@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diccionarios en Python</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="REEDI de Programación básica: diccionarios en Python con get(), keys(), values() e items().">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: una diapositiva a la vez; barra superior (progreso + ficha), escenario con scroll propio, barra inferior de navegación.
+   Convención visual: las CLAVES siempre en ámbar (etiqueta), los VALORES en azul. */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --fg:#16202B; --muted:#576474; --line:#D7DEE7;
+  --accent:#2C5A88; --accent-soft:#E3ECF6;
+  --key:#9A5F00; --key-bg:#FBEBC8; --val:#1F5FA6;
+  --ok:#2C7A4B; --ok-bg:#E2F2E8; --bad:#AE3434; --bad-bg:#F8E3E3;
+  --code-bg:#EEF2F7;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161D; --surface:#19202A; --fg:#E5EAF1; --muted:#9AA6B5; --line:#2B3542;
+  --accent:#86B4E6; --accent-soft:#1E2C3D;
+  --key:#F2C35C; --key-bg:#3A2F17; --val:#8CC0F5;
+  --ok:#6FCB94; --ok-bg:#16301F; --bad:#F08A8A; --bad-bg:#3A1C1C;
+  --code-bg:#151B23; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161D; --surface:#19202A; --fg:#E5EAF1; --muted:#9AA6B5; --line:#2B3542;
+  --accent:#86B4E6; --accent-soft:#1E2C3D;
+  --key:#F2C35C; --key-bg:#3A2F17; --val:#8CC0F5;
+  --ok:#6FCB94; --ok-bg:#16301F; --bad:#F08A8A; --bad-bg:#3A1C1C;
+  --code-bg:#151B23; color-scheme:dark}
+
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.55;margin:0}
+*{box-sizing:border-box}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.bar{display:flex;align-items:center;gap:12px;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .course{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.count{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.progress{height:3px;background:var(--line)}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .3s}
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;border-radius:8px;font-weight:700;font-size:.92rem}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+main{overflow-y:auto;padding-block:28px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.slide{max-width:980px;margin:0 auto;display:grid;gap:20px;animation:in .35s ease}
+@keyframes in{from{transform:translateY(8px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.slide{animation:none}.progress span{transition:none}}
+
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0}
+h1,h2{font-family:var(--f-display);font-weight:700;line-height:1.12;margin:0;text-wrap:balance}
+h1{font-size:clamp(2rem,5.5vw,3.4rem)}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem)}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.15rem;margin:0}
+p{margin:0;max-width:66ch}
+.lead{font-size:1.12rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;align-items:start}
+.grid2>*{min-width:0}
+.stack{display:grid;gap:12px;align-content:start}
+
+pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  font-family:var(--f-mono);font-size:.88rem;line-height:1.6;overflow-x:auto}
+code{font-family:var(--f-mono);font-size:.9em}
+p code,li code,td code{background:var(--code-bg);padding:1px 5px;border-radius:4px}
+.k{color:var(--key);font-weight:600}.v{color:var(--val)}.m{color:var(--accent);font-weight:600}.c{color:var(--muted);font-style:italic}
+.out{background:transparent;border-style:dashed}
+.out::before{content:"Salida";display:block;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.err{color:var(--bad);font-weight:600}
+
+.note{border-left:3px solid var(--accent);padding:4px 0 4px 14px;color:var(--muted);font-size:.95rem}
+.note b{color:var(--fg)}
+
+/* Ficha visual clave-valor */
+.cards{display:grid;gap:8px}
+.kv{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tag{font-family:var(--f-mono);font-size:.88rem;background:var(--key-bg);color:var(--key);font-weight:600;padding:4px 10px 4px 18px;border-radius:4px 14px 14px 4px;position:relative}
+.tag::before{content:"";position:absolute;left:7px;top:50%;width:5px;height:5px;border-radius:50%;background:var(--key);transform:translateY(-50%)}
+.arrow{color:var(--muted);font-family:var(--f-mono)}
+.val{font-family:var(--f-mono);color:var(--val);font-size:.92rem}
+
+/* Actividades */
+.act{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px}
+.act .eyebrow{color:var(--key)}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:10px 14px;border-radius:8px;font-size:.98rem}
+.opt{font-family:var(--f-mono);font-size:.9rem;line-height:1.5}
+.opt code{background:none;padding:0;font-size:1em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{background:var(--ok-bg);border-color:var(--ok)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.fb{font-size:.95rem}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--bad)}
+.reveal-body{display:grid;gap:10px}
+
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.tablewrap{overflow-x:auto}
+
+.match{display:grid;gap:10px}
+.mrow{display:grid;grid-template-columns:110px 1fr 28px;gap:10px;align-items:center}
+.mrow select{font:inherit;font-size:.95rem;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-width:0;width:100%}
+.mark{font-weight:700;text-align:center}
+
+.algo{counter-reset:none;font-family:var(--f-mono);font-size:.84rem;line-height:1.55;max-height:430px;overflow:auto}
+.algo span.n{display:inline-block;width:2.4em;color:var(--muted);text-align:right;margin-right:.8em}
+.algo .hl{color:var(--key)}
+
+.score{font-family:var(--f-display);font-size:1.3rem}
+.refs{display:grid;gap:10px;padding-left:0;list-style:none}
+.refs li{padding-left:2em;text-indent:-2em;font-size:.95rem}
+.refs a{color:var(--accent);word-break:break-all}
+
+.foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--surface);border-top:1px solid var(--line)}
+.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.dot{width:10px;height:10px;border-radius:50%;border:none;background:var(--line);padding:0}
+.dot[aria-current="true"]{background:var(--accent);width:22px;border-radius:5px}
+.hint{font-size:.78rem;color:var(--muted)}
+@media (max-width:560px){.dots{display:none}.hint{display:none}.mrow{grid-template-columns:1fr 28px}.mrow code{grid-column:1/-1}}
+
+/* Modal ficha */
+.modal{position:fixed;inset:0;background:rgba(10,15,22,.55);display:grid;place-items:center;z-index:50;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--surface);color:var(--fg);border-radius:14px;max-width:720px;width:100%;max-height:100%;overflow:auto;padding:24px;display:grid;gap:16px;border:1px solid var(--line)}
+.sheet dl{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;margin:0}
+.sheet dt{font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;padding-top:3px}
+.sheet dd{margin:0;min-width:0}
+.sheet ol{margin:0;padding-left:1.3em;display:grid;gap:6px}
+@media (max-width:560px){.sheet dl{grid-template-columns:1fr}.sheet dt{padding-top:8px}}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:3px 9px;border-radius:12px}
+.obj{background:var(--accent-soft);border-radius:12px;padding:16px 18px}
+.obj p{color:var(--fg)}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;color:var(--muted);font-size:.9rem}
+
+.algo .ln{display:block;border-radius:4px;padding-right:6px;transition:background .2s}
+.algo .ln.on{background:var(--key-bg);box-shadow:inset 3px 0 0 var(--key)}
+.maprow{cursor:pointer}
+.maprow:hover td{background:var(--accent-soft)}
+.maprow.sel td{background:var(--key-bg)}
+.maprow.sel td:first-child{box-shadow:inset 3px 0 0 var(--key)}
+.vz-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.vz-label{font-size:.85rem;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.segb{border:none;background:var(--surface);color:var(--fg);padding:6px 12px;font-family:var(--f-mono);font-size:.85rem}
+.segb[aria-checked="true"]{background:var(--key-bg);color:var(--key);font-weight:600}
+.vz-code{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:8px 0;max-height:420px;overflow:auto;font-family:var(--f-mono);font-size:.85rem}
+.cl{display:flex;gap:10px;padding:2px 12px;white-space:pre;border-left:3px solid transparent}
+.cl .n{color:var(--muted);width:1.6em;text-align:right;flex:none}
+.cl code{font-size:1em;background:none;padding:0}
+.cl.cur{background:var(--accent-soft);border-left-color:var(--accent)}
+.vz-ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.vz-msg{min-height:3.2em;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:.96rem}
+.vz-panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:8px}
+.vz-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.vz-vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.vz-var{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:6px;padding:5px 9px;font-family:var(--f-mono);font-size:.84rem;min-width:0}
+.vz-var .v,.vz-ref{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vz-name{color:var(--fg);font-weight:600}
+.vz-ref{color:var(--accent)}
+.vz-pair{border-radius:6px;padding:2px 4px}
+.vz-miss{opacity:.85}
+.vz-miss .tag{background:var(--bad-bg);color:var(--bad)}
+.vz-miss .tag::before{background:var(--bad)}
+.vz-miss .val{color:var(--bad)}
+.vz-empty{color:var(--muted);font-size:.9rem;font-style:italic}
+.vz-out{min-height:5.5em;max-height:180px;overflow:auto;font-size:.84rem}
+.flash{background:var(--key-bg);border-color:var(--key)!important;animation:pulse .6s ease}
+@keyframes pulse{from{transform:scale(1.04)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}.algo .ln{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="bar">
+      <span class="course">Programación básica · Diccionarios</span>
+      <span class="count" id="count">1 / 10</span>
+      <button class="btn" id="fichaBtn" aria-haspopup="dialog">Ficha del recurso</button>
+    </div>
+    <div class="progress"><span id="prog" style="width:10%"></span></div>
+  </header>
+
+  <main id="stage" tabindex="-1">
+
+<!-- 1 -->
+<section class="slide" data-n="1">
+  <p class="eyebrow">REEDI · Programación básica</p>
+  <h1>Diccionarios en Python: consulta y recorre datos con clave y valor</h1>
+  <div class="obj">
+    <p class="eyebrow" style="margin-bottom:6px">Objetivo de aprendizaje</p>
+    <p>Aplicar los métodos <code>get()</code>, <code>keys()</code>, <code>values()</code> e <code>items()</code> de los diccionarios de Python para consultar y recorrer datos clave–valor, a partir de un problema resuelto con análisis EPS y un algoritmo estilo Osvaldo Cairó.</p>
+  </div>
+  <div class="meta">
+    <span>Autores: Perla Marlene Viera González, Guillermo Ezequiel Sánchez Guerrero, Osvaldo Habib González González y Yazmany Jahaziel Guerrero Ceja</span>
+    <span>Duración: 30–35 min</span>
+    <span>4 actividades, simulación en memoria y autoevaluación</span>
+  </div>
+  <p class="hint">Avanza con las flechas del teclado o con los botones de abajo.</p>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-n="2" hidden>
+  <p class="eyebrow">Idea 1 · Qué es</p>
+  <h2>Un diccionario guarda pares clave&nbsp;:&nbsp;valor</h2>
+  <div class="grid2">
+    <div class="stack">
+      <p>Cada <b style="color:var(--key)">clave</b> identifica un dato, y con ella se consulta su <b style="color:var(--val)">valor</b>. Funciona como una ficha: buscas por la etiqueta, no por la posición.</p>
+<pre>alumno = {
+    <span class="k">"nombre"</span>: <span class="v">"Ana"</span>,
+    <span class="k">"edad"</span>: <span class="v">18</span>,
+    <span class="k">"carrera"</span>: <span class="v">"Matemáticas"</span>
+}</pre>
+      <p class="note">Las claves no se repiten. Si asignas un valor a una clave existente, se reemplaza el anterior.</p>
+    </div>
+    <div class="act" aria-label="Representación de la ficha alumno">
+      <h3>Ficha <code>alumno</code></h3>
+      <div class="cards">
+        <div class="kv"><span class="tag">"nombre"</span><span class="arrow">→</span><span class="val">"Ana"</span></div>
+        <div class="kv"><span class="tag">"edad"</span><span class="arrow">→</span><span class="val">18</span></div>
+        <div class="kv"><span class="tag">"carrera"</span><span class="arrow">→</span><span class="val">"Matemáticas"</span></div>
+      </div>
+      <p class="note">En esta presentación las claves siempre aparecen en ámbar y los valores en azul.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3" hidden>
+  <p class="eyebrow">Idea 2 · Consultar</p>
+  <h2>Corchetes o <code>get()</code>: la diferencia aparece cuando la clave no existe</h2>
+  <div class="grid2">
+    <div class="stack">
+<pre>print(alumno[<span class="k">"nombre"</span>])       <span class="c"># Ana</span>
+print(alumno.<span class="m">get</span>(<span class="k">"nombre"</span>))   <span class="c"># Ana</span>
+
+print(alumno[<span class="k">"semestre"</span>])</pre>
+<pre class="out"><span class="err">KeyError: 'semestre'</span></pre>
+      <p class="note">El <b>KeyError</b> es un error de ejecución: el código es válido, pero falla al buscar una clave que no está. <code>get()</code> lo evita.</p>
+    </div>
+    <div class="act mc" data-answer="c">
+      <p class="eyebrow">Actividad 1 · Opción múltiple</p>
+      <p>¿Qué se muestra en pantalla al ejecutar el programa?</p>
+<pre>alumno = {<span class="k">"nombre"</span>: <span class="v">"Ana"</span>, <span class="k">"edad"</span>: <span class="v">18</span>}
+print(alumno.<span class="m">get</span>(<span class="k">"semestre"</span>))</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-fb="KeyError lo producen los corchetes: alumno['semestre']. get() devuelve un valor en lugar de detener el programa.">KeyError</button>
+        <button class="opt" data-k="b" data-fb="get() devuelve el valor asociado a la clave, no la clave buscada.">semestre</button>
+        <button class="opt" data-k="c" data-fb="Correcto. Sin valor alternativo, get() devuelve None cuando la clave no existe.">None</button>
+        <button class="opt" data-k="d" data-fb="False es el resultado de 'semestre' in alumno. get() devuelve None, que representa la ausencia de valor.">False</button>
+      </div>
+      <p class="fb" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4" hidden>
+  <p class="eyebrow">Idea 3 · Valor alternativo</p>
+  <h2><code>get(clave, alternativo)</code> responde aunque falte el dato</h2>
+  <div class="grid2">
+    <div class="stack">
+<pre>print(alumno.<span class="m">get</span>(<span class="k">"semestre"</span>, <span class="v">"No registrado"</span>))</pre>
+<pre class="out">No registrado</pre>
+      <p>El segundo argumento es lo que se devuelve si la clave no existe. Si la clave sí existe, se ignora y se devuelve su valor real.</p>
+      <p class="note"><b>Uso típico:</b> datos opcionales, como un correo o un teléfono que no todos los alumnos registran.</p>
+    </div>
+    <div class="act reveal">
+      <p class="eyebrow">Actividad 2 · Predice y revela</p>
+      <p>Escribe en tu libreta qué imprime cada línea y después revisa.</p>
+<pre>alumno = {<span class="k">"nombre"</span>: <span class="v">"Ana"</span>, <span class="k">"edad"</span>: <span class="v">18</span>, <span class="k">"carrera"</span>: <span class="v">"Matemáticas"</span>}
+
+print(alumno.<span class="m">get</span>(<span class="k">"carrera"</span>, <span class="v">"No registrado"</span>))
+print(alumno.<span class="m">get</span>(<span class="k">"correo"</span>, <span class="v">"Sin correo"</span>))</pre>
+      <button class="btn" aria-expanded="false">Revelar respuesta</button>
+      <div class="reveal-body" hidden>
+<pre class="out">Matemáticas
+Sin correo</pre>
+        <p class="fb">La clave <code>"carrera"</code> existe, así que se ignora el alternativo. <code>"correo"</code> no existe, así que se devuelve <code>"Sin correo"</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5" hidden>
+  <p class="eyebrow">Idea 4 · Claves y valores</p>
+  <h2><code>keys()</code> da las etiquetas; <code>values()</code> da el contenido</h2>
+  <div class="grid2">
+    <div class="stack">
+      <h3><code>keys()</code></h3>
+<pre>for clave in alumno.<span class="m">keys</span>():
+    print(clave)</pre>
+<pre class="out"><span class="k">nombre</span>
+<span class="k">edad</span>
+<span class="k">carrera</span></pre>
+      <p class="note"><code>for clave in alumno:</code> también recorre las claves. Con <code>keys()</code> el código es más explícito.</p>
+    </div>
+    <div class="stack">
+      <h3><code>values()</code></h3>
+<pre>for valor in alumno.<span class="m">values</span>():
+    print(valor)</pre>
+<pre class="out"><span class="v">Ana</span>
+<span class="v">18</span>
+<span class="v">Matemáticas</span></pre>
+      <p class="note"><b>Nota técnica:</b> en Python 3 estos métodos devuelven vistas (<code>dict_keys</code>, <code>dict_values</code>), no listas. Para una lista usa <code>list(alumno.keys())</code>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6" hidden>
+  <p class="eyebrow">Idea 5 · Todo junto</p>
+  <h2><code>items()</code> recorre clave y valor al mismo tiempo</h2>
+  <div class="grid2">
+    <div class="stack">
+<pre>for clave, valor in alumno.<span class="m">items</span>():
+    print(clave, ":", valor)</pre>
+<pre class="out"><span class="k">nombre</span> : <span class="v">Ana</span>
+<span class="k">edad</span> : <span class="v">18</span>
+<span class="k">carrera</span> : <span class="v">Matemáticas</span></pre>
+      <p>Cada elemento es una tupla <code>('nombre', 'Ana')</code>; el <code>for</code> la desempaca en dos variables.</p>
+    </div>
+    <div class="act matchact">
+      <p class="eyebrow">Actividad 3 · Relaciona conceptos</p>
+      <p>Con <code>d = {"a": 1, "b": 2}</code>, elige qué obtienes con cada método.</p>
+      <div class="match">
+        <div class="mrow" data-ans="1"><code>get()</code>
+          <select id="m1" aria-label="get()"><option value="">Elige…</option><option value="1">El valor asociado a una clave</option><option value="2">Una vista con las claves</option><option value="3">Una vista con los valores</option><option value="4">Una vista con pares (clave, valor)</option></select><span class="mark" aria-live="polite"></span></div>
+        <div class="mrow" data-ans="2"><code>keys()</code>
+          <select id="m2" aria-label="keys()"><option value="">Elige…</option><option value="1">El valor asociado a una clave</option><option value="2">Una vista con las claves</option><option value="3">Una vista con los valores</option><option value="4">Una vista con pares (clave, valor)</option></select><span class="mark" aria-live="polite"></span></div>
+        <div class="mrow" data-ans="3"><code>values()</code>
+          <select id="m3" aria-label="values()"><option value="">Elige…</option><option value="1">El valor asociado a una clave</option><option value="2">Una vista con las claves</option><option value="3">Una vista con los valores</option><option value="4">Una vista con pares (clave, valor)</option></select><span class="mark" aria-live="polite"></span></div>
+        <div class="mrow" data-ans="4"><code>items()</code>
+          <select id="m4" aria-label="items()"><option value="">Elige…</option><option value="1">El valor asociado a una clave</option><option value="2">Una vista con las claves</option><option value="3">Una vista con los valores</option><option value="4">Una vista con pares (clave, valor)</option></select><span class="mark" aria-live="polite"></span></div>
+      </div>
+      <button class="btn primary" style="justify-self:start">Comprobar</button>
+      <p class="fb" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-n="7" hidden>
+  <p class="eyebrow">Idea 6 · Del algoritmo al código</p>
+  <h2>Algoritmo CONSULTA_ALUMNO y su equivalente en Python</h2>
+  <p>El algoritmo es independiente del lenguaje: representa el diccionario como un arreglo de registros <code>PAR = REGISTRO CLAVE: cadena, VALOR: cadena</code>.</p>
+  <div class="grid2">
+<pre class="algo" id="algo7"><span class="ln" data-s="1"><span class="n">1.</span>Inicio</span><span class="ln" data-s="2"><span class="n">2.</span>Leer NOM</span><span class="ln" data-s="3"><span class="n">3.</span>Leer EDAD</span><span class="ln" data-s="4"><span class="n">4.</span>Leer CAR</span><span class="ln" data-s="5"><span class="n">5.</span>Leer BUS</span><span class="ln" data-s="6"><span class="n">6.</span>PARES[1].CLAVE ← <span class="hl">"nombre"</span></span><span class="ln" data-s="7"><span class="n">7.</span>PARES[1].VALOR ← NOM</span><span class="ln" data-s="8"><span class="n">8.</span>PARES[2].CLAVE ← <span class="hl">"edad"</span></span><span class="ln" data-s="9"><span class="n">9.</span>PARES[2].VALOR ← EDAD</span><span class="ln" data-s="10"><span class="n">10.</span>PARES[3].CLAVE ← <span class="hl">"carrera"</span></span><span class="ln" data-s="11"><span class="n">11.</span>PARES[3].VALOR ← CAR</span><span class="ln" data-s="12"><span class="n">12.</span>RES ← "No registrado"</span><span class="ln" data-s="13"><span class="n">13.</span>BAN ← FALSO</span><span class="ln" data-s="14"><span class="n">14.</span>I ← 1</span><span class="ln" data-s="15"><span class="n">15.</span>Mientras (I &lt;= 3) y (BAN = FALSO) Repetir</span><span class="ln" data-s="16"><span class="n">16.</span>  Si PARES[I].CLAVE = BUS entonces</span><span class="ln" data-s="17"><span class="n">17.</span>    RES ← PARES[I].VALOR</span><span class="ln" data-s="18"><span class="n">18.</span>    BAN ← VERDADERO</span><span class="ln" data-s="19"><span class="n">19.</span>  Fin del paso 16</span><span class="ln" data-s="20"><span class="n">20.</span>  I ← I + 1</span><span class="ln" data-s="21"><span class="n">21.</span>Fin del paso 15</span><span class="ln" data-s="22"><span class="n">22.</span>Mostrar BUS, ": ", RES</span><span class="ln" data-s="23"><span class="n">23.</span>Repetir con I desde 1 hasta 3</span><span class="ln" data-s="24"><span class="n">24.</span>  Mostrar PARES[I].CLAVE</span><span class="ln" data-s="25"><span class="n">25.</span>Fin del paso 23</span><span class="ln" data-s="26"><span class="n">26.</span>Repetir con I desde 1 hasta 3</span><span class="ln" data-s="27"><span class="n">27.</span>  Mostrar PARES[I].CLAVE, " : ", PARES[I].VALOR</span><span class="ln" data-s="28"><span class="n">28.</span>Fin del paso 26</span><span class="ln" data-s="29"><span class="n">29.</span>Fin</span></pre>
+    <div class="stack">
+      <p class="hint" style="display:block">Toca una fila para resaltar sus pasos en el algoritmo.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Pasos</th><th>Qué hacen</th><th>En Python</th></tr></thead>
+        <tbody>
+          <tr class="maprow" tabindex="0" role="button" aria-pressed="false" data-from="2" data-to="5"><td>2–5</td><td>Leer datos</td><td><code>input()</code></td></tr>
+          <tr class="maprow" tabindex="0" role="button" aria-pressed="false" data-from="6" data-to="11"><td>6–11</td><td>Construir pares</td><td><code>alumno = {...}</code></td></tr>
+          <tr class="maprow" tabindex="0" role="button" aria-pressed="false" data-from="12" data-to="22"><td>12–22</td><td>Buscar con alternativo</td><td><code>alumno.get(bus, "No registrado")</code></td></tr>
+          <tr class="maprow" tabindex="0" role="button" aria-pressed="false" data-from="23" data-to="25"><td>23–25</td><td>Recorrer claves</td><td><code>for clave in alumno.keys():</code></td></tr>
+          <tr class="maprow" tabindex="0" role="button" aria-pressed="false" data-from="26" data-to="28"><td>26–28</td><td>Recorrer pares</td><td><code>for clave, valor in alumno.items():</code></td></tr>
+        </tbody>
+      </table></div>
+      <p class="note"><b>Para reflexionar:</b> los pasos 12 a 21 son una búsqueda completa con bandera. En Python, una sola línea con <code>get()</code> hace ese trabajo.</p>
+      <details>
+        <summary style="cursor:pointer;font-weight:700">Diccionario de variables</summary>
+        <ul style="margin:8px 0 0;padding-left:1.2em;font-size:.93rem;display:grid;gap:4px">
+          <li><b>PARES</b>: arreglo unidimensional de PAR, de 1 a 3. Datos del alumno como pares clave–valor.</li>
+          <li><b>NOM, EDAD, CAR</b>: cadenas. Nombre, edad y carrera del alumno.</li>
+          <li><b>BUS</b>: cadena. Clave que se desea consultar.</li>
+          <li><b>RES</b>: cadena. Valor encontrado o valor alternativo.</li>
+          <li><b>BAN</b>: booleano. Indica si la clave fue encontrada.</li>
+          <li><b>I</b>: entero. Controla los recorridos del arreglo.</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-n="8" hidden>
+  <p class="eyebrow">Idea 7 · Ejecución en memoria</p>
+  <h2>Observa la memoria mientras corre <code>consulta_alumno.py</code></h2>
+  <div class="vz-top">
+    <span class="vz-label">Clave a consultar (BUS):</span>
+    <div class="seg" role="radiogroup" aria-label="Clave a consultar">
+      <button class="segb" role="radio" aria-checked="true" data-bus="semestre">"semestre"</button>
+      <button class="segb" role="radio" aria-checked="false" data-bus="edad">"edad"</button>
+    </div>
+    <span class="vz-label">Entradas: Ana · 18 · Matemáticas</span>
+  </div>
+  <div class="grid2 vz">
+    <div class="stack">
+      <div class="vz-code" id="vzCode" aria-label="Código en ejecución"></div>
+      <div class="vz-ctrl">
+        <button class="btn" id="vzReset" aria-label="Reiniciar">⟲ Reiniciar</button>
+        <button class="btn" id="vzPrev">← Paso</button>
+        <button class="btn primary" id="vzNext">Paso →</button>
+        <button class="btn" id="vzPlay" aria-pressed="false">▶ Reproducir</button>
+        <span class="count" id="vzCount"></span>
+      </div>
+      <p class="vz-msg" id="vzMsg" role="status" aria-live="polite"></p>
+    </div>
+    <div class="stack">
+      <div class="vz-panel">
+        <p class="vz-h">Memoria · variables</p>
+        <div id="vzVars" class="vz-vars"></div>
+      </div>
+      <div class="vz-panel">
+        <p class="vz-h" id="vzDictH">Diccionario</p>
+        <div id="vzDict" class="cards"></div>
+      </div>
+      <div class="vz-panel">
+        <p class="vz-h">Pantalla</p>
+        <pre class="vz-out" id="vzOut"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:12px">
+    <div class="stack">
+      <p class="eyebrow" style="color:var(--key)">Aplica · Reto</p>
+      <h3>La ficha de un libro</h3>
+      <ol style="margin:0;padding-left:1.3em;display:grid;gap:6px">
+        <li>Guarda un libro con <span class="k">título</span>, <span class="k">autor</span> y <span class="k">año</span>.</li>
+        <li>Consulta la clave <span class="k">editorial</span> con <code>get()</code> y el alternativo <code>"Sin editorial"</code>.</li>
+        <li>Muestra solo los valores con <code>values()</code>.</li>
+        <li>Muestra la información completa con <code>items()</code>.</li>
+      </ol>
+      <p class="note">Primero resuélvelo en tu libreta; después compara.</p>
+    </div>
+    <div class="act reveal">
+      <p class="eyebrow">Actividad 4 · Revela la solución</p>
+      <button class="btn" aria-expanded="false" style="justify-self:start">Revelar solución</button>
+      <div class="reveal-body" hidden>
+<pre>libro = {
+    <span class="k">"titulo"</span>: <span class="v">"Rayuela"</span>,
+    <span class="k">"autor"</span>: <span class="v">"Julio Cortázar"</span>,
+    <span class="k">"anio"</span>: <span class="v">1963</span>
+}
+print(<span class="k">"editorial"</span>, ":", libro.<span class="m">get</span>(<span class="k">"editorial"</span>, <span class="v">"Sin editorial"</span>))
+
+for valor in libro.<span class="m">values</span>():
+    print(valor)
+
+for clave, valor in libro.<span class="m">items</span>():
+    print(clave, ":", valor)</pre>
+<pre class="out">editorial : Sin editorial
+Rayuela
+Julio Cortázar
+1963
+titulo : Rayuela
+autor : Julio Cortázar
+anio : 1963</pre>
+        <p class="fb">Observa que el diccionario de Python admite valores de distintos tipos: <code>1963</code> es entero y el resto son cadenas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-n="9" hidden>
+  <p class="eyebrow">Autoevaluación</p>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p class="lead">Cinco reactivos. Lee cada código con atención: solo cuenta tu primera respuesta.</p>
+  <div class="grid2" id="evalGrid">
+    <div class="act mc eval" data-answer="b">
+      <p>1. ¿Qué valor muestra el programa?</p>
+<pre>precios = {<span class="k">"lapiz"</span>: <span class="v">8</span>, <span class="k">"cuaderno"</span>: <span class="v">35</span>}
+total = precios.<span class="m">get</span>(<span class="k">"borrador"</span>, <span class="v">0</span>) + precios.<span class="m">get</span>(<span class="k">"lapiz"</span>, <span class="v">0</span>)
+print(total)</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-fb="Ese resultado sumaría todos los valores del diccionario. Aquí solo se suman dos consultas con get().">43</button>
+        <button class="opt" data-k="b" data-fb="Correcto. 'borrador' no existe y get() devuelve el alternativo 0; 'lapiz' vale 8. Entonces 0 + 8 = 8.">8</button>
+        <button class="opt" data-k="c" data-fb="Sucedería si la clave inexistente anulara la suma. get() devuelve 0 y la suma continúa.">0</button>
+        <button class="opt" data-k="d" data-fb="Sucedería si get() devolviera None. Con el alternativo 0 la suma es entre enteros.">TypeError</button>
+      </div><p class="fb" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="act mc eval" data-answer="c">
+      <p>2. ¿Qué muestra el programa?</p>
+<pre>inventario = {<span class="k">"mouse"</span>: <span class="v">15</span>, <span class="k">"teclado"</span>: <span class="v">7</span>}
+for x in inventario:
+    print(x)</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-fb="Esa salida corresponde a recorrer inventario.values().">15<br>7</button>
+        <button class="opt" data-k="b" data-fb="Esa salida corresponde a recorrer inventario.items() con una sola variable.">('mouse', 15)<br>('teclado', 7)</button>
+        <button class="opt" data-k="c" data-fb="Correcto. Recorrer el diccionario directamente equivale a recorrer sus claves.">mouse<br>teclado</button>
+        <button class="opt" data-k="d" data-fb="Para obtener esa salida se necesita items() con dos variables: for clave, valor in ...">mouse 15<br>teclado 7</button>
+      </div><p class="fb" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="act mc eval" data-answer="a">
+      <p>3. ¿Qué debe ir en el espacio para que el programa muestre <code>Ana obtuvo 90</code> y <code>Luis obtuvo 75</code>?</p>
+<pre>calif = {<span class="k">"Ana"</span>: <span class="v">90</span>, <span class="k">"Luis"</span>: <span class="v">75</span>}
+for ________ in calif.<span class="m">items</span>():
+    print(nombre, "obtuvo", nota)</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-fb="Correcto. items() entrega (clave, valor): la clave va a nombre y el valor a nota.">nombre, nota</button>
+        <button class="opt" data-k="b" data-fb="El programa corre, pero intercambia los datos: mostraría '90 obtuvo Ana'. Es un error lógico.">nota, nombre</button>
+        <button class="opt" data-k="c" data-fb="nombre recibiría la tupla completa y nota quedaría sin definir: se produce NameError.">nombre</button>
+        <button class="opt" data-k="d" data-fb="Con esa variable nombre y nota quedan sin definir: se produce NameError.">clave</button>
+      </div><p class="fb" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="act mc eval" data-answer="d">
+      <p>4. ¿Qué ocurre al ejecutar el programa?</p>
+<pre>alumno = {<span class="k">"nombre"</span>: <span class="v">"Ana"</span>, <span class="k">"edad"</span>: <span class="v">18</span>}
+claves = alumno.<span class="m">keys</span>()
+print(claves[0])</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-fb="Así funcionaría una lista. keys() devuelve una vista dict_keys, que se recorre con for pero se indexa con list(claves)[0].">Muestra nombre</button>
+        <button class="opt" data-k="b" data-fb="Aunque se pudiera indexar, claves contiene las claves, no los valores.">Muestra Ana</button>
+        <button class="opt" data-k="c" data-fb="KeyError aparece al consultar con corchetes una clave inexistente del diccionario. Aquí el problema es indexar la vista.">Lanza KeyError</button>
+        <button class="opt" data-k="d" data-fb="Correcto. La vista dict_keys acepta recorridos, pero no índices: 'dict_keys' object is not subscriptable.">Lanza TypeError</button>
+      </div><p class="fb" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="act mc eval" data-answer="b">
+      <p>5. Estos pasos del algoritmo CONSULTA_ALUMNO, ¿a qué instrucción de Python equivalen?</p>
+<pre class="algo" style="max-height:none"><span class="n">12.</span>RES ← "No registrado"
+<span class="n">13.</span>BAN ← FALSO
+<span class="n">14.</span>I ← 1
+<span class="n">15.</span>Mientras (I &lt;= 3) y (BAN = FALSO) Repetir
+<span class="n">16.</span>  Si PARES[I].CLAVE = BUS entonces
+<span class="n">17.</span>    RES ← PARES[I].VALOR
+<span class="n">18.</span>    BAN ← VERDADERO
+<span class="n">19.</span>  Fin del paso 16
+<span class="n">20.</span>  I ← I + 1
+<span class="n">21.</span>Fin del paso 15</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-fb="Los argumentos están invertidos: buscaría la clave 'No registrado' y usaría bus como alternativo."><code>res = alumno.get("No registrado", bus)</code></button>
+        <button class="opt" data-k="b" data-fb="Correcto. Busca bus y, si no la encuentra, conserva 'No registrado', igual que RES en el paso 12."><code>res = alumno.get(bus, "No registrado")</code></button>
+        <button class="opt" data-k="c" data-fb="Falta el valor alternativo del paso 12: si la clave no existe, res valdría None."><code>res = alumno.get(bus)</code></button>
+        <button class="opt" data-k="d" data-fb="Esa expresión equivale a la bandera BAN (si se encontró), no al valor RES."><code>res = bus in alumno.keys()</code></button>
+      </div><p class="fb" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="act" style="align-content:center">
+      <p class="eyebrow">Resultado</p>
+      <p class="score" id="score" aria-live="polite">0 de 5 contestadas</p>
+      <p class="fb" id="scoreMsg"></p>
+      <button class="btn" id="resetEval" style="justify-self:start">Reiniciar autoevaluación</button>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-n="10" hidden>
+  <p class="eyebrow">Cierre</p>
+  <h2>Resumen</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Método</th><th>Qué permite</th><th>Para recordarlo</th></tr></thead>
+    <tbody>
+      <tr><td><code>get()</code></td><td>Obtener el valor de una clave, sin error si no existe (con alternativo opcional)</td><td>Quiero un dato</td></tr>
+      <tr><td><code>keys()</code></td><td>Obtener las claves</td><td>Quiero las claves</td></tr>
+      <tr><td><code>values()</code></td><td>Obtener los valores</td><td>Quiero los valores</td></tr>
+      <tr><td><code>items()</code></td><td>Obtener clave y valor</td><td>Quiero todo</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note"><b>Tarea:</b> resuelve el ejercicio propuesto del material complementario (producto con nombre, precio y existencia; consulta <code>proveedor</code> con <code>"Sin proveedor"</code>): EPS, algoritmo estilo Cairó y código.</p>
+  <h3>Fuentes</h3>
+  <ul class="refs">
+    <li>Cairó, O. (2005). <i>Metodología de la programación: Algoritmos, diagramas de flujo y programas</i> (3.ª ed.). Alfaomega.</li>
+    <li>Python Software Foundation. (s.f.-a). <i>Built-in types: Mapping types — dict</i>. Python 3 documentation. Recuperado el 16 de octubre de 2026, de <a href="https://docs.python.org/3/library/stdtypes.html#mapping-types-dict" target="_blank" rel="noopener">https://docs.python.org/3/library/stdtypes.html#mapping-types-dict</a></li>
+    <li>Python Software Foundation. (s.f.-b). <i>Data structures: Dictionaries</i>. The Python tutorial. Recuperado el 16 de octubre de 2026, de <a href="https://docs.python.org/3/tutorial/datastructures.html#dictionaries" target="_blank" rel="noopener">https://docs.python.org/3/tutorial/datastructures.html#dictionaries</a></li>
+    <li>Viera González, P. M., Sánchez Guerrero, G. E., González González, O. H., &amp; Guerrero Ceja, Y. J. (2026). <i>Diccionarios en Python: material complementario</i> [Material de clase]. Programación básica, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</li>
+  </ul>
+</section>
+
+  </main>
+
+  <footer class="foot">
+    <button class="btn" id="prev">← Anterior</button>
+    <div class="dots" id="dots" role="tablist" aria-label="Diapositivas"></div>
+    <span class="hint">← → para navegar</span>
+    <button class="btn primary" id="next">Siguiente →</button>
+  </footer>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fichaTitle" tabindex="-1">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+      <h2 id="fichaTitle" style="font-size:1.5rem">Ficha del recurso</h2>
+      <button class="btn" id="closeFicha">Cerrar</button>
+    </div>
+    <dl>
+      <dt>Título</dt><dd>Diccionarios en Python: consulta y recorre datos con clave y valor</dd>
+      <dt>Objetivo</dt><dd>Aplicar los métodos get(), keys(), values() e items() de los diccionarios de Python para consultar y recorrer datos clave–valor, a partir de un problema resuelto con análisis EPS y un algoritmo estilo Osvaldo Cairó.</dd>
+      <dt>Unidad de aprendizaje</dt><dd>Programación básica</dd>
+      <dt>Autores</dt><dd>Perla Marlene Viera González, Guillermo Ezequiel Sánchez Guerrero, Osvaldo Habib González González y Yazmany Jahaziel Guerrero Ceja</dd>
+      <dt>Audiencia</dt><dd>Estudiantes de primer semestre de licenciatura que cursan Programación básica, con conocimientos previos de variables, ciclos, arreglos y registros.</dd>
+      <dt>Palabras clave</dt><dd class="chips"><span class="chip">diccionario</span><span class="chip">clave–valor</span><span class="chip">get()</span><span class="chip">items()</span><span class="chip">KeyError</span></dd>
+      <dt>Descripción</dt><dd>El estudiante aprende a crear diccionarios en Python y a usar get(), keys(), values() e items() para consultar datos sin errores y recorrer pares clave–valor. Relaciona un algoritmo estilo Cairó con su código y observa la memoria paso a paso durante la ejecución. Interactúa con opción múltiple con retroalimentación, respuestas por revelar, relación de conceptos, un reto aplicado y una autoevaluación de cinco reactivos. Tiempo estimado: 30 a 35 minutos.</dd>
+      <dt>Competencias</dt><dd><ol>
+        <li>Construye diccionarios en Python con pares clave–valor a partir de los datos de un problema, respetando la sintaxis del lenguaje.</li>
+        <li>Consulta valores de un diccionario con get() y un valor alternativo, evitando KeyError cuando la clave no existe.</li>
+        <li>Recorre un diccionario con keys(), values() e items() para mostrar su información, relacionando cada recorrido con los pasos del algoritmo equivalente.</li>
+      </ol></dd>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var N=slides.length, cur=0;
+  var prev=document.getElementById('prev'), next=document.getElementById('next');
+  var count=document.getElementById('count'), prog=document.getElementById('prog');
+  var dots=document.getElementById('dots'), stage=document.getElementById('stage');
+  var modal=document.getElementById('modal'), fichaBtn=document.getElementById('fichaBtn');
+
+  slides.forEach(function(s,i){
+    var d=document.createElement('button');
+    d.className='dot'; d.setAttribute('aria-label','Diapositiva '+(i+1));
+    d.addEventListener('click',function(){go(i)});
+    dots.appendChild(d);
+  });
+
+  function go(i){
+    if(i<0||i>=N) return;
+    slides[cur].hidden=true; cur=i; slides[cur].hidden=false;
+    count.textContent=(cur+1)+' / '+N;
+    prog.style.width=((cur+1)/N*100)+'%';
+    prev.disabled=cur===0; next.disabled=cur===N-1;
+    [].forEach.call(dots.children,function(d,j){d.setAttribute('aria-current',j===cur?'true':'false')});
+    stage.scrollTop=0;
+    try{history.replaceState(null,'','#d'+(cur+1))}catch(e){}
+  }
+  prev.addEventListener('click',function(){go(cur-1)});
+  next.addEventListener('click',function(){go(cur+1)});
+
+  document.addEventListener('keydown',function(e){
+    if(!modal.hidden){ if(e.key==='Escape') closeFicha(); return; }
+    var t=e.target.tagName;
+    if(t==='SELECT'||t==='INPUT'||t==='TEXTAREA') return;
+    if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();go(cur+1)}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1)}
+    else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(N-1)}
+  });
+
+  /* Opción múltiple */
+  var answered=0, correct=0;
+  document.querySelectorAll('.mc').forEach(function(box){
+    var ans=box.dataset.answer, fb=box.querySelector('.fb'), isEval=box.classList.contains('eval');
+    box.querySelectorAll('.opt').forEach(function(b){
+      b.addEventListener('click',function(){
+        var ok=b.dataset.k===ans;
+        if(isEval){
+          if(box.dataset.done) return;
+          box.dataset.done='1'; answered++; if(ok) correct++;
+          box.querySelectorAll('.opt').forEach(function(o){o.disabled=true; if(o.dataset.k===ans) o.classList.add('right')});
+          if(!ok) b.classList.add('wrong');
+          updateScore();
+        } else {
+          box.querySelectorAll('.opt').forEach(function(o){o.classList.remove('wrong')});
+          b.classList.add(ok?'right':'wrong');
+          if(ok) box.querySelectorAll('.opt').forEach(function(o){o.disabled=true});
+        }
+        fb.textContent=b.dataset.fb; fb.className='fb '+(ok?'ok':'no');
+      });
+    });
+  });
+  function updateScore(){
+    document.getElementById('score').textContent=answered<5? answered+' de 5 contestadas · '+correct+' aciertos' : correct+' de 5 aciertos';
+    var m=document.getElementById('scoreMsg');
+    if(answered===5){
+      m.textContent= correct===5?'Dominas el tema. Continúa con la tarea.': correct>=3?'Buen avance. Repasa las diapositivas de los reactivos que fallaste.':'Repasa las diapositivas 3 a 8 y vuelve a intentarlo.';
+    } else m.textContent='';
+  }
+  document.getElementById('resetEval').addEventListener('click',function(){
+    answered=0; correct=0;
+    document.querySelectorAll('.mc.eval').forEach(function(box){
+      delete box.dataset.done;
+      box.querySelectorAll('.opt').forEach(function(o){o.disabled=false;o.classList.remove('right','wrong')});
+      var fb=box.querySelector('.fb'); fb.textContent=''; fb.className='fb';
+    });
+    updateScore();
+  });
+
+  /* Revelar */
+  document.querySelectorAll('.reveal').forEach(function(box){
+    var b=box.querySelector('button'), body=box.querySelector('.reveal-body');
+    b.addEventListener('click',function(){
+      body.hidden=!body.hidden;
+      b.setAttribute('aria-expanded',String(!body.hidden));
+      b.textContent=body.hidden?(b.textContent.indexOf('solución')>-1?'Revelar solución':'Revelar respuesta'):'Ocultar';
+    });
+  });
+
+  /* Relacionar */
+  document.querySelectorAll('.matchact').forEach(function(box){
+    var btn=box.querySelector('.btn'), fb=box.querySelector('.fb');
+    btn.addEventListener('click',function(){
+      var good=0;
+      box.querySelectorAll('.mrow').forEach(function(r){
+        var s=r.querySelector('select'), mk=r.querySelector('.mark'), ok=s.value===r.dataset.ans;
+        if(ok) good++;
+        mk.textContent=s.value?(ok?'✓':'✗'):'';
+        mk.style.color=ok?'var(--ok)':'var(--bad)';
+      });
+      fb.textContent= good===4?'¡Todo correcto! Ya distingues los cuatro métodos.':good+' de 4 correctas. Revisa las que tienen ✗ y vuelve a comprobar.';
+      fb.className='fb '+(good===4?'ok':'no');
+    });
+  });
+
+  /* Ficha */
+  var lastFocus=null;
+  function openFicha(){lastFocus=document.activeElement; modal.hidden=false; modal.querySelector('.sheet').focus()}
+  function closeFicha(){modal.hidden=true; if(lastFocus) lastFocus.focus()}
+  fichaBtn.addEventListener('click',openFicha);
+  document.getElementById('closeFicha').addEventListener('click',closeFicha);
+  modal.addEventListener('click',function(e){if(e.target===modal) closeFicha()});
+
+  var h=parseInt((location.hash||'').replace('#d',''),10);
+  go(h>=1&&h<=N?h-1:0);
+})();
+</script>
+<script>
+/* Diapositiva 7: resaltar pasos del algoritmo al elegir una fila */
+(function(){
+  var algo=document.getElementById('algo7');
+  var rows=[].slice.call(document.querySelectorAll('.maprow'));
+  function pick(tr){
+    var on=!tr.classList.contains('sel');
+    rows.forEach(function(r){r.classList.remove('sel');r.setAttribute('aria-pressed','false')});
+    var a=+tr.dataset.from,b=+tr.dataset.to,first=null;
+    algo.querySelectorAll('.ln').forEach(function(l){
+      var n=+l.dataset.s, hit=on&&n>=a&&n<=b;
+      l.classList.toggle('on',hit); if(hit&&!first) first=l;
+    });
+    if(on){tr.classList.add('sel');tr.setAttribute('aria-pressed','true')}
+    if(first) algo.scrollTop=Math.max(0,first.offsetTop-algo.offsetTop-24);
+  }
+  rows.forEach(function(tr){
+    tr.addEventListener('click',function(){pick(tr)});
+    tr.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();pick(tr)}});
+  });
+})();
+
+/* Diapositiva 8: ejecución paso a paso en memoria */
+(function(){
+  var CODE=[
+    'nom = input("Nombre: ")',
+    'edad = input("Edad: ")',
+    'car = input("Carrera: ")',
+    'bus = input("Clave a consultar: ")',
+    'alumno = {',
+    '    "nombre": nom,',
+    '    "edad": edad,',
+    '    "carrera": car',
+    '}',
+    'res = alumno.get(bus, "No registrado")',
+    'print(bus, ":", res)',
+    'for clave in alumno.keys():',
+    '    print(clave)',
+    'for clave, valor in alumno.items():',
+    '    print(clave, ":", valor)'
+  ];
+  var ORDER=['nom','edad','car','bus','alumno','res','clave','valor'];
+  var codeEl=document.getElementById('vzCode'), varsEl=document.getElementById('vzVars'),
+      dictEl=document.getElementById('vzDict'), dictH=document.getElementById('vzDictH'),
+      outEl=document.getElementById('vzOut'), msgEl=document.getElementById('vzMsg'),
+      cnt=document.getElementById('vzCount'), playB=document.getElementById('vzPlay');
+  var steps=[], i=0, timer=null;
+
+  function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+  function hl(line){
+    return esc(line)
+      .replace(/("(?:nombre|edad|carrera)")(:)/g,'<span class="k">$1</span>$2')
+      .replace(/\.(get|keys|items)\(/g,'.<span class="m">$1</span>(');
+  }
+  codeEl.innerHTML=CODE.map(function(l,n){
+    return '<div class="cl" data-l="'+(n+1)+'"><span class="n">'+(n+1)+'</span><code>'+hl(l)+'</code></div>';
+  }).join('');
+
+  function build(bus){
+    steps=[]; var v={}, d=[], named=false, out=[];
+    function push(line,msg,o){o=o||{};steps.push({line:line,v:JSON.parse(JSON.stringify(v)),d:d.map(function(p){return p.slice()}),
+      named:named,out:out.slice(),msg:msg,hiKey:o.hiKey||null,hiVar:o.hiVar||[],miss:o.miss||null})}
+    push([],'Presiona “Paso →” para ejecutar la primera línea. La memoria todavía está vacía.');
+    v.nom='Ana'; out.push('Nombre: Ana');
+    push([1],'input() lee lo que escribe el usuario y lo guarda en la variable nom.',{hiVar:['nom']});
+    v.edad='18'; out.push('Edad: 18');
+    push([2],'input() siempre devuelve una cadena: edad guarda "18", no el número 18.',{hiVar:['edad']});
+    v.car='Matemáticas'; out.push('Carrera: Matemáticas');
+    push([3],'car guarda la carrera.',{hiVar:['car']});
+    v.bus=bus; out.push('Clave a consultar: '+bus);
+    push([4],'bus guarda la clave que se va a consultar: "'+bus+'".',{hiVar:['bus']});
+    d.push(['nombre','Ana']);
+    push([5,6],'Python empieza a construir el diccionario. La clave "nombre" se asocia con el valor de nom.',{hiKey:'nombre'});
+    d.push(['edad','18']);
+    push([7],'La clave "edad" se asocia con el valor de edad.',{hiKey:'edad'});
+    d.push(['carrera','Matemáticas']);
+    push([8],'La clave "carrera" se asocia con el valor de car.',{hiKey:'carrera'});
+    named=true; v.alumno='{…}';
+    push([9],'Se cierra la llave: la variable alumno ahora hace referencia al diccionario con 3 pares.',{hiVar:['alumno']});
+    var f=null; d.forEach(function(p){if(p[0]===bus) f=p});
+    if(f){
+      push([10],'get() busca la clave "'+bus+'" en alumno y la encuentra.',{hiKey:bus});
+      v.res=f[1];
+      push([10],'res recibe el valor "'+f[1]+'". El alternativo "No registrado" se ignora.',{hiVar:['res'],hiKey:bus});
+    } else {
+      push([10],'get() busca la clave "'+bus+'" y no existe en alumno. No hay KeyError: se usará el alternativo.',{miss:bus});
+      v.res='No registrado';
+      push([10],'res recibe el valor alternativo "No registrado".',{hiVar:['res'],miss:bus});
+    }
+    out.push(bus+' : '+v.res);
+    push([11],'print() muestra la clave consultada y el resultado.');
+    d.forEach(function(p){
+      v.clave=p[0];
+      push([12],'keys() entrega la siguiente clave: clave = "'+p[0]+'".',{hiVar:['clave'],hiKey:p[0]});
+      out.push(p[0]);
+      push([13],'Se muestra '+p[0]+'.',{hiKey:p[0]});
+    });
+    push([12],'Ya no quedan claves: el primer ciclo termina.');
+    d.forEach(function(p){
+      v.clave=p[0]; v.valor=p[1];
+      push([14],'items() entrega el par ("'+p[0]+'", "'+p[1]+'") y se desempaca en clave y valor.',{hiVar:['clave','valor'],hiKey:p[0]});
+      out.push(p[0]+' : '+p[1]);
+      push([15],'Se muestran la clave y su valor.',{hiKey:p[0]});
+    });
+    push([14],'No quedan pares: el ciclo termina y el programa finaliza.');
+  }
+
+  function render(){
+    var s=steps[i];
+    codeEl.querySelectorAll('.cl').forEach(function(el){el.classList.toggle('cur',s.line.indexOf(+el.dataset.l)>-1)});
+    var cur=codeEl.querySelector('.cl.cur'); if(cur) codeEl.scrollTop=Math.max(0,cur.offsetTop-codeEl.offsetTop-60);
+    var keys=ORDER.filter(function(k){return k in s.v});
+    varsEl.innerHTML=keys.length?keys.map(function(k){
+      var val=k==='alumno'?'<span class="vz-ref">→ diccionario</span>':'<span class="v">"'+esc(s.v[k])+'"</span>';
+      return '<div class="vz-var'+(s.hiVar.indexOf(k)>-1?' flash':'')+'"><span class="vz-name">'+k+'</span>'+val+'</div>';
+    }).join(''):'<p class="vz-empty">Sin variables todavía.</p>';
+    dictH.textContent=s.named?'Diccionario · alumno':(s.d.length?'Diccionario · en construcción':'Diccionario');
+    var html=s.d.map(function(p){
+      return '<div class="kv vz-pair'+(s.hiKey===p[0]?' flash':'')+'"><span class="tag">"'+esc(p[0])+'"</span><span class="arrow">→</span><span class="val">"'+esc(p[1])+'"</span></div>';
+    }).join('');
+    if(s.miss) html+='<div class="kv vz-miss"><span class="tag">"'+esc(s.miss)+'"</span><span class="arrow">✗</span><span class="val">no existe</span></div>';
+    dictEl.innerHTML=html||'<p class="vz-empty">Todavía no se crea.</p>';
+    outEl.textContent=s.out.join('\n');
+    outEl.scrollTop=outEl.scrollHeight;
+    msgEl.textContent=s.msg;
+    cnt.textContent='Paso '+i+' / '+(steps.length-1);
+    document.getElementById('vzPrev').disabled=i===0;
+    document.getElementById('vzNext').disabled=i===steps.length-1;
+  }
+  function stop(){if(timer){clearInterval(timer);timer=null}playB.textContent='▶ Reproducir';playB.setAttribute('aria-pressed','false')}
+  function step(dl){i=Math.max(0,Math.min(steps.length-1,i+dl));render();if(i===steps.length-1)stop()}
+  document.getElementById('vzNext').addEventListener('click',function(){stop();step(1)});
+  document.getElementById('vzPrev').addEventListener('click',function(){stop();step(-1)});
+  document.getElementById('vzReset').addEventListener('click',function(){stop();i=0;render()});
+  playB.addEventListener('click',function(){
+    if(timer){stop();return}
+    if(i===steps.length-1){i=0;render()}
+    playB.textContent='❚❚ Pausa'; playB.setAttribute('aria-pressed','true');
+    timer=setInterval(function(){step(1)},1600);
+  });
+  document.querySelectorAll('.segb').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.segb').forEach(function(x){x.setAttribute('aria-checked',String(x===b))});
+      stop(); build(b.dataset.bus); i=0; render();
+    });
+  });
+  /* detener la reproducción al cambiar de diapositiva */
+  new MutationObserver(function(){ if(document.querySelector('.slide[data-n="8"]').hidden) stop(); })
+    .observe(document.querySelector('.slide[data-n="8"]'),{attributes:true,attributeFilter:['hidden']});
+  build('semestre'); render();
+})();
+</script>
+
+</body>
+</html>
