@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>EDLNH y operador anulador</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&family=STIX+Two+Text:ital,wght@0,400;1,400&display=swap">
+<style>
+/* Layout (serie REEDI FCFM): cuaderno cuadriculado; app de una pantalla (barra superior, hoja desplazable, navegación inferior). Actividades con borde punteado como las hojas recortables; resaltador amarillo para la etapa activa. */
+:root{
+  --paper:#f5f6fb; --sheet:#ffffff; --ink:#1a2142; --muted:#565e7e; --rule:#d7dbea; --grid:rgba(60,80,160,.07);
+  --accent:#b0157c; --accent-ink:#ffffff; --accent-soft:#fbe8f3;
+  --ok:#1d7a4e; --ok-soft:#e2f4e9; --bad:#b0372b; --bad-soft:#fbe6e3;
+  --hl:#fff0a6; --hl-ink:#1a2142; --code:#f0f2f9;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-math:"STIX Two Text", "Cambria Math", "Times New Roman", serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#11152a; --sheet:#181d36; --ink:#e7e9f6; --muted:#a3a9c6; --rule:#2d3456; --grid:rgba(150,170,255,.06);
+  --accent:#f06ab9; --accent-ink:#1a0f17; --accent-soft:#3a1a32;
+  --ok:#62d69d; --ok-soft:#14352a; --bad:#ff8c7d; --bad-soft:#3c1d1a;
+  --hl:#5a4f14; --hl-ink:#fff8d6; --code:#1f2543; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#11152a; --sheet:#181d36; --ink:#e7e9f6; --muted:#a3a9c6; --rule:#2d3456; --grid:rgba(150,170,255,.06);
+  --accent:#f06ab9; --accent-ink:#1a0f17; --accent-soft:#3a1a32;
+  --ok:#62d69d; --ok-soft:#14352a; --bad:#ff8c7d; --bad-soft:#3c1d1a;
+  --hl:#5a4f14; --hl-ink:#fff8d6; --code:#1f2543; color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  background:var(--sheet);border-bottom:1px solid var(--rule)}
+.brand{font-family:var(--f-display);font-weight:800;font-size:1rem;letter-spacing:.01em;min-width:0}
+#fichaBtn{white-space:nowrap;flex:none}
+.brand small{display:block;font-family:var(--f-body);font-weight:400;font-size:.78rem;color:var(--muted)}
+.btn{border:1px solid var(--rule);background:var(--sheet);border-radius:8px;padding:8px 14px;cursor:pointer;line-height:1.2}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.progress{height:4px;background:var(--rule)}
+.progress span{display:block;height:100%;width:10%;background:var(--accent);transition:width .25s}
+
+.stage{position:relative;min-height:0}
+#deck{height:100%;overflow-y:auto;overflow-x:hidden;padding-block:28px 40px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px}
+.slide{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.slide>*{min-width:0}
+.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.2rem);font-weight:800}
+h2{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:800}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0;max-width:68ch}
+ul,ol{margin:0;padding-left:1.3em}
+li+li{margin-top:4px}
+
+.box{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.label{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.box.obs .label{color:var(--accent)}
+.activity{background:var(--sheet);border:2px dashed var(--accent);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.activity>.label{color:var(--accent)}
+.goal{background:var(--accent-soft);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;color:var(--muted);font-size:.92rem}
+
+/* Matemáticas */
+.m{font-family:var(--f-math);font-style:italic;font-size:1.08em}
+.m .up{font-style:normal}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.15;margin:0 .12em;font-size:.92em}
+.fr>span:first-child{border-bottom:1px solid currentColor;padding:0 .2em .06em}
+.fr>span:last-child{padding:.06em .2em 0}
+sup,sub{font-size:.68em;line-height:0}
+.eq{font-family:var(--f-math);font-size:1.18rem;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;
+  padding:14px 16px;overflow-x:auto;text-align:center;white-space:nowrap}
+.eq .m{font-size:1em}
+.eq.left{text-align:left}
+.chain{display:flex;flex-direction:column;gap:8px}
+.hl{background:var(--hl);color:var(--hl-ink);border-radius:3px;padding:0 3px}
+
+/* Tablas */
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:middle}
+th{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+tr:last-child td{border-bottom:0}
+
+/* Opción múltiple */
+.stem{font-weight:700}
+.opts{display:grid;gap:8px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;width:100%;border:1px solid var(--rule);background:var(--paper);
+  border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt .lt{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;border:1px solid var(--rule);background:var(--sheet)}
+.opt.ok{background:var(--ok-soft);border-color:var(--ok)}
+.opt.ok .lt{background:var(--ok);color:var(--sheet);border-color:var(--ok)}
+.opt.bad{background:var(--bad-soft);border-color:var(--bad)}
+.opt.bad .lt{background:var(--bad);color:var(--sheet);border-color:var(--bad)}
+.fb{border-radius:8px;padding:12px 14px;background:var(--paper);border:1px solid var(--rule);display:flex;flex-direction:column;gap:8px}
+.fb .verdict{font-weight:700}
+.fb .verdict.ok{color:var(--ok)} .fb .verdict.bad{color:var(--bad)}
+.fb ul{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
+.fb li{margin:0;font-size:.95rem}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;border-radius:99px;margin-right:6px}
+.tag.ok{background:var(--ok-soft);color:var(--ok)} .tag.bad{background:var(--bad-soft);color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* Revelar */
+.reveal-ans{border-radius:8px;background:var(--ok-soft);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+
+/* Paso a paso */
+.stepper{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+@media (max-width:760px){.stepper{grid-template-columns:minmax(0,1fr)}}
+.stages{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px;counter-reset:st}
+.stages li{margin:0;display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:6px;color:var(--muted);counter-increment:st}
+.stages li::before{content:counter(st);font-family:var(--f-mono);font-size:.8rem;min-width:1.4em}
+.stages li.done{color:var(--ink)}
+.stages li.active{background:var(--hl);color:var(--hl-ink);font-weight:700}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.cur-eq{font-family:var(--f-math);font-size:1.25rem;background:var(--hl);color:var(--hl-ink);border-radius:8px;padding:14px;overflow-x:auto;white-space:nowrap;text-align:center}
+.cur-eq .m{font-size:1em}
+tr.changed td{background:var(--hl);color:var(--hl-ink)}
+.chg{font-family:var(--f-mono);font-size:.72rem;font-weight:600}
+.note{font-size:.95rem}
+.console{font-family:var(--f-mono);font-size:.82rem;background:var(--code);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;
+  max-height:190px;overflow:auto;display:flex;flex-direction:column;gap:3px}
+.console div{white-space:nowrap}
+.console .m{font-size:1.1em}
+.console .pn{color:var(--accent);margin-right:8px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.controls .count{margin-left:auto;color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
+
+/* Resaltado vinculado */
+.linked{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.linked{grid-template-columns:minmax(0,1fr)}}
+.algo{background:var(--code);border:1px solid var(--rule);border-radius:8px;padding:8px;font-family:var(--f-mono);font-size:.86rem;
+  list-style:none;margin:0;overflow-x:auto}
+.algo li{margin:0}
+.algo button,.expl button{width:100%;text-align:left;border:0;background:transparent;border-radius:5px;cursor:pointer}
+.algo button{display:flex;gap:10px;padding:5px 8px;white-space:nowrap}
+.algo .ln{color:var(--muted);min-width:1.6em;text-align:right;font-variant-numeric:tabular-nums}
+.algo .ind{display:inline-block;width:1.6em}
+.kw{color:var(--accent);font-weight:600}
+.algo .m{font-size:1.15em}
+.expl{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px;max-height:430px;overflow:auto}
+.expl li{margin:0}
+.expl button{padding:7px 10px;display:flex;gap:10px;align-items:baseline;font-size:.93rem}
+.expl .ln{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);min-width:1.6em}
+.sel{background:var(--hl)!important;color:var(--hl-ink)}
+.vars{font-size:.92rem}
+.vars dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0}
+.vars dt{font-family:var(--f-math);font-style:italic}
+.vars dd{margin:0}
+
+/* Relacionar */
+.match{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px}
+.col{display:flex;flex-direction:column;gap:8px}
+.mi{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--rule);background:var(--paper);border-radius:8px;
+  padding:10px 12px;cursor:pointer;text-align:left;min-height:56px;width:100%}
+.mi:hover{border-color:var(--accent)}
+.mi.picked{outline:2px solid var(--accent);outline-offset:1px}
+.mi .pair{flex:none;width:24px;height:24px;border-radius:50%;font-size:.78rem;font-weight:700;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.mi.ok{background:var(--ok-soft);border-color:var(--ok)}
+.mi.bad{background:var(--bad-soft);border-color:var(--bad)}
+.mi .m{white-space:normal}
+.mi>span:first-child{min-width:0}
+
+/* Ficha */
+.ficha{position:absolute;top:0;right:0;bottom:0;width:min(440px,100%);z-index:20;background:var(--sheet);border-left:1px solid var(--rule);
+  box-shadow:-12px 0 32px rgba(10,15,40,.18);display:flex;flex-direction:column;
+  padding-right:env(safe-area-inset-right,0px)}
+.ficha header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--rule)}
+.ficha .body{overflow:auto;padding:16px 18px 28px;display:flex;flex-direction:column;gap:14px;font-size:.95rem}
+.ficha dt{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--accent);margin-top:4px}
+.ficha dd{margin:4px 0 0}
+.ficha dl{margin:0}
+
+.nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  background:var(--sheet);border-top:1px solid var(--rule)}
+#indicator{font-variant-numeric:tabular-nums;font-weight:700;font-family:var(--f-display)}
+.ref{padding-left:2em;text-indent:-2em}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media (max-width:420px){body{font-size:16px}.brand small{display:none}.btn{padding:8px 11px}.eq{font-size:1.05rem}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">EDLNH y operador anulador<small>Ecuaciones Diferenciales · FCFM-UANL</small></div>
+    <button class="btn" id="fichaBtn" aria-controls="ficha" aria-expanded="false">Ficha del recurso</button>
+  </header>
+  <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+
+  <div class="stage">
+  <main id="deck" aria-live="polite">
+
+    <!-- 1 -->
+    <section class="slide" data-title="Inicio">
+      <span class="eyebrow">Ecuaciones Diferenciales · REEDI</span>
+      <h1>EDLNH y operador anulador</h1>
+      <p style="font-size:1.2rem">Conceptos básicos: la estructura $y = y_C + y_p$ y los operadores que reducen una función a cero.</p>
+      <div class="goal">
+        <span class="label">Objetivo de aprendizaje</span>
+        <p>Determinar la solución complementaria, la solución particular y el operador anulador de orden mínimo en ecuaciones diferenciales lineales no homogéneas, a partir de la definición $y = y_C + y_p$ y de las reglas del operador anulador.</p>
+      </div>
+      <div class="meta">
+        <span>Autora: Dra. Yenny del Carmen Valenzuela Murillo</span>
+        <span>Tiempo estimado: 45 min</span>
+      </div>
+      <div class="box">
+        <span class="label">Cómo usar este recurso</span>
+        <ul>
+          <li>Avanza con <b>Siguiente</b> y <b>Anterior</b> o con las flechas ← → del teclado.</li>
+          <li>Las actividades tienen borde punteado y se basan en las actividades de cierre de tus apuntes.</li>
+          <li>El botón <b>Ficha del recurso</b> muestra el objetivo y las competencias.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <span class="label">Siglas</span>
+        <p><b>EDLNH</b>: ecuación diferencial lineal no homogénea. <b>EDLH</b>: ecuación diferencial lineal homogénea. <b>CFS</b>: conjunto fundamental de soluciones.</p>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" data-title="Solución general" hidden>
+      <span class="eyebrow">Idea clave 1 · Bloque 1</span>
+      <h2>La solución general de una EDLNH</h2>
+      <p>Sea $y_p$ una solución particular no sujeta a condiciones iniciales de la EDLNH de orden $n$ en un intervalo $I$ y sea $y_C = c_1y_1(x) + c_2y_2(x) + … + c_ny_n(x)$ la solución general de la EDLH asociada. La solución general de la EDLNH en $I$ es</p>
+      <div class="eq">$y(x) = c_1y_1(x) + c_2y_2(x) + … + c_ny_n(x) + y_p$ &nbsp;&nbsp;ó bien&nbsp;&nbsp; <span class="hl">$y(x) = y_C(x) + y_p$</span></div>
+      <div class="two">
+        <div class="box obs">
+          <span class="label">Observaciones</span>
+          <ul>
+            <li>$y_C$ es la solución complementaria o característica: la solución general de la EDLH asociada.</li>
+            <li>$y_p$ también se llama integral particular; es una función libre de parámetros.</li>
+          </ul>
+        </div>
+        <div class="box">
+          <span class="label">Ejemplo</span>
+          <p>En $y = c_1e^x + c_2e^{−x} + x^2$:</p>
+          <p>$y_C = c_1e^x + c_2e^{−x}$ (lleva las constantes) y $y_p = x^2$ (libre de parámetros).</p>
+        </div>
+      </div>
+      <div class="activity" data-mc="q1">
+        <span class="label">Actividad 1 · Opción múltiple</span>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" data-title="EDLH asociada" hidden>
+      <span class="eyebrow">Idea clave 2 · Bloque 1</span>
+      <h2>La EDLH asociada y la forma $P(D)y = g(x)$</h2>
+      <p>La EDLNH</p>
+      <div class="eq">$a_n(x)\f{d^ny}{dx^n} + a_{n−1}(x)\f{d^{n−1}y}{dx^{n−1}} + … + a_1(x)\f{dy}{dx} + a_0(x)y = g(x)$ &nbsp;&nbsp;(1)</div>
+      <p>se puede expresar como <span class="hl">$P(D)y = g(x)$</span>, y su EDLH asociada es de la forma <span class="hl">$P(D)y = 0$</span>: se obtiene igualando a cero el término que hace no homogénea a la ecuación.</p>
+      <div class="box">
+        <span class="label">Ejemplo</span>
+        <p>EDLNH: $y‴ − 2y = xe^{−3x}$, es decir, $(D^3 − 2)y = xe^{−3x}$.</p>
+        <p>EDLH asociada: $y‴ − 2y = 0$, es decir, $(D^3 − 2)y = 0$.</p>
+      </div>
+      <div class="activity">
+        <span class="label">Actividad 2 · Revelar respuesta</span>
+        <p class="stem">Escribe la EDLH asociada de $x^5w^{(5)} − 3x^2w″ − 8w = \ln(x)$.</p>
+        <p>Escríbela en tu cuaderno y después compárala.</p>
+        <div class="row"><button class="btn primary" data-reveal="r1" aria-expanded="false" aria-controls="r1">Revelar respuesta</button></div>
+        <div class="reveal-ans" id="r1" hidden>
+          <p>$x^5w^{(5)} − 3x^2w″ − 8w = 0$</p>
+          <p>Solo se iguala a cero el término $g(x) = \ln(x)$; los coeficientes $x^5$ y $−3x^2$ se conservan porque multiplican a la función $w$ y sus derivadas.</p>
+          <p>Error habitual: eliminar también los coeficientes variables o cambiar la variable dependiente $w$ por $y$.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" data-title="Superposición" hidden>
+      <span class="eyebrow">Idea clave 3 · Bloque 1</span>
+      <h2>Principio de superposición para ecuaciones no homogéneas</h2>
+      <p>Si $y_{pi}$ es una solución particular de la ecuación con lado derecho $g_i$, para $i = 1, 2, 3, …, k$:</p>
+      <div class="eq">$a_n(x)\f{d^ny}{dx^n} + … + a_1(x)\f{dy}{dx} + a_0(x)y = g_i$</div>
+      <p>entonces $y_p = y_{p1}(x) + y_{p2}(x) + … + y_{pk}(x)$ es una solución particular de</p>
+      <div class="eq">$a_n(x)\f{d^ny}{dx^n} + … + a_1(x)\f{dy}{dx} + a_0(x)y = g_1(x) + g_2(x) + … + g_k(x)$</div>
+      <div class="box">
+        <span class="label">En otras palabras</span>
+        <p>Si el lado derecho de la EDLNH es una suma de funciones, una solución particular puede construirse como la suma de las soluciones particulares correspondientes.</p>
+      </div>
+      <div class="activity" data-mc="q2">
+        <span class="label">Actividad 3 · Opción múltiple</span>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" data-title="Procedimiento general" hidden>
+      <span class="eyebrow">Idea clave 4 · Visualización</span>
+      <h2>Procedimiento general para resolver una EDLNH</h2>
+      <p>Selecciona un paso del algoritmo o una explicación: ambos se resaltan juntos.</p>
+      <div class="linked">
+        <ol class="algo" id="algo" aria-label="Algoritmo ResolverEDLNH"></ol>
+        <ol class="expl" id="expl" aria-label="Explicación de cada paso"></ol>
+      </div>
+      <div class="box vars">
+        <span class="label">Descripción de variables</span>
+        <dl>
+          <dt>EDLNH</dt><dd>Ecuación $P(D)y = g(x)$ con $g(x) ≠ 0$.</dd>
+          <dt>EDLH</dt><dd>Ecuación homogénea asociada $P(D)y = 0$.</dd>
+          <dt>y₁, …, yₙ</dt><dd>Conjunto fundamental de soluciones (CFS) de la EDLH.</dd>
+          <dt>c₁, …, cₙ</dt><dd>Constantes arbitrarias.</dd>
+          <dt>y_C</dt><dd>Solución complementaria.</dd>
+          <dt>y_p</dt><dd>Solución particular, libre de parámetros.</dd>
+          <dt>y_g</dt><dd>Solución general de la EDLNH.</dd>
+        </dl>
+      </div>
+      <div class="activity" id="matchAct">
+        <span class="label">Actividad 4 · Relacionar conceptos</span>
+        <p class="stem">Relaciona cada concepto o expresión de la izquierda con su descripción.</p>
+        <p class="note">Toca un elemento de la izquierda y después su pareja de la derecha. Toca un elemento emparejado para deshacer el par.</p>
+        <div class="match">
+          <div class="col" id="mL"></div>
+          <div class="col" id="mR"></div>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="mCheck">Verificar</button>
+          <button class="btn" id="mReset">Reiniciar</button>
+          <span id="mStatus" class="note" aria-live="polite"></span>
+        </div>
+        <div class="fb" id="mFb" hidden></div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" data-title="Operador anulador" hidden>
+      <span class="eyebrow">Idea clave 5 · Bloque 2</span>
+      <h2>¿Qué es un operador anulador?</h2>
+      <p>Un operador diferencial $P(D)$ que satisface <span class="hl">$P(D)(f(x)) = 0$</span> es llamado un operador anulador de la función $f(x)$.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Operador</th><th>Anula a cada una de las funciones</th></tr></thead>
+          <tbody>
+            <tr><td>$D^n$</td><td>$1, x, x^2, …, x^{n−1}$</td></tr>
+            <tr><td>$(D − α)^n$</td><td>$e^{αx}, xe^{αx}, x^2e^{αx}, …, x^{n−1}e^{αx}$</td></tr>
+            <tr><td>$[(D − α)^2 + β^2]^n$</td><td>$e^{αx}\cos(βx), xe^{αx}\cos(βx), …, x^{n−1}e^{αx}\cos(βx)$<br>$e^{αx}\sen(βx), xe^{αx}\sen(βx), …, x^{n−1}e^{αx}\sen(βx)$</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="box">
+        <span class="label">Ejemplos de la tabla de orden mínimo</span>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Función f(x)</th><th>Anulador P(D)</th><th>Por qué</th></tr></thead>
+            <tbody>
+              <tr><td>$x^3$</td><td>$D^4$</td><td>$x^3 = x^{n−1}$ con $n = 4$</td></tr>
+              <tr><td>$7e^{3x}$</td><td>$D − 3$</td><td>$α = 3$, $n = 1$; la constante 7 no cambia el anulador</td></tr>
+              <tr><td>$xe^{4x}$</td><td>$(D − 4)^2$</td><td>$α = 4$, $x^1 = x^{n−1}$ con $n = 2$</td></tr>
+              <tr><td>$e^{3x}\sen(4x)$</td><td>$(D − 3)^2 + 16$</td><td>$α = 3$, $β = 4$, $n = 1$</td></tr>
+              <tr><td>$xe^x\cos(x)$</td><td>$[(D − 1)^2 + 1]^2$</td><td>$α = 1$, $β = 1$, $n = 2$</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="activity" data-mc="q3">
+        <span class="label">Actividad 5 · Opción múltiple</span>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide" data-title="Reglas del anulador" hidden>
+      <span class="eyebrow">Idea clave 6 · Bloque 2</span>
+      <h2>Sumas de funciones y orden mínimo</h2>
+      <div class="box obs">
+        <span class="label">Observaciones</span>
+        <ul>
+          <li>Si las funciones se suman, los anuladores de cada una se <b>multiplican</b>, <b>no</b> se suman.</li>
+          <li>No toda función tiene operador anulador.</li>
+          <li>El operador que anula a una función no es único.</li>
+          <li>En el curso se aplica el operador anulador de orden mínimo posible.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <span class="label">Ejemplo</span>
+        <p>$D − 2$ anula a $e^{2x}$ y $D + 1$ anula a $e^{−x}$. Por lo tanto, $(D − 2)(D + 1) = D^2 − D − 2$ anula a $e^{2x} + e^{−x}$.</p>
+        <p>Además, $D^2 − D − 2$ también anula a $e^{2x}$ sola, aunque no es su anulador de orden mínimo.</p>
+      </div>
+      <div class="activity" data-mc="q4">
+        <span class="label">Actividad 6 · Opción múltiple</span>
+      </div>
+      <div class="activity">
+        <span class="label">Actividad 7 · Revelar respuesta</span>
+        <p class="stem">Construye el operador anulador de orden mínimo de $g(x) = x + e^{\f{x}{2}}$.</p>
+        <div class="row"><button class="btn primary" data-reveal="r2" aria-expanded="false" aria-controls="r2">Revelar respuesta</button></div>
+        <div class="reveal-ans" id="r2" hidden>
+          <p>$x$ se anula con $D^2$ ($x = x^{n−1}$ con $n = 2$) y $e^{\f{x}{2}}$ con $D − \f{1}{2}$ ($α = \f{1}{2}$).</p>
+          <p>Como las funciones se suman, los anuladores se multiplican: $D^2\left(D − \f{1}{2}\right)$.</p>
+          <p>Errores habituales: sumar los anuladores, $D^2 + D − \f{1}{2}$, o usar $D$ para $x$, que solo anula constantes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide" data-title="Demostración paso a paso" hidden>
+      <span class="eyebrow">Idea clave 7 · Visualización</span>
+      <h2>Demostración paso a paso: $D^2 − D − 2$ anula a $e^{2x} + e^{−x}$</h2>
+      <p>Avanza con los botones. La etapa activa se resalta, la tabla de estado marca lo que cambió y la bitácora acumula cada renglón de la demostración.</p>
+      <div class="stepper">
+        <ol class="stages" id="stages"></ol>
+        <div class="panel">
+          <div class="cur-eq" id="curEq"></div>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>Elemento</th><th>Valor actual</th><th>Valor anterior</th></tr></thead>
+              <tbody id="memBody"></tbody>
+            </table>
+          </div>
+          <div class="box" style="padding:12px 14px">
+            <span class="label">Qué ocurre y por qué</span>
+            <p class="note" id="stepNote"></p>
+          </div>
+          <div>
+            <span class="label">Bitácora</span>
+            <div class="console" id="console" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="stPrev">Anterior</button>
+        <button class="btn primary" id="stNext">Siguiente</button>
+        <button class="btn" id="stReset">Reiniciar</button>
+        <span class="count" id="stCount"></span>
+      </div>
+      <div class="activity" data-mc="q5">
+        <span class="label">Actividad 8 · Pregunta de predicción</span>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide" data-title="Autoevaluación" hidden>
+      <span class="eyebrow">Autoevaluación</span>
+      <h2>Comprueba lo que aprendiste</h2>
+      <p>Responde las cuatro preguntas. Cada respuesta muestra por qué es correcta o incorrecta. Tu puntaje aparece al final.</p>
+      <div class="activity" data-mc="a1" data-scored="1"><span class="label">Pregunta 1 de 4</span></div>
+      <div class="activity" data-mc="a2" data-scored="1"><span class="label">Pregunta 2 de 4</span></div>
+      <div class="activity" data-mc="a3" data-scored="1"><span class="label">Pregunta 3 de 4</span></div>
+      <div class="activity" data-mc="a4" data-scored="1"><span class="label">Pregunta 4 de 4</span></div>
+      <div class="goal">
+        <span class="label">Puntaje</span>
+        <p id="score" aria-live="polite">Responde las cuatro preguntas para ver tu puntaje.</p>
+        <div class="row"><button class="btn" id="scoreReset">Reiniciar autoevaluación</button></div>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" data-title="Resumen y fuentes" hidden>
+      <span class="eyebrow">Cierre</span>
+      <h2>Resumen</h2>
+      <div class="box">
+        <ul>
+          <li>La solución general de una EDLNH es $y = y_C + y_p$: $y_C$ resuelve la EDLH asociada y $y_p$ es libre de parámetros.</li>
+          <li>La EDLNH se escribe $P(D)y = g(x)$ y su EDLH asociada es $P(D)y = 0$.</li>
+          <li>Superposición: si $g = g_1 + … + g_k$, entonces $y_p = y_{p1} + … + y_{pk}$.</li>
+          <li>Procedimiento: EDLH asociada → $y_C$ → $y_p$ → $y_g = y_C + y_p$ → condiciones iniciales, si las hay.</li>
+          <li>$P(D)$ anula a $f(x)$ si $P(D)(f(x)) = 0$. Para sumas de funciones, los anuladores se multiplican.</li>
+        </ul>
+      </div>
+      <div class="activity">
+        <span class="label">Tarea · Actividades de cierre pendientes</span>
+        <ul>
+          <li>Bloque 1, I c): identifica $y_C$ y $y_p$ en $y = c_1 + c_2x + c_3e^x + \ln(x)$.</li>
+          <li>Bloque 2, I: construye tres anuladores de $h(x) = \f{\sen(3x)}{5}$ y elige el de orden mínimo, con su justificación.</li>
+          <li>Bloque 2, II: anulador de orden mínimo de $h(x) = \sen(3x) + 7\cos(3x)$.</li>
+          <li>Bloque 2, III: demuestra que $D − 8$ anula a $e^{8x}$, que $D^2 + 16$ anula a $\sen(4x)$ y que $(D + 3)^2$ anula a $\f{xe^{−3x}}{5}$.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <span class="label">Fuentes (APA 7)</span>
+        <p class="ref">Valenzuela Murillo, Y. del C. (2026). <i>Ecuaciones diferenciales. Capítulo 4. Sesión de autoestudio 1: Conceptos básicos de las EDLNH</i> [Material de autoestudio, pp. 16–23]. Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</p>
+      </div>
+    </section>
+  </main>
+
+<aside class="ficha" id="ficha" role="dialog" aria-modal="false" aria-labelledby="fichaTitle" hidden>
+  <header>
+    <h3 id="fichaTitle">Ficha del recurso</h3>
+    <button class="btn" id="fichaClose">Cerrar ✕</button>
+  </header>
+  <div class="body">
+    <dl>
+      <dt>Título</dt><dd>EDLNH: estructura de la solución y operador anulador</dd>
+      <dt>Objetivo de aprendizaje</dt><dd>Determinar la solución complementaria, la solución particular y el operador anulador de orden mínimo en ecuaciones diferenciales lineales no homogéneas, a partir de la definición $y = y_C + y_p$ y de las reglas del operador anulador.</dd>
+      <dt>Autora</dt><dd>Dra. Yenny del Carmen Valenzuela Murillo</dd>
+      <dt>Unidad de aprendizaje</dt><dd>Ecuaciones Diferenciales</dd>
+      <dt>Palabras clave</dt><dd>Solución complementaria; solución particular; EDLH asociada; principio de superposición; operador anulador.</dd>
+      <dt>Descripción</dt><dd>El estudiante distingue la solución complementaria y la particular de una EDLNH, establece su EDLH asociada, aplica el principio de superposición y construye operadores anuladores de orden mínimo. Interactúa con un algoritmo de resaltado vinculado, una demostración paso a paso, preguntas de opción múltiple con retroalimentación, actividades de revelar respuesta y relacionar conceptos, y una autoevaluación. Tiempo estimado: 45 minutos.</dd>
+      <dt>Audiencia</dt><dd>Estudiantes universitarios de programas de licenciatura relacionados con ciencias exactas.</dd>
+      <dt>Competencias que desarrolla el estudiante</dt>
+      <dd><ol>
+        <li>Distingue la solución complementaria y la solución particular en la solución general de una EDLNH a partir de la definición $y = y_C + y_p$.</li>
+        <li>Establece la EDLH asociada y la forma $P(D)y = g(x)$ de una EDLNH a partir de su ecuación diferencial.</li>
+        <li>Construye y verifica el operador anulador de orden mínimo de funciones polinomiales, exponenciales y trigonométricas aplicando las reglas del operador anulador.</li>
+      </ol></dd>
+      <dt>Fuente</dt><dd>Valenzuela Murillo, Y. del C. (2026). Ecuaciones diferenciales. Capítulo 4. Sesión de autoestudio 1: Conceptos básicos de las EDLNH [Material de autoestudio]. FCFM, UANL.</dd>
+    </dl>
+  </div>
+</aside>
+  </div>
+
+  <nav class="nav" aria-label="Navegación de diapositivas">
+    <button class="btn" id="prev">← Anterior</button>
+    <span id="indicator" aria-live="polite">1 / 10</span>
+    <button class="btn primary" id="next">Siguiente →</button>
+  </nav>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- Mini-notación matemática: \f{n}{d}, ^{..}, _{..}, \ln, \left[, \right] ---------- */
+function esc(c){return c==="<"?"&lt;":c===">"?"&gt;":c==="&"?"&amp;":c;}
+function tex(s){
+  var i=0;
+  function group(){
+    var out="";
+    while(i<s.length){
+      var c=s[i];
+      if(c==="}"){i++;return out;}
+      if(c==="{"){i++;out+=group();continue;}
+      if(c==="\\"){
+        var m=/^\\([a-zA-Z]+)/.exec(s.slice(i));
+        if(m){
+          var w=m[1]; i+=m[0].length;
+          if(w==="f"){ i++; var n=group(); i++; var d=group();
+            out+='<span class="fr"><span>'+n+'</span><span>'+d+'</span></span>'; continue; }
+          if(w==="ln"||w==="sen"||w==="cos"){ out+='<span class="up">'+w+'</span>'; continue; }
+          if(w==="left"||w==="right"){ continue; }
+          out+=w; continue;
+        }
+      }
+      if(c==="^"||c==="_"){
+        i++; var a;
+        if(s[i]==="{"){i++;a=group();} else {a=esc(s[i]||"");i++;}
+        out+=(c==="^"?"<sup>":"<sub>")+a+(c==="^"?"</sup>":"</sub>"); continue;
+      }
+      out+=esc(c); i++;
+    }
+    return out;
+  }
+  return group();
+}
+function rich(str){
+  var parts=String(str).split("$"), out="";
+  for(var k=0;k<parts.length;k++){
+    if(k%2===0){ out+=parts[k].replace(/[<>&]/g,esc); }
+    else { out+='<span class="m">'+tex(parts[k])+'</span>'; }
+  }
+  return out;
+}
+function renderMath(root){
+  var walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:function(n){
+    if(n.nodeValue.indexOf("$")<0) return NodeFilter.FILTER_REJECT;
+    var p=n.parentNode; if(p&&(p.nodeName==="SCRIPT"||p.nodeName==="STYLE")) return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT;}});
+  var nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(function(n){
+    var span=document.createElement("span"); span.innerHTML=rich(n.nodeValue);
+    var frag=document.createDocumentFragment(); while(span.firstChild) frag.appendChild(span.firstChild);
+    n.parentNode.replaceChild(frag,n);
+  });
+}
+
+/* ---------- Reactivos ---------- */
+var Q={
+ q1:{stem:"En la solución general $y = c_1\\cos(x) + c_2\\sen(x) + 3e^{2x}$, ¿cuál es la solución particular $y_p$?",
+  opts:[
+   {t:"$c_1\\cos(x) + c_2\\sen(x)$",ok:false,why:"Es la solución complementaria $y_C$: contiene las constantes $c_1$ y $c_2$."},
+   {t:"$e^{2x}$",ok:false,why:"Se omitió el coeficiente 3; $y_p$ es el término completo libre de parámetros, $3e^{2x}$."},
+   {t:"$3e^{2x}$",ok:true,why:"Es el único término libre de parámetros; por eso es la integral particular."},
+   {t:"$c_2\\sen(x) + 3e^{2x}$",ok:false,why:"Mezcla un término de $y_C$ con $y_p$; $y_p$ no lleva constantes arbitrarias."}]},
+ q2:{stem:"Si $y_{p1}$ es solución particular de $P(D)y = e^{2x}$ y $y_{p2}$ es solución particular de $P(D)y = \\sen(x)$, ¿qué función es solución particular de $P(D)y = e^{2x} + \\sen(x)$?",
+  opts:[
+   {t:"$y_{p1} + y_{p2}$",ok:true,why:"Por el principio de superposición, a la suma de lados derechos le corresponde la suma de soluciones particulares."},
+   {t:"$y_{p1}·y_{p2}$",ok:false,why:"Se confunde con la regla de los anuladores, que se multiplican; las soluciones particulares se suman."},
+   {t:"$y_{p1}$",ok:false,why:"Solo resuelve el lado derecho $e^{2x}$; falta la parte que corresponde a $\\sen(x)$."},
+   {t:"$c_1y_{p1} + c_2y_{p2}$",ok:false,why:"$y_p$ es una función libre de parámetros; las constantes arbitrarias pertenecen a $y_C$."}]},
+ q3:{stem:"¿Cuál es el operador anulador de orden mínimo de $f(x) = 5x^7$?",
+  opts:[
+   {t:"$D^7$",ok:false,why:"$D^7$ anula hasta $x^6$; para $x^7 = x^{n−1}$ se necesita $n = 8$."},
+   {t:"$D − 7$",ok:false,why:"$D − α$ anula exponenciales $e^{αx}$, no potencias de $x$."},
+   {t:"$D^5$",ok:false,why:"El coeficiente 5 no determina el anulador; lo determina el exponente de $x$."},
+   {t:"$D^8$",ok:true,why:"$D^n$ anula a $1, x, …, x^{n−1}$; con $n = 8$ se anula $x^7$, y la constante 5 no cambia el anulador."}]},
+ q4:{stem:"¿Cuál es el operador anulador de orden mínimo de $f(x) = e^{7x} + e^{−8x}$?",
+  opts:[
+   {t:"$(D − 7) + (D + 8)$",ok:false,why:"Los anuladores de una suma de funciones se multiplican, no se suman."},
+   {t:"$(D − 7)(D + 8)$",ok:true,why:"$D − 7$ anula a $e^{7x}$ ($α = 7$) y $D + 8$ anula a $e^{−8x}$ ($α = −8$); para la suma se multiplican."},
+   {t:"$(D + 7)(D − 8)$",ok:false,why:"Signos invertidos: el factor es $D − α$, así que $α = 7$ da $D − 7$."},
+   {t:"$(D − 7)(D − 8)$",ok:false,why:"Se ignoró el signo de $α = −8$: $D − (−8) = D + 8$."}]},
+ q5:{stem:"Predicción: si aplicas solo $(D − 2)$ a $h(x) = e^{2x} + e^{−x}$, ¿qué obtienes?",
+  opts:[
+   {t:"$0$",ok:false,why:"$D − 2$ anula solo a $e^{2x}$; el término $e^{−x}$ no se reduce a cero."},
+   {t:"$−e^{−x}$",ok:false,why:"Faltó restar $2e^{−x}$: $D(e^{−x}) − 2e^{−x} = −e^{−x} − 2e^{−x}$."},
+   {t:"$−3e^{−x}$",ok:true,why:"$(D − 2)(e^{2x} + e^{−x}) = 2e^{2x} − e^{−x} − 2e^{2x} − 2e^{−x} = −3e^{−x}$."},
+   {t:"$3e^{−x}$",ok:false,why:"Error de signo al derivar: $D(e^{−x}) = −e^{−x}$."}]},
+ a1:{stem:"En la solución general $y = c_1e^x + c_2e^{−x} + x^2$, ¿cuál es la solución complementaria $y_C$?",
+  opts:[
+   {t:"$x^2$",ok:false,why:"Es la solución particular $y_p$: no contiene constantes arbitrarias."},
+   {t:"$c_1e^x + c_2e^{−x}$",ok:true,why:"Es la parte con constantes arbitrarias: la solución general de la EDLH asociada."},
+   {t:"$c_1e^x + c_2e^{−x} + x^2$",ok:false,why:"Es la solución general completa $y = y_C + y_p$."},
+   {t:"$c_2e^{−x} + x^2$",ok:false,why:"Mezcla parte de $y_C$ con $y_p$ y omite $c_1e^x$."}]},
+ a2:{stem:"¿Cuál es el operador anulador de orden mínimo de $g(x) = 6e^{−\\f{7}{3}x}$?",
+  opts:[
+   {t:"$D + \\f{7}{3}$",ok:true,why:"$α = −\\f{7}{3}$, así que $D − α = D + \\f{7}{3}$; el coeficiente 6 no cambia el anulador."},
+   {t:"$D − \\f{7}{3}$",ok:false,why:"Se ignoró el signo de $α = −\\f{7}{3}$."},
+   {t:"$D − 6$",ok:false,why:"Se usó el coeficiente 6 en lugar de $α$, el número que multiplica a $x$ en el exponente."},
+   {t:"$\\left(D + \\f{7}{3}\\right)^2$",ok:false,why:"Sí anula a $g(x)$, pero no es de orden mínimo: basta $n = 1$."}]},
+ a3:{stem:"¿Cuál es el operador anulador de orden mínimo de $r(x) = x^3e^{−4x}$?",
+  opts:[
+   {t:"$(D + 4)^3$",ok:false,why:"$(D − α)^n$ anula hasta $x^{n−1}e^{αx}$; para $x^3$ se necesita $n = 4$."},
+   {t:"$(D − 4)^4$",ok:false,why:"Signo de $α$ invertido: $α = −4$ da $D + 4$."},
+   {t:"$(D + 4)^4$",ok:true,why:"$α = −4$ y $x^3 = x^{n−1}$ con $n = 4$."},
+   {t:"$D^4(D + 4)$",ok:false,why:"Se trató el producto $x^3·e^{−4x}$ como una suma de funciones y se multiplicaron sus anuladores."}]},
+ a4:{stem:"¿Cuál es el operador anulador de orden mínimo de $w(x) = 5e^{−3x}\\cos\\left(\\f{x}{4}\\right)$?",
+  opts:[
+   {t:"$(D − 3)^2 + \\f{1}{16}$",ok:false,why:"Signo de $α$ invertido: $α = −3$ da $(D + 3)^2$."},
+   {t:"$(D + 3)^2 + \\f{1}{4}$",ok:false,why:"Falta elevar $β$ al cuadrado: $β = \\f{1}{4}$, así que $β^2 = \\f{1}{16}$."},
+   {t:"$(D + 3)^2 − \\f{1}{16}$",ok:false,why:"La forma es $(D − α)^2 + β^2$, con suma."},
+   {t:"$(D + 3)^2 + \\f{1}{16}$",ok:true,why:"$α = −3$, $β = \\f{1}{4}$ y $n = 1$: $(D − α)^2 + β^2 = (D + 3)^2 + \\f{1}{16}$."}]}
+};
+var LET="ABCD";
+var scored={};
+function buildMC(box){
+  var id=box.getAttribute("data-mc"), q=Q[id], isScored=box.hasAttribute("data-scored");
+  var stem=document.createElement("p"); stem.className="stem"; stem.innerHTML=rich(q.stem); box.appendChild(stem);
+  var opts=document.createElement("div"); opts.className="opts"; opts.setAttribute("role","group"); opts.setAttribute("aria-label","Opciones");
+  var fb=document.createElement("div"); fb.className="fb"; fb.hidden=true; fb.setAttribute("aria-live","polite");
+  var retry=document.createElement("button"); retry.className="btn"; retry.textContent="Intentar de nuevo"; retry.hidden=true;
+  var btns=q.opts.map(function(o,k){
+    var b=document.createElement("button"); b.className="opt"; b.type="button";
+    b.innerHTML='<span class="lt">'+LET[k]+'</span><span>'+rich(o.t)+'</span>';
+    b.addEventListener("click",function(){answer(k);});
+    opts.appendChild(b); return b;
+  });
+  function answer(k){
+    btns.forEach(function(b,j){ b.disabled=true;
+      if(q.opts[j].ok) b.classList.add("ok");
+      else if(j===k) b.classList.add("bad"); });
+    var right=q.opts[k].ok;
+    var h='<p class="verdict '+(right?"ok":"bad")+'">'+(right?"¡Correcto!":"Incorrecto. La respuesta correcta es la "+LET[q.opts.findIndex(function(o){return o.ok;})]+".")+'</p><ul>';
+    q.opts.forEach(function(o,j){ h+='<li><span class="tag '+(o.ok?"ok":"bad")+'">'+LET[j]+(o.ok?" correcta":" incorrecta")+'</span>'+rich(o.why)+'</li>'; });
+    fb.innerHTML=h+'</ul>'; fb.hidden=false; retry.hidden=isScored;
+    if(isScored && !(id in scored)){ scored[id]=right; updateScore(); }
+  }
+  function reset(){ btns.forEach(function(b){b.disabled=false;b.classList.remove("ok","bad");}); fb.hidden=true; fb.innerHTML=""; retry.hidden=true; }
+  retry.addEventListener("click",reset);
+  box.appendChild(opts); box.appendChild(fb);
+  var row=document.createElement("div"); row.className="row"; row.appendChild(retry); box.appendChild(row);
+  box._reset=reset;
+}
+function updateScore(){
+  var ids=["a1","a2","a3","a4"], n=ids.filter(function(i){return i in scored;}).length;
+  var c=ids.filter(function(i){return scored[i];}).length, el=document.getElementById("score");
+  if(n<4){ el.textContent="Llevas "+n+" de 4 respondidas."; }
+  else { el.textContent="Obtuviste "+c+" de 4. "+(c===4?"Dominas los conceptos; continúa con la tarea.":c>=2?"Repasa las diapositivas 2 y 6 antes de la tarea.":"Vuelve a revisar las diapositivas 2, 6 y 7."); }
+}
+
+/* ---------- Ejecución paso a paso ---------- */
+var STEPS=[
+ {t:"Plantear lo que se demuestra",eq:"P(D)(h(x)) = 0,   h(x) = e^{2x} + e^{−x}",pend:"D^2 − D − 2",c2:"—",c1:"—",note:"Hay que probar que al aplicar $P(D) = D^2 − D − 2$ a $h(x)$ el resultado es cero.",log:"Por demostrar $P(D)(h(x)) = 0$"},
+ {t:"Distribuir el operador",eq:"D^2(e^{2x} + e^{−x}) − D(e^{2x} + e^{−x}) − 2(e^{2x} + e^{−x})",pend:"D^2,  D,  −2",c2:"—",c1:"—",note:"El operador se aplica término a término: $D^2$, luego $−D$ y luego $−2$.",log:"$D^2(e^{2x} + e^{−x}) − D(e^{2x} + e^{−x}) − 2(e^{2x} + e^{−x})$"},
+ {t:"Escribir D² como D(D(·))",eq:"D(D(e^{2x} + e^{−x})) − D(e^{2x} + e^{−x}) − 2(e^{2x} + e^{−x})",pend:"D(D(·)),  D(·)",c2:"—",c1:"—",note:"$D^2$ significa derivar dos veces: primero la derivada interior.",log:"$D(D(e^{2x} + e^{−x})) − D(e^{2x} + e^{−x}) − 2(e^{2x} + e^{−x})$"},
+ {t:"Primera derivada",eq:"D(2e^{2x} − e^{−x}) − (2e^{2x} − e^{−x}) − 2e^{2x} − 2e^{−x}",pend:"D(·) exterior",c2:"—",c1:"—",note:"$D(e^{2x}) = 2e^{2x}$ y $D(e^{−x}) = −e^{−x}$; además se distribuye el $−2$.",log:"$D(2e^{2x} − e^{−x}) − (2e^{2x} − e^{−x}) − 2e^{2x} − 2e^{−x}$"},
+ {t:"Segunda derivada y agrupar",eq:"2(2e^{2x}) − (−e^{−x}) − 4e^{2x} − e^{−x}",pend:"ninguno",c2:"4 − 4",c1:"1 − 1",note:"Se deriva la expresión exterior y se agrupan $−2e^{2x} − 2e^{2x} = −4e^{2x}$ y $e^{−x} − 2e^{−x} = −e^{−x}$.",log:"$2(2e^{2x}) − (−e^{−x}) − 4e^{2x} − e^{−x}$"},
+ {t:"Simplificar signos",eq:"4e^{2x} + e^{−x} − 4e^{2x} − e^{−x}",pend:"ninguno",c2:"4 − 4",c1:"1 − 1",note:"$2(2e^{2x}) = 4e^{2x}$ y $−(−e^{−x}) = e^{−x}$.",log:"$4e^{2x} + e^{−x} − 4e^{2x} − e^{−x}$"},
+ {t:"Resultado",eq:"(D^2 − D − 2)(e^{2x} + e^{−x}) = 0",pend:"ninguno",c2:"0",c1:"0",note:"Los términos semejantes se cancelan y el resultado es cero.",log:"$(D^2 − D − 2)(e^{2x} + e^{−x}) = 0$"},
+ {t:"Conclusión",eq:"D^2 − D − 2 = (D − 2)(D + 1)",pend:"ninguno",c2:"0",c1:"0",note:"$P(D)$ redujo a cero a $h(x)$, así que es un operador anulador. $D − 2$ anula a $e^{2x}$, $D + 1$ anula a $e^{−x}$, y su producto anula la suma.",log:"$D^2 − D − 2$ es operador anulador de $h(x)$"}
+];
+var sIdx=0;
+function M(s){return '<span class="m">'+tex(s)+'</span>';}
+function renderStep(){
+  var st=document.getElementById("stages");
+  [].forEach.call(st.children,function(li,k){ li.classList.toggle("active",k===sIdx); li.classList.toggle("done",k<sIdx);
+    if(k===sIdx) li.setAttribute("aria-current","step"); else li.removeAttribute("aria-current"); });
+  var s=STEPS[sIdx], p=sIdx>0?STEPS[sIdx-1]:null;
+  document.getElementById("curEq").innerHTML=M(s.eq);
+  var rows=[["Expresión",s.eq,p?p.eq:"—"],["Operador pendiente",s.pend,p?p.pend:"—"],["Coeficiente de $e^{2x}$",s.c2,p?p.c2:"—"],["Coeficiente de $e^{−x}$",s.c1,p?p.c1:"—"]];
+  document.getElementById("memBody").innerHTML=rows.map(function(r){
+    var ch=p&&r[1]!==r[2];
+    return '<tr'+(ch?' class="changed"':'')+'><td>'+rich(r[0])+(ch?' <span class="chg">● cambió</span>':'')+'</td><td>'+(r[1]==="—"?"—":M(r[1]))+'</td><td>'+(r[2]==="—"?"—":M(r[2]))+'</td></tr>';
+  }).join("");
+  document.getElementById("stepNote").innerHTML=rich(s.note);
+  var con=document.getElementById("console");
+  con.innerHTML=STEPS.slice(0,sIdx+1).map(function(x,k){return '<div><span class="pn">'+(k+1)+'&gt;</span>'+rich(x.log)+'</div>';}).join("");
+  con.scrollTop=con.scrollHeight;
+  document.getElementById("stPrev").disabled=sIdx===0;
+  document.getElementById("stNext").disabled=sIdx===STEPS.length-1;
+  document.getElementById("stCount").textContent="Paso "+(sIdx+1)+" / "+STEPS.length;
+}
+function initStepper(){
+  document.getElementById("stages").innerHTML=STEPS.map(function(s){return "<li>"+rich(s.t)+"</li>";}).join("");
+  document.getElementById("stPrev").addEventListener("click",function(){ if(sIdx>0){sIdx--;renderStep();} });
+  document.getElementById("stNext").addEventListener("click",function(){ if(sIdx<STEPS.length-1){sIdx++;renderStep();} });
+  document.getElementById("stReset").addEventListener("click",function(){ sIdx=0; renderStep(); });
+  renderStep();
+}
+
+/* ---------- Resaltado vinculado ---------- */
+var ALGO=[
+ {c:'<span class="kw">Inicio</span>',e:"Comienza el algoritmo."},
+ {c:'<span class="kw">Leer</span> EDLNH $P(D)y = g(x)$',e:"Se recibe la ecuación; la forma (1) se expresa como $P(D)y = g(x)$."},
+ {c:'Establecer la EDLH asociada $P(D)y = 0$',e:"Se iguala a cero el término $g(x)$ que hace no homogénea a la ecuación."},
+ {c:'Resolver la EDLH asociada',e:"Se obtiene un conjunto fundamental de soluciones $y_1, y_2, …, y_n$."},
+ {c:'$y_C ← c_1y_1 + c_2y_2 + … + c_ny_n$',e:"La solución general de la EDLH es la solución complementaria o característica."},
+ {c:'Buscar $y_p$',e:"Se usa el método de coeficientes indeterminados (aplicando el operador anulador) o el de variación de parámetros."},
+ {c:'$y_g ← y_C + y_p$',e:"Se establece la solución general de la EDLNH."},
+ {c:'<span class="kw">Si</span> hay condiciones iniciales <span class="kw">entonces</span>',e:"Se verifica si el problema incluye condiciones iniciales."},
+ {c:'<span class="ind"></span>Hallar la solución particular sujeta a las condiciones',e:"Se determinan los valores de las constantes $c_1, …, c_n$ con las condiciones iniciales."},
+ {c:'<span class="kw">Fin del paso 8</span>',e:"Cierra la estructura condicional del paso 8."},
+ {c:'<span class="kw">Fin</span>',e:"Termina el algoritmo."}
+];
+function codeRich(s){ /* conserva las etiquetas del algoritmo y procesa solo los fragmentos entre $ */
+  return s.split("$").map(function(p,k){return k%2?M(p):p;}).join("");
+}
+function initLinked(){
+  var A=document.getElementById("algo"), E=document.getElementById("expl");
+  ALGO.forEach(function(r,k){
+    var li=document.createElement("li"), b=document.createElement("button"); b.type="button";
+    b.innerHTML='<span class="ln">'+(k+1)+'</span><span>'+codeRich(r.c)+'</span>'; b.setAttribute("aria-label","Paso "+(k+1));
+    b.addEventListener("click",function(){select(k,"e");}); li.appendChild(b); A.appendChild(li);
+    var li2=document.createElement("li"), b2=document.createElement("button"); b2.type="button";
+    b2.innerHTML='<span class="ln">'+(k+1)+'</span><span>'+rich(r.e)+'</span>';
+    b2.addEventListener("click",function(){select(k,"a");}); li2.appendChild(b2); E.appendChild(li2);
+  });
+  function select(k,scrollSide){
+    [A,E].forEach(function(list){ [].forEach.call(list.querySelectorAll("button"),function(b,j){
+      b.classList.toggle("sel",j===k); b.setAttribute("aria-pressed",j===k?"true":"false"); }); });
+    var target=(scrollSide==="e"?E:A).querySelectorAll("button")[k], box=target.closest("ol");
+    if(box.scrollHeight>box.clientHeight){ box.scrollTop=target.offsetTop-box.offsetTop-box.clientHeight/2+target.offsetHeight/2; }
+  }
+  select(1,"e");
+}
+
+/* ---------- Relacionar ---------- */
+var ML=[{t:"$y_C$",why:"$y_C$ es la solución general de la EDLH asociada."},
+        {t:"$y_p$",why:"$y_p$ es una solución particular, libre de parámetros."},
+        {t:"$y = y_C + y_p$",why:"Es la forma general de la solución de una EDLNH."},
+        {t:"EDLH asociada",why:"Se obtiene igualando a cero el término que hace no homogénea a la ecuación diferencial."}];
+var MR=[{t:"Solución particular",k:1},{t:"Se obtiene igualando a cero el término que hace no homogénea a la ecuación diferencial.",k:3},{t:"Solución general de la EDLH asociada",k:0},{t:"Forma general de la solución de una EDLNH",k:2}];
+var pairs={}, picked=null, mL=[], mR=[];
+function initMatch(){
+  var L=document.getElementById("mL"), R=document.getElementById("mR");
+  ML.forEach(function(o,i){ var b=document.createElement("button"); b.type="button"; b.className="mi";
+    b.innerHTML='<span>'+rich(o.t)+'</span><span class="pair" hidden></span>'; b.addEventListener("click",function(){clickL(i);}); L.appendChild(b); mL.push(b); });
+  MR.forEach(function(o,j){ var b=document.createElement("button"); b.type="button"; b.className="mi";
+    b.innerHTML='<span>'+rich(o.t)+'</span><span class="pair" hidden></span>'; b.addEventListener("click",function(){clickR(j);}); R.appendChild(b); mR.push(b); });
+  document.getElementById("mCheck").addEventListener("click",check);
+  document.getElementById("mReset").addEventListener("click",function(){pairs={};picked=null;paint();
+    document.getElementById("mFb").hidden=true;document.getElementById("mStatus").textContent="";});
+  paint();
+}
+function clearMarks(){ mL.concat(mR).forEach(function(b){b.classList.remove("ok","bad");}); document.getElementById("mFb").hidden=true; }
+function clickL(i){ clearMarks(); if(i in pairs){ delete pairs[i]; picked=null; } else picked=(picked===i?null:i); paint(); }
+function clickR(j){ clearMarks();
+  var owner=Object.keys(pairs).find(function(k){return pairs[k]===j;});
+  if(owner!==undefined){ delete pairs[owner]; picked=null; paint(); return; }
+  if(picked===null){ document.getElementById("mStatus").textContent="Primero elige un elemento de la izquierda."; return; }
+  pairs[picked]=j; picked=null; paint(); }
+function paint(){
+  var n=Object.keys(pairs).length;
+  mL.forEach(function(b,i){ var tag=b.querySelector(".pair"); b.classList.toggle("picked",picked===i);
+    if(i in pairs){tag.hidden=false;tag.textContent=i+1;} else tag.hidden=true; b.setAttribute("aria-pressed",picked===i?"true":"false"); });
+  mR.forEach(function(b,j){ var tag=b.querySelector(".pair"), owner=Object.keys(pairs).find(function(k){return pairs[k]===j;});
+    if(owner!==undefined){tag.hidden=false;tag.textContent=Number(owner)+1;} else tag.hidden=true; });
+  document.getElementById("mStatus").textContent=n+" de "+ML.length+" parejas formadas.";
+}
+function check(){
+  var n=Object.keys(pairs).length, st=document.getElementById("mStatus");
+  if(n<ML.length){ st.textContent="Forma las "+ML.length+" parejas antes de verificar ("+n+" de "+ML.length+")."; return; }
+  var good=0, h="<ul>";
+  ML.forEach(function(o,i){ var j=pairs[i], ok=MR[j].k===i; if(ok) good++;
+    mL[i].classList.add(ok?"ok":"bad"); mR[j].classList.add(ok?"ok":"bad");
+    var correct=MR.find(function(r){return r.k===i;});
+    h+='<li><span class="tag '+(ok?"ok":"bad")+'">'+(ok?"correcta":"incorrecta")+'</span>'+rich(o.t+" ↔ "+correct.t.replace(/\.$/,"")+". "+o.why)+'</li>'; });
+  var fb=document.getElementById("mFb");
+  fb.innerHTML='<p class="verdict '+(good===ML.length?"ok":"bad")+'">'+(good===ML.length?"¡Todas correctas!":good+" de "+ML.length+" correctas. Revisa las marcadas en rojo.")+'</p>'+h+"</ul>";
+  fb.hidden=false; st.textContent=good+" de "+ML.length+" correctas.";
+}
+
+/* ---------- Revelar ---------- */
+function initReveal(){
+  [].forEach.call(document.querySelectorAll("[data-reveal]"),function(b){
+    b.addEventListener("click",function(){ var t=document.getElementById(b.getAttribute("data-reveal"));
+      t.hidden=!t.hidden; b.setAttribute("aria-expanded",String(!t.hidden)); b.textContent=t.hidden?"Revelar respuesta":"Ocultar respuesta"; });
+  });
+}
+
+/* ---------- Navegación y ficha ---------- */
+var slides=[].slice.call(document.querySelectorAll(".slide")), cur=0;
+var prev=document.getElementById("prev"), next=document.getElementById("next"), ind=document.getElementById("indicator");
+function go(n){
+  n=Math.max(0,Math.min(slides.length-1,n)); cur=n;
+  slides.forEach(function(s,i){s.hidden=i!==n;});
+  ind.textContent=(n+1)+" / "+slides.length;
+  prev.disabled=n===0; next.disabled=n===slides.length-1;
+  document.getElementById("bar").style.width=((n+1)/slides.length*100)+"%";
+  document.getElementById("deck").scrollTop=0;
+}
+var ficha=document.getElementById("ficha"), fBtn=document.getElementById("fichaBtn");
+function setFicha(open){ ficha.hidden=!open; fBtn.setAttribute("aria-expanded",String(open));
+  if(open) document.getElementById("fichaClose").focus(); else fBtn.focus(); }
+fBtn.addEventListener("click",function(){setFicha(ficha.hidden);});
+document.getElementById("fichaClose").addEventListener("click",function(){setFicha(false);});
+prev.addEventListener("click",function(){go(cur-1);});
+next.addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape" && !ficha.hidden){ setFicha(false); return; }
+  var tg=e.target&&e.target.tagName; if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT") return;
+  if(e.key==="ArrowRight"){ e.preventDefault(); go(cur+1); }
+  else if(e.key==="ArrowLeft"){ e.preventDefault(); go(cur-1); }
+});
+document.getElementById("scoreReset").addEventListener("click",function(){
+  scored={}; [].forEach.call(document.querySelectorAll("[data-scored]"),function(b){b._reset();});
+  document.getElementById("score").textContent="Responde las cuatro preguntas para ver tu puntaje.";
+});
+
+renderMath(document.getElementById("deck"));
+renderMath(ficha);
+[].forEach.call(document.querySelectorAll("[data-mc]"),buildMC);
+initStepper(); initLinked(); initMatch(); initReveal();
+go(0);
+})();
+</script>
+
+</body>
+</html>
