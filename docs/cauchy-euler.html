@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Cauchy-Euler paso a paso</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&family=STIX+Two+Text:ital,wght@0,400;1,400&display=swap">
+<style>
+/* Layout: cuaderno cuadriculado de FCFM; app de una pantalla (barra superior, hoja desplazable, navegación inferior). Actividades con borde punteado como las hojas recortables; resaltador amarillo para la etapa activa. */
+:root{
+  --paper:#f5f6fb; --sheet:#ffffff; --ink:#1a2142; --muted:#565e7e; --rule:#d7dbea; --grid:rgba(60,80,160,.07);
+  --accent:#b0157c; --accent-ink:#ffffff; --accent-soft:#fbe8f3;
+  --ok:#1d7a4e; --ok-soft:#e2f4e9; --bad:#b0372b; --bad-soft:#fbe6e3;
+  --hl:#fff0a6; --hl-ink:#1a2142; --code:#f0f2f9;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-math:"STIX Two Text", "Cambria Math", "Times New Roman", serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#11152a; --sheet:#181d36; --ink:#e7e9f6; --muted:#a3a9c6; --rule:#2d3456; --grid:rgba(150,170,255,.06);
+  --accent:#f06ab9; --accent-ink:#1a0f17; --accent-soft:#3a1a32;
+  --ok:#62d69d; --ok-soft:#14352a; --bad:#ff8c7d; --bad-soft:#3c1d1a;
+  --hl:#5a4f14; --hl-ink:#fff8d6; --code:#1f2543; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#11152a; --sheet:#181d36; --ink:#e7e9f6; --muted:#a3a9c6; --rule:#2d3456; --grid:rgba(150,170,255,.06);
+  --accent:#f06ab9; --accent-ink:#1a0f17; --accent-soft:#3a1a32;
+  --ok:#62d69d; --ok-soft:#14352a; --bad:#ff8c7d; --bad-soft:#3c1d1a;
+  --hl:#5a4f14; --hl-ink:#fff8d6; --code:#1f2543; color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  background:var(--sheet);border-bottom:1px solid var(--rule)}
+.brand{font-family:var(--f-display);font-weight:800;font-size:1rem;letter-spacing:.01em;min-width:0}
+#fichaBtn{white-space:nowrap;flex:none}
+.brand small{display:block;font-family:var(--f-body);font-weight:400;font-size:.78rem;color:var(--muted)}
+.btn{border:1px solid var(--rule);background:var(--sheet);border-radius:8px;padding:8px 14px;cursor:pointer;line-height:1.2}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.progress{height:4px;background:var(--rule)}
+.progress span{display:block;height:100%;width:10%;background:var(--accent);transition:width .25s}
+
+.stage{position:relative;min-height:0}
+#deck{height:100%;overflow-y:auto;overflow-x:hidden;padding-block:28px 40px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px}
+.slide{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.slide>*{min-width:0}
+.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.2rem);font-weight:800}
+h2{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:800}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0;max-width:68ch}
+ul,ol{margin:0;padding-left:1.3em}
+li+li{margin-top:4px}
+
+.box{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.label{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.box.obs .label{color:var(--accent)}
+.activity{background:var(--sheet);border:2px dashed var(--accent);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.activity>.label{color:var(--accent)}
+.goal{background:var(--accent-soft);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;color:var(--muted);font-size:.92rem}
+
+/* Matemáticas */
+.m{font-family:var(--f-math);font-style:italic;font-size:1.08em}
+.m .up{font-style:normal}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.15;margin:0 .12em;font-size:.92em}
+.fr>span:first-child{border-bottom:1px solid currentColor;padding:0 .2em .06em}
+.fr>span:last-child{padding:.06em .2em 0}
+sup,sub{font-size:.68em;line-height:0}
+.eq{font-family:var(--f-math);font-size:1.18rem;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;
+  padding:14px 16px;overflow-x:auto;text-align:center;white-space:nowrap}
+.eq .m{font-size:1em}
+.eq.left{text-align:left}
+.chain{display:flex;flex-direction:column;gap:8px}
+.hl{background:var(--hl);color:var(--hl-ink);border-radius:3px;padding:0 3px}
+
+/* Tablas */
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:middle}
+th{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+tr:last-child td{border-bottom:0}
+
+/* Opción múltiple */
+.stem{font-weight:700}
+.opts{display:grid;gap:8px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;width:100%;border:1px solid var(--rule);background:var(--paper);
+  border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt .lt{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;border:1px solid var(--rule);background:var(--sheet)}
+.opt.ok{background:var(--ok-soft);border-color:var(--ok)}
+.opt.ok .lt{background:var(--ok);color:var(--sheet);border-color:var(--ok)}
+.opt.bad{background:var(--bad-soft);border-color:var(--bad)}
+.opt.bad .lt{background:var(--bad);color:var(--sheet);border-color:var(--bad)}
+.fb{border-radius:8px;padding:12px 14px;background:var(--paper);border:1px solid var(--rule);display:flex;flex-direction:column;gap:8px}
+.fb .verdict{font-weight:700}
+.fb .verdict.ok{color:var(--ok)} .fb .verdict.bad{color:var(--bad)}
+.fb ul{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
+.fb li{margin:0;font-size:.95rem}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;border-radius:99px;margin-right:6px}
+.tag.ok{background:var(--ok-soft);color:var(--ok)} .tag.bad{background:var(--bad-soft);color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* Revelar */
+.reveal-ans{border-radius:8px;background:var(--ok-soft);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+
+/* Paso a paso */
+.stepper{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+@media (max-width:760px){.stepper{grid-template-columns:minmax(0,1fr)}}
+.stages{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px;counter-reset:st}
+.stages li{margin:0;display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:6px;color:var(--muted);counter-increment:st}
+.stages li::before{content:counter(st);font-family:var(--f-mono);font-size:.8rem;min-width:1.4em}
+.stages li.done{color:var(--ink)}
+.stages li.active{background:var(--hl);color:var(--hl-ink);font-weight:700}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.cur-eq{font-family:var(--f-math);font-size:1.25rem;background:var(--hl);color:var(--hl-ink);border-radius:8px;padding:14px;overflow-x:auto;white-space:nowrap;text-align:center}
+.cur-eq .m{font-size:1em}
+tr.changed td{background:var(--hl);color:var(--hl-ink)}
+.chg{font-family:var(--f-mono);font-size:.72rem;font-weight:600}
+.note{font-size:.95rem}
+.console{font-family:var(--f-mono);font-size:.82rem;background:var(--code);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;
+  max-height:190px;overflow:auto;display:flex;flex-direction:column;gap:3px}
+.console div{white-space:nowrap}
+.console .m{font-size:1.1em}
+.console .pn{color:var(--accent);margin-right:8px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.controls .count{margin-left:auto;color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
+
+/* Resaltado vinculado */
+.linked{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.linked{grid-template-columns:minmax(0,1fr)}}
+.algo{background:var(--code);border:1px solid var(--rule);border-radius:8px;padding:8px;font-family:var(--f-mono);font-size:.86rem;
+  list-style:none;margin:0;overflow-x:auto}
+.algo li{margin:0}
+.algo button,.expl button{width:100%;text-align:left;border:0;background:transparent;border-radius:5px;cursor:pointer}
+.algo button{display:flex;gap:10px;padding:5px 8px;white-space:nowrap}
+.algo .ln{color:var(--muted);min-width:1.6em;text-align:right;font-variant-numeric:tabular-nums}
+.algo .ind{display:inline-block;width:1.6em}
+.kw{color:var(--accent);font-weight:600}
+.algo .m{font-size:1.15em}
+.expl{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px;max-height:430px;overflow:auto}
+.expl li{margin:0}
+.expl button{padding:7px 10px;display:flex;gap:10px;align-items:baseline;font-size:.93rem}
+.expl .ln{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);min-width:1.6em}
+.sel{background:var(--hl)!important;color:var(--hl-ink)}
+.vars{font-size:.92rem}
+.vars dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0}
+.vars dt{font-family:var(--f-math);font-style:italic}
+.vars dd{margin:0}
+
+/* Relacionar */
+.match{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px}
+.col{display:flex;flex-direction:column;gap:8px}
+.mi{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--rule);background:var(--paper);border-radius:8px;
+  padding:10px 12px;cursor:pointer;text-align:left;min-height:56px;width:100%}
+.mi:hover{border-color:var(--accent)}
+.mi.picked{outline:2px solid var(--accent);outline-offset:1px}
+.mi .pair{flex:none;width:24px;height:24px;border-radius:50%;font-size:.78rem;font-weight:700;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.mi.ok{background:var(--ok-soft);border-color:var(--ok)}
+.mi.bad{background:var(--bad-soft);border-color:var(--bad)}
+.mi .m{white-space:normal}
+
+/* Ficha */
+.ficha{position:absolute;top:0;right:0;bottom:0;width:min(440px,100%);z-index:20;background:var(--sheet);border-left:1px solid var(--rule);
+  box-shadow:-12px 0 32px rgba(10,15,40,.18);display:flex;flex-direction:column;
+  padding-right:env(safe-area-inset-right,0px)}
+.ficha header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--rule)}
+.ficha .body{overflow:auto;padding:16px 18px 28px;display:flex;flex-direction:column;gap:14px;font-size:.95rem}
+.ficha dt{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--accent);margin-top:4px}
+.ficha dd{margin:4px 0 0}
+.ficha dl{margin:0}
+
+.nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  background:var(--sheet);border-top:1px solid var(--rule)}
+#indicator{font-variant-numeric:tabular-nums;font-weight:700;font-family:var(--f-display)}
+.ref{padding-left:2em;text-indent:-2em}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media (max-width:420px){body{font-size:16px}.brand small{display:none}.btn{padding:8px 11px}.eq{font-size:1.05rem}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">Cauchy-Euler paso a paso<small>Ecuaciones Diferenciales · FCFM-UANL</small></div>
+    <button class="btn" id="fichaBtn" aria-controls="ficha" aria-expanded="false">Ficha del recurso</button>
+  </header>
+  <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+
+  <div class="stage">
+  <main id="deck" aria-live="polite">
+
+    <!-- 1 -->
+    <section class="slide" data-title="Inicio">
+      <span class="eyebrow">Ecuaciones Diferenciales · REEDI</span>
+      <h1>Cauchy-Euler paso a paso</h1>
+      <p style="font-size:1.2rem">Del cambio de variable $ax + b = e^w$ a la solución general.</p>
+      <div class="goal">
+        <span class="label">Objetivo de aprendizaje</span>
+        <p>Resolver ecuaciones diferenciales homogéneas de Cauchy-Euler de orden 2 mediante el cambio de variable $ax + b = e^w$ y el operador $D = \f{d}{dw}$, hasta expresar la solución general en la variable $x$, a partir de la fórmula general de las derivadas.</p>
+      </div>
+      <div class="meta">
+        <span>Autora: Dra. Yenny del Carmen Valenzuela Murillo</span>
+        <span>Tiempo estimado: 40 min</span>
+      </div>
+      <div class="box">
+        <span class="label">Cómo usar este recurso</span>
+        <ul>
+          <li>Avanza con <b>Siguiente</b> y <b>Anterior</b> o con las flechas ← → del teclado.</li>
+          <li>Las actividades tienen borde punteado; responde antes de seguir.</li>
+          <li>El botón <b>Ficha del recurso</b> muestra el objetivo y las competencias.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" data-title="Definición" hidden>
+      <span class="eyebrow">Idea clave 1</span>
+      <h2>¿Qué es una ecuación de Cauchy-Euler?</h2>
+      <p>Una ecuación diferencial lineal de la forma</p>
+      <div class="eq">$a_n(ax + b)^n\f{d^ny}{dx^n} + a_{n−1}(ax + b)^{n−1}\f{d^{n−1}y}{dx^{n−1}} + … + a_1(ax + b)\f{dy}{dx} + a_0y = g(x)$</div>
+      <p>con $a_i ∈ ℝ$, $i = 1, 2, 3, …, n$, es llamada <b>ecuación diferencial de Cauchy-Euler</b> (EDCE).</p>
+      <div class="box obs">
+        <span class="label">Observación</span>
+        <p>El caso más frecuente es cuando $a = 1$ y $b = 0$:</p>
+        <div class="eq">$a_nx^n\f{d^ny}{dx^n} + a_{n−1}x^{n−1}\f{d^{n−1}y}{dx^{n−1}} + … + a_1x\f{dy}{dx} + a_0y = g(x)$</div>
+      </div>
+      <div class="box">
+        <span class="label">Ejemplo</span>
+        <p>$x^2y″ − 2y = 0$ es una EDCE homogénea de orden 2: $a = 1$, $b = 0$, $a_2 = 1$, $a_1 = 0$, $a_0 = −2$ y $g(x) = 0$.</p>
+      </div>
+      <div class="activity" data-mc="q1">
+        <span class="label">Actividad 1 · Opción múltiple</span>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" data-title="Cambio de variable" hidden>
+      <span class="eyebrow">Idea clave 2</span>
+      <h2>El cambio de variable $ax + b = e^w$</h2>
+      <p>Para resolver una EDCE se hace el cambio de variable <span class="hl">$ax + b = e^w$</span>. Al diferenciar respecto a $x$:</p>
+      <div class="eq">$a = e^w\f{dw}{dx}$ &nbsp;&nbsp;⇒&nbsp;&nbsp; $ae^{−w} = \f{dw}{dx}$</div>
+      <p>Con la regla de la cadena y el operador $D = \f{d}{dw}$, la primera derivada queda:</p>
+      <div class="eq">$\f{dy}{dx} = \f{dy}{dw}·\f{dw}{dx} = \f{dy}{dw}·ae^{−w}$ &nbsp;&nbsp;⇒&nbsp;&nbsp; <span class="hl">$\f{dy}{dx} = ae^{−w}Dy$</span></div>
+      <div class="box">
+        <span class="label">Ejemplo</span>
+        <p>En el caso $a = 1$, $b = 0$: $x = e^w$, por lo que $w = \ln(x)$ y $\f{dy}{dx} = e^{−w}Dy$.</p>
+      </div>
+      <div class="activity">
+        <span class="label">Actividad 2 · Revelar respuesta</span>
+        <p class="stem">Si el cambio de variable es $2x + 3 = e^w$, ¿cuánto vale $\f{dw}{dx}$ y cómo queda $\f{dy}{dx}$ en términos de $D$?</p>
+        <p>Escribe tu respuesta en tu cuaderno y después compárala.</p>
+        <div class="row"><button class="btn primary" data-reveal="r1" aria-expanded="false" aria-controls="r1">Revelar respuesta</button></div>
+        <div class="reveal-ans" id="r1" hidden>
+          <p>Aquí $a = 2$ y $b = 3$. Al diferenciar: $2 = e^w\f{dw}{dx}$, así que $\f{dw}{dx} = 2e^{−w}$.</p>
+          <p>Por la regla de la cadena: $\f{dy}{dx} = 2e^{−w}Dy$.</p>
+          <p>Error habitual: escribir $e^{−w}Dy$ y olvidar el factor $a = 2$, que solo desaparece cuando $a = 1$.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" data-title="Derivadas de orden superior" hidden>
+      <span class="eyebrow">Idea clave 3</span>
+      <h2>Derivadas de orden superior con el operador $D$</h2>
+      <p>Aplicando de nuevo la regla de la cadena se obtiene la segunda derivada:</p>
+      <div class="eq">$\f{d^2y}{dx^2} = a^2e^{−2w}\left[\f{d^2y}{dw^2} − \f{dy}{dw}\right] = a^2e^{−2w}[D^2 − D]y$ &nbsp;⇒&nbsp; <span class="hl">$\f{d^2y}{dx^2} = a^2e^{−2w}(D − 1)Dy$</span></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Derivada</th><th>Forma con el operador D</th></tr></thead>
+          <tbody>
+            <tr><td>$\f{dy}{dx}$</td><td>$ae^{−w}Dy$</td></tr>
+            <tr><td>$\f{d^2y}{dx^2}$</td><td>$a^2e^{−2w}(D − 1)Dy$</td></tr>
+            <tr><td>$\f{d^3y}{dx^3}$</td><td>$a^3e^{−3w}(D − 2)(D − 1)Dy$</td></tr>
+            <tr><td>$\f{d^4y}{dx^4}$</td><td>$a^4e^{−4w}(D − 3)(D − 2)(D − 1)Dy$</td></tr>
+            <tr><td>$\f{d^ny}{dx^n}$</td><td>$a^ne^{−nw}[D − (n − 1)]⋯(D − 2)(D − 1)Dy$</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="box">
+        <span class="label">Ejemplo</span>
+        <p>Con $a = 1$, $b = 0$ ($x = e^w$): $y″ = e^{−2w}(D − 1)Dy$. Al multiplicar por $x^2 = e^{2w}$ se obtiene $x^2y″ = (D − 1)Dy$.</p>
+      </div>
+      <div class="activity" data-mc="q2">
+        <span class="label">Actividad 3 · Opción múltiple</span>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" data-title="Ejemplo paso a paso" hidden>
+      <span class="eyebrow">Idea clave 4 · Visualización</span>
+      <h2>Ejemplo resuelto paso a paso: $x^2y″ − 2y = 0$</h2>
+      <p>Avanza con los botones. La etapa activa se resalta, la tabla de estado marca lo que cambió y la bitácora acumula los resultados.</p>
+      <div class="stepper">
+        <ol class="stages" id="stages"></ol>
+        <div class="panel">
+          <div class="cur-eq" id="curEq"></div>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>Elemento</th><th>Valor actual</th><th>Valor anterior</th></tr></thead>
+              <tbody id="memBody"></tbody>
+            </table>
+          </div>
+          <div class="box" style="padding:12px 14px">
+            <span class="label">Qué ocurre y por qué</span>
+            <p class="note" id="stepNote"></p>
+          </div>
+          <div>
+            <span class="label">Bitácora</span>
+            <div class="console" id="console" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="stPrev">Anterior</button>
+        <button class="btn primary" id="stNext">Siguiente</button>
+        <button class="btn" id="stReset">Reiniciar</button>
+        <span class="count" id="stCount"></span>
+      </div>
+      <div class="activity" data-mc="q3">
+        <span class="label">Actividad 4 · Pregunta de predicción</span>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" data-title="Regresar a x" hidden>
+      <span class="eyebrow">Idea clave 5</span>
+      <h2>Regresar a la variable original $x$</h2>
+      <p>La solución $y(w) = C_1e^{2w} + C_2e^{−w}$ debe escribirse en términos de $x$. Hay dos formas equivalentes:</p>
+      <div class="two">
+        <div class="box">
+          <span class="label">Forma 1 · Reescribir y(w)</span>
+          <div class="chain">
+            <div class="eq left">$y(w) = C_1(e^w)^2 + C_2(e^w)^{−1}$</div>
+            <p>Como $x = e^w$:</p>
+            <div class="eq left">$y(x) = C_1x^2 + C_2x^{−1}$</div>
+          </div>
+        </div>
+        <div class="box">
+          <span class="label">Forma 2 · Despejar w</span>
+          <div class="chain">
+            <p>Como $x = e^w$ ⇒ $w = \ln(x)$:</p>
+            <div class="eq left">$y(x) = C_1e^{2\ln(x)} + C_2e^{−\ln(x)}$</div>
+            <div class="eq left">$y(x) = C_1e^{\ln(x^2)} + C_2e^{\ln(x^{−1})}$</div>
+            <div class="eq left">$y(x) = C_1x^2 + C_2x^{−1}$</div>
+          </div>
+        </div>
+      </div>
+      <div class="activity">
+        <span class="label">Actividad 5 · Revelar respuesta</span>
+        <p class="stem">Una EDCE con $x = e^w$ tiene solución $y(w) = C_1e^{3w} + C_2e^{−2w}$. Escribe $y(x)$ con la Forma 1 y con la Forma 2.</p>
+        <div class="row"><button class="btn primary" data-reveal="r2" aria-expanded="false" aria-controls="r2">Revelar respuesta</button></div>
+        <div class="reveal-ans" id="r2" hidden>
+          <p>Forma 1: $y = C_1(e^w)^3 + C_2(e^w)^{−2} = C_1x^3 + C_2x^{−2}$.</p>
+          <p>Forma 2: $y = C_1e^{3\ln(x)} + C_2e^{−2\ln(x)} = C_1e^{\ln(x^3)} + C_2e^{\ln(x^{−2})} = C_1x^3 + C_2x^{−2}$.</p>
+          <p>Error habitual: dejar la respuesta en $w$ o escribir $e^{3x}$, como si la ecuación original tuviera coeficientes constantes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide" data-title="Algoritmo del método" hidden>
+      <span class="eyebrow">Idea clave 6 · Visualización</span>
+      <h2>El método como algoritmo</h2>
+      <p>Selecciona un paso del algoritmo o una explicación: ambos se resaltan juntos. Los ejemplos corresponden a $x^2y″ − 2y = 0$.</p>
+      <div class="linked">
+        <ol class="algo" id="algo" aria-label="Algoritmo CauchyEulerHomogénea"></ol>
+        <ol class="expl" id="expl" aria-label="Explicación de cada paso"></ol>
+      </div>
+      <div class="box vars">
+        <span class="label">Descripción de variables</span>
+        <dl>
+          <dt>EDCE</dt><dd>Ecuación diferencial de Cauchy-Euler homogénea de orden 2.</dd>
+          <dt>a, b</dt><dd>Coeficientes reales de $ax + b$.</dd>
+          <dt>w</dt><dd>Nueva variable independiente, definida por $ax + b = e^w$.</dd>
+          <dt>D</dt><dd>Operador derivada $\f{d}{dw}$.</dd>
+          <dt>m₁, m₂</dt><dd>Raíces de la ecuación auxiliar.</dd>
+          <dt>C₁, C₂</dt><dd>Constantes arbitrarias.</dd>
+          <dt>y(w), y(x)</dt><dd>Solución general en $w$ y en $x$.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide" data-title="Coeficientes constantes" hidden>
+      <span class="eyebrow">Idea clave 7</span>
+      <h2>La nueva ecuación tiene coeficientes constantes</h2>
+      <p>Al sustituir $ax + b = e^w$ y cada una de las derivadas, la EDCE se convierte en una ecuación diferencial lineal con coeficientes constantes en la variable $w$.</p>
+      <div class="box">
+        <span class="label">Ejemplo</span>
+        <p>$x^2y″ − 2y = 0$ (coeficientes variables) se transforma en $(D^2 − D − 2)y = 0$ (coeficientes constantes), que se resuelve con su ecuación auxiliar.</p>
+        <p>Si $g(x) ≠ 0$, la nueva ecuación es no homogénea y se resuelve con los métodos vistos: coeficientes indeterminados o variación de parámetros.</p>
+      </div>
+      <div class="activity" id="matchAct">
+        <span class="label">Actividad 6 · Relacionar conceptos</span>
+        <p class="stem">Relaciona cada expresión de la izquierda con su forma equivalente cuando $ax + b = e^w$.</p>
+        <p class="note">Toca un elemento de la izquierda y después su pareja de la derecha. Toca un elemento emparejado para deshacer el par.</p>
+        <div class="match">
+          <div class="col" id="mL"></div>
+          <div class="col" id="mR"></div>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="mCheck">Verificar</button>
+          <button class="btn" id="mReset">Reiniciar</button>
+          <span id="mStatus" class="note" aria-live="polite"></span>
+        </div>
+        <div class="fb" id="mFb" hidden></div>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide" data-title="Autoevaluación" hidden>
+      <span class="eyebrow">Autoevaluación</span>
+      <h2>Comprueba lo que aprendiste</h2>
+      <p>Responde las cuatro preguntas. Cada respuesta muestra por qué es correcta o incorrecta. Tu puntaje aparece al final.</p>
+      <div class="activity" data-mc="q4" data-scored="1"><span class="label">Pregunta 1 de 4</span></div>
+      <div class="activity" data-mc="q5" data-scored="1"><span class="label">Pregunta 2 de 4</span></div>
+      <div class="activity" data-mc="q6" data-scored="1"><span class="label">Pregunta 3 de 4</span></div>
+      <div class="activity" data-mc="q7" data-scored="1"><span class="label">Pregunta 4 de 4</span></div>
+      <div class="goal">
+        <span class="label">Puntaje</span>
+        <p id="score" aria-live="polite">Responde las cuatro preguntas para ver tu puntaje.</p>
+        <div class="row"><button class="btn" id="scoreReset">Reiniciar autoevaluación</button></div>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" data-title="Resumen y fuentes" hidden>
+      <span class="eyebrow">Cierre</span>
+      <h2>Resumen</h2>
+      <div class="box">
+        <ul>
+          <li>Una EDCE tiene coeficientes $a_i(ax + b)^i$ en la derivada de orden $i$; el caso más frecuente es $a = 1$, $b = 0$.</li>
+          <li>Se resuelve con el cambio de variable $ax + b = e^w$, de donde $\f{dw}{dx} = ae^{−w}$.</li>
+          <li>Con $D = \f{d}{dw}$: $\f{d^ny}{dx^n} = a^ne^{−nw}[D − (n − 1)]⋯(D − 2)(D − 1)Dy$.</li>
+          <li>La ecuación resultante es lineal con coeficientes constantes; si es homogénea se resuelve con su ecuación auxiliar.</li>
+          <li>Con raíces reales distintas: $y(w) = C_1e^{m_1w} + C_2e^{m_2w}$, y se regresa a $x$ con $x = e^w$ o $w = \ln(x)$.</li>
+        </ul>
+      </div>
+      <div class="activity">
+        <span class="label">Tarea</span>
+        <p>Resuelve la ecuación diferencial $x^3y‴ + xy′ − y = 0$ siguiendo el algoritmo de la diapositiva 7.</p>
+        <p class="note">Usa la fórmula de $\f{d^3y}{dx^3}$ de la diapositiva 4.</p>
+      </div>
+      <div class="box">
+        <span class="label">Fuentes (APA 7)</span>
+        <p class="ref">Valenzuela Murillo, Y. del C. (2026). <i>Ecuaciones diferenciales. Capítulo 4: Ecuación de Cauchy-Euler, parte 4</i> [Apuntes de clase, pp. 13–16]. Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</p>
+      </div>
+    </section>
+  </main>
+<aside class="ficha" id="ficha" role="dialog" aria-modal="false" aria-labelledby="fichaTitle" hidden>
+  <header>
+    <h3 id="fichaTitle">Ficha del recurso</h3>
+    <button class="btn" id="fichaClose">Cerrar ✕</button>
+  </header>
+  <div class="body">
+    <dl>
+      <dt>Título</dt><dd>Cauchy-Euler paso a paso: del cambio eʷ a la solución general</dd>
+      <dt>Objetivo de aprendizaje</dt><dd>Resolver ecuaciones diferenciales homogéneas de Cauchy-Euler de orden 2 mediante el cambio de variable $ax + b = e^w$ y el operador $D = \f{d}{dw}$, hasta expresar la solución general en la variable $x$, a partir de la fórmula general de las derivadas.</dd>
+      <dt>Autora</dt><dd>Dra. Yenny del Carmen Valenzuela Murillo</dd>
+      <dt>Unidad de aprendizaje</dt><dd>Ecuaciones Diferenciales</dd>
+      <dt>Palabras clave</dt><dd>Ecuación de Cauchy-Euler; cambio de variable; operador D; ecuación auxiliar; solución general.</dd>
+      <dt>Descripción</dt><dd>El estudiante identifica ecuaciones de Cauchy-Euler, aplica el cambio de variable ax + b = eʷ y transforma las derivadas con el operador D en una ecuación con coeficientes constantes. Recorre un ejemplo resuelto paso a paso, sigue un algoritmo con resaltado vinculado, responde preguntas de opción múltiple con retroalimentación, relaciona conceptos y realiza una autoevaluación. Tiempo estimado: 40 minutos.</dd>
+      <dt>Audiencia</dt><dd>Estudiantes universitarios de programas de licenciatura relacionados con ciencias exactas.</dd>
+      <dt>Competencias que desarrolla el estudiante</dt>
+      <dd><ol>
+        <li>Identifica ecuaciones diferenciales de Cauchy-Euler y sus parámetros $a$ y $b$ a partir de la forma general de la definición.</li>
+        <li>Transforma una ecuación de Cauchy-Euler en una ecuación lineal con coeficientes constantes mediante el cambio de variable $ax + b = e^w$ y el operador $D$.</li>
+        <li>Determina la solución general en la variable original de una ecuación de Cauchy-Euler homogénea de orden 2, a partir de las raíces reales distintas de su ecuación auxiliar.</li>
+      </ol></dd>
+      <dt>Fuente</dt><dd>Valenzuela Murillo, Y. del C. (2026). Ecuaciones diferenciales. Capítulo 4: Ecuación de Cauchy-Euler, parte 4 [Apuntes de clase]. FCFM, UANL.</dd>
+    </dl>
+  </div>
+</aside>
+  </div>
+
+  <nav class="nav" aria-label="Navegación de diapositivas">
+    <button class="btn" id="prev">← Anterior</button>
+    <span id="indicator" aria-live="polite">1 / 10</span>
+    <button class="btn primary" id="next">Siguiente →</button>
+  </nav>
+</div>
+
+
+
+<script>
+(function(){
+"use strict";
+/* ---------- Mini-notación matemática: \f{n}{d}, ^{..}, _{..}, \ln, \left[, \right] ---------- */
+function esc(c){return c==="<"?"&lt;":c===">"?"&gt;":c==="&"?"&amp;":c;}
+function tex(s){
+  var i=0;
+  function group(){
+    var out="";
+    while(i<s.length){
+      var c=s[i];
+      if(c==="}"){i++;return out;}
+      if(c==="{"){i++;out+=group();continue;}
+      if(c==="\\"){
+        var m=/^\\([a-zA-Z]+)/.exec(s.slice(i));
+        if(m){
+          var w=m[1]; i+=m[0].length;
+          if(w==="f"){ i++; var n=group(); i++; var d=group();
+            out+='<span class="fr"><span>'+n+'</span><span>'+d+'</span></span>'; continue; }
+          if(w==="ln"){ out+='<span class="up">ln</span>'; continue; }
+          if(w==="left"||w==="right"){ continue; }
+          out+=w; continue;
+        }
+      }
+      if(c==="^"||c==="_"){
+        i++; var a;
+        if(s[i]==="{"){i++;a=group();} else {a=esc(s[i]||"");i++;}
+        out+=(c==="^"?"<sup>":"<sub>")+a+(c==="^"?"</sup>":"</sub>"); continue;
+      }
+      out+=esc(c); i++;
+    }
+    return out;
+  }
+  return group();
+}
+function rich(str){
+  var parts=String(str).split("$"), out="";
+  for(var k=0;k<parts.length;k++){
+    if(k%2===0){ out+=parts[k].replace(/[<>&]/g,esc); }
+    else { out+='<span class="m">'+tex(parts[k])+'</span>'; }
+  }
+  return out;
+}
+function renderMath(root){
+  var walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:function(n){
+    if(n.nodeValue.indexOf("$")<0) return NodeFilter.FILTER_REJECT;
+    var p=n.parentNode; if(p&&(p.nodeName==="SCRIPT"||p.nodeName==="STYLE")) return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT;}});
+  var nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(function(n){
+    var span=document.createElement("span"); span.innerHTML=rich(n.nodeValue);
+    var frag=document.createDocumentFragment(); while(span.firstChild) frag.appendChild(span.firstChild);
+    n.parentNode.replaceChild(frag,n);
+  });
+}
+
+/* ---------- Reactivos ---------- */
+var Q={
+ q1:{stem:"¿Cuál de las siguientes ecuaciones es una ecuación diferencial de Cauchy-Euler?",
+  opts:[
+   {t:"$xy″ + 3xy′ − 4y = 0$",ok:false,why:"En el término de $y″$ la potencia de $x$ debe ser 2, igual al orden de la derivada; aquí es 1."},
+   {t:"$x^2y″ + 3xy′ − 4y = 0$",ok:true,why:"Cada derivada de orden $k$ va multiplicada por $x^k$ (caso $a = 1$, $b = 0$) y el coeficiente de $y$ es constante."},
+   {t:"$x^2y″ + 3y′ − 4y = 0$",ok:false,why:"El término de $y′$ debe llevar $x^1$; aquí falta la $x$."},
+   {t:"$x^2y″ + 3xy′ − 4xy = 0$",ok:false,why:"El coeficiente $a_0$ de $y$ debe ser una constante real; aquí está multiplicado por $x$."}]},
+ q2:{stem:"Con $ax + b = e^w$, $a = 1$ y $b = 0$ (es decir, $x = e^w$), ¿qué expresión corresponde a $x^3\\f{d^3y}{dx^3}$?",
+  opts:[
+   {t:"$(D − 3)(D − 2)(D − 1)Dy$",ok:false,why:"Tiene cuatro factores, el patrón de la cuarta derivada. Para $n = 3$ el último factor es $(D − 2)$."},
+   {t:"$e^{−3w}(D − 2)(D − 1)Dy$",ok:false,why:"Es solo $\\f{d^3y}{dx^3}$; falta multiplicar por $x^3 = e^{3w}$, que cancela $e^{−3w}$."},
+   {t:"$(D − 2)(D − 1)Dy$",ok:true,why:"$\\f{d^3y}{dx^3} = e^{−3w}(D − 2)(D − 1)Dy$ y $x^3 = e^{3w}$; el producto $e^{3w}·e^{−3w} = 1$."},
+   {t:"$(D + 2)(D + 1)Dy$",ok:false,why:"Los factores llevan resta: $[D − (n − 1)]⋯(D − 1)D$."}]},
+ q3:{stem:"Predicción: si en lugar de $x^2y″ − 2y = 0$ resuelves $x^2y″ − 6y = 0$ con los mismos pasos, ¿qué raíces tendrá la ecuación auxiliar?",
+  opts:[
+   {t:"$m_1 = 3$,  $m_2 = −2$",ok:true,why:"Se obtiene $(D − 1)Dy − 6y = 0$, es decir $(D^2 − D − 6)y = 0 = (D − 3)(D + 2)y$; las raíces son 3 y −2."},
+   {t:"$m_1 = −3$,  $m_2 = 2$",ok:false,why:"Se tomaron los números de los factores con el signo cambiado; de $m − 3 = 0$ resulta $m = 3$."},
+   {t:"$m_1 = √6$,  $m_2 = −√6$",ok:false,why:"Se sustituyó $x^2y″$ por $D^2y$ y se omitió el término $−D$ que aporta $(D − 1)D$."},
+   {t:"$m_1 = 6$,  $m_2 = −1$",ok:false,why:"Error al factorizar: $(m − 6)(m + 1) = m^2 − 5m − 6$, no $m^2 − m − 6$."}]},
+ q4:{stem:"Al derivar $ax + b = e^w$ respecto a $x$, ¿qué expresión es igual a $\\f{dw}{dx}$?",
+  opts:[
+   {t:"$ae^w$",ok:false,why:"Falta despejar: de $a = e^w\\f{dw}{dx}$ se divide entre $e^w$, lo que produce $e^{−w}$."},
+   {t:"$\\f{e^{−w}}{a}$",ok:false,why:"La constante $a$ queda multiplicando, no dividiendo."},
+   {t:"$−ae^{−w}$",ok:false,why:"El coeficiente no lleva signo negativo; el negativo está en el exponente."},
+   {t:"$ae^{−w}$",ok:true,why:"De $a = e^w\\f{dw}{dx}$ se despeja $\\f{dw}{dx} = ae^{−w}$."}]},
+ q5:{stem:"Si $2x + 1 = e^w$, ¿qué expresión corresponde a $\\f{d^2y}{dx^2}$?",
+  opts:[
+   {t:"$2e^{−2w}(D − 1)Dy$",ok:false,why:"Con $n = 2$ el coeficiente es $a^2 = 4$, no $a = 2$."},
+   {t:"$4e^{−2w}(D − 1)Dy$",ok:true,why:"$a = 2$, así que $a^2e^{−2w}(D − 1)Dy = 4e^{−2w}(D − 1)Dy$."},
+   {t:"$4e^{2w}(D − 1)Dy$",ok:false,why:"El exponente es $−nw = −2w$, negativo."},
+   {t:"$4e^{−2w}(D + 1)Dy$",ok:false,why:"El factor es $(D − 1)$, con resta."}]},
+ q6:{stem:"Con $x = e^w$, ¿qué ecuación en el operador $D$ se obtiene de $x^2y″ + xy′ − 4y = 0$?",
+  opts:[
+   {t:"$(D^2 − D − 4)y = 0$",ok:false,why:"Se sustituyó $x^2y″$ pero se omitió el término $xy′ = Dy$."},
+   {t:"$(D^2 + D − 4)y = 0$",ok:false,why:"Se tomó $x^2y″$ como $D^2y$; en realidad es $(D − 1)Dy = (D^2 − D)y$."},
+   {t:"$(D^2 − 4)y = 0$",ok:true,why:"$x^2y″ = (D − 1)Dy$ y $xy′ = Dy$; al sumar: $(D^2 − D + D − 4)y = (D^2 − 4)y$."},
+   {t:"$(D^2 − 2D − 4)y = 0$",ok:false,why:"Se restó $Dy$ en lugar de sumarlo."}]},
+ q7:{stem:"Las raíces de la ecuación auxiliar de una EDCE con $x = e^w$ son $m_1 = 3$ y $m_2 = −1$. ¿Cuál es la solución general $y(x)$?",
+  opts:[
+   {t:"$y = C_1x^3 + C_2x^{−1}$",ok:true,why:"$y(w) = C_1e^{3w} + C_2e^{−w}$ y, como $e^w = x$, queda $C_1x^3 + C_2x^{−1}$."},
+   {t:"$y = C_1e^{3x} + C_2e^{−x}$",ok:false,why:"Se usó $x$ en el exponente, como si la ecuación original tuviera coeficientes constantes."},
+   {t:"$y = C_1x^{−3} + C_2x$",ok:false,why:"Se invirtieron los signos; el exponente de $x$ es la raíz $m$."},
+   {t:"$y = C_1e^{3w} + C_2e^{−w}$",ok:false,why:"Es la solución en $w$; falta regresar a la variable $x$."}]}
+};
+var LET="ABCD";
+var scored={};
+function buildMC(box){
+  var id=box.getAttribute("data-mc"), q=Q[id], isScored=box.hasAttribute("data-scored");
+  var stem=document.createElement("p"); stem.className="stem"; stem.innerHTML=rich(q.stem); box.appendChild(stem);
+  var opts=document.createElement("div"); opts.className="opts"; opts.setAttribute("role","group"); opts.setAttribute("aria-label","Opciones");
+  var fb=document.createElement("div"); fb.className="fb"; fb.hidden=true; fb.setAttribute("aria-live","polite");
+  var retry=document.createElement("button"); retry.className="btn"; retry.textContent="Intentar de nuevo"; retry.hidden=true;
+  var btns=q.opts.map(function(o,k){
+    var b=document.createElement("button"); b.className="opt"; b.type="button";
+    b.innerHTML='<span class="lt">'+LET[k]+'</span><span>'+rich(o.t)+'</span>';
+    b.addEventListener("click",function(){answer(k);});
+    opts.appendChild(b); return b;
+  });
+  function answer(k){
+    btns.forEach(function(b,j){ b.disabled=true;
+      if(q.opts[j].ok) b.classList.add("ok");
+      else if(j===k) b.classList.add("bad"); });
+    var right=q.opts[k].ok;
+    var h='<p class="verdict '+(right?"ok":"bad")+'">'+(right?"¡Correcto!":"Incorrecto. La respuesta correcta es la "+LET[q.opts.findIndex(function(o){return o.ok;})]+".")+'</p><ul>';
+    q.opts.forEach(function(o,j){ h+='<li><span class="tag '+(o.ok?"ok":"bad")+'">'+LET[j]+(o.ok?" correcta":" incorrecta")+'</span>'+rich(o.why)+'</li>'; });
+    fb.innerHTML=h+'</ul>'; fb.hidden=false; retry.hidden=isScored;
+    if(isScored && !(id in scored)){ scored[id]=right; updateScore(); }
+  }
+  function reset(){ btns.forEach(function(b){b.disabled=false;b.classList.remove("ok","bad");}); fb.hidden=true; fb.innerHTML=""; retry.hidden=true; }
+  retry.addEventListener("click",reset);
+  box.appendChild(opts); box.appendChild(fb);
+  var row=document.createElement("div"); row.className="row"; row.appendChild(retry); box.appendChild(row);
+  box._reset=reset;
+}
+function updateScore(){
+  var ids=["q4","q5","q6","q7"], n=ids.filter(function(i){return i in scored;}).length;
+  var c=ids.filter(function(i){return scored[i];}).length, el=document.getElementById("score");
+  if(n<4){ el.textContent="Llevas "+n+" de 4 respondidas."; }
+  else { el.textContent="Obtuviste "+c+" de 4. "+(c===4?"Dominas el procedimiento; continúa con la tarea.":c>=2?"Repasa las diapositivas 3 y 4 antes de la tarea.":"Vuelve a recorrer el ejemplo paso a paso de la diapositiva 5."); }
+}
+
+/* ---------- Ejecución paso a paso ---------- */
+var STEPS=[
+ {t:"Identificar la ecuación",eq:"x^2y″ − 2y = 0",v:"x",r:"—",note:"Es una EDCE homogénea de orden 2: $g(x) = 0$, $a = 1$ y $b = 0$.",log:"EDCE homogénea de orden 2, $a = 1$, $b = 0$"},
+ {t:"Cambio de variable",eq:"x = e^w,   y″ = e^{−2w}(D − 1)Dy",v:"w",r:"—",note:"Con $a = 1$ la fórmula general da $y″ = (1)^2e^{−2w}(D − 1)Dy$.",log:"$x = e^w$,  $y″ = e^{−2w}(D − 1)Dy$"},
+ {t:"Sustituir en la ecuación",eq:"(e^w)^2·e^{−2w}(D − 1)Dy − 2y = 0",v:"w",r:"—",note:"Se reemplazan $x$ y $y″$; ahora $y = y(w)$.",log:"$(e^w)^2·e^{−2w}(D − 1)Dy − 2y = 0$"},
+ {t:"Simplificar",eq:"(D − 1)Dy − 2y = 0",v:"w",r:"—",note:"$e^{2w}·e^{−2w} = e^0 = 1$: el coeficiente variable desaparece.",log:"$(D − 1)Dy − 2y = 0$"},
+ {t:"Factorizar y",eq:"(D^2 − D − 2)y = 0",v:"w",r:"—",note:"$((D − 1)D − 2)y = 0$ y se desarrolla el producto.",log:"$(D^2 − D − 2)y = 0$"},
+ {t:"Factorizar el operador",eq:"(D − 2)(D + 1)y = 0",v:"w",r:"—",note:"El polinomio en $D$ se factoriza como un polinomio algebraico.",log:"$(D − 2)(D + 1)y = 0$"},
+ {t:"Ecuación auxiliar",eq:"(m − 2)(m + 1) = 0",v:"w",r:"m_1 = 2,  m_2 = −1",note:"$m − 2 = 0$ o $m + 1 = 0$, así que $m_1 = 2$ y $m_2 = −1$.",log:"$m_1 = 2$,  $m_2 = −1$"},
+ {t:"Solución en w",eq:"y(w) = C_1e^{2w} + C_2e^{−w}",v:"w",r:"m_1 = 2,  m_2 = −1",note:"$m_1, m_2 ∈ ℝ$ y $m_1 ≠ m_2$, entonces la solución general es una combinación de $e^{m_1w}$ y $e^{m_2w}$.",log:"$y(w) = C_1e^{2w} + C_2e^{−w}$"},
+ {t:"Regresar a x",eq:"y(x) = C_1x^2 + C_2x^{−1}",v:"x",r:"m_1 = 2,  m_2 = −1",note:"Como $x = e^w$: $(e^w)^2 = x^2$ y $(e^w)^{−1} = x^{−1}$.",log:"$y(x) = C_1x^2 + C_2x^{−1}$"}
+];
+var sIdx=0;
+function M(s){return '<span class="m">'+tex(s)+'</span>';}
+function renderStep(){
+  var st=document.getElementById("stages");
+  [].forEach.call(st.children,function(li,k){ li.classList.toggle("active",k===sIdx); li.classList.toggle("done",k<sIdx);
+    if(k===sIdx) li.setAttribute("aria-current","step"); else li.removeAttribute("aria-current"); });
+  var s=STEPS[sIdx], p=sIdx>0?STEPS[sIdx-1]:null;
+  document.getElementById("curEq").innerHTML=M(s.eq);
+  var rows=[["Ecuación",s.eq,p?p.eq:"—"],["Variable independiente",s.v,p?p.v:"—"],["Raíces",s.r,p?p.r:"—"]];
+  document.getElementById("memBody").innerHTML=rows.map(function(r){
+    var ch=p&&r[1]!==r[2];
+    return '<tr'+(ch?' class="changed"':'')+'><td>'+r[0]+(ch?' <span class="chg">● cambió</span>':'')+'</td><td>'+(r[1]==="—"?"—":M(r[1]))+'</td><td>'+(r[2]==="—"?"—":M(r[2]))+'</td></tr>';
+  }).join("");
+  document.getElementById("stepNote").innerHTML=rich(s.note);
+  var con=document.getElementById("console");
+  con.innerHTML=STEPS.slice(0,sIdx+1).map(function(x,k){return '<div><span class="pn">'+(k+1)+'&gt;</span>'+rich(x.log)+'</div>';}).join("");
+  con.scrollTop=con.scrollHeight;
+  document.getElementById("stPrev").disabled=sIdx===0;
+  document.getElementById("stNext").disabled=sIdx===STEPS.length-1;
+  document.getElementById("stCount").textContent="Paso "+(sIdx+1)+" / "+STEPS.length;
+}
+function initStepper(){
+  document.getElementById("stages").innerHTML=STEPS.map(function(s){return "<li>"+rich(s.t)+"</li>";}).join("");
+  document.getElementById("stPrev").addEventListener("click",function(){ if(sIdx>0){sIdx--;renderStep();} });
+  document.getElementById("stNext").addEventListener("click",function(){ if(sIdx<STEPS.length-1){sIdx++;renderStep();} });
+  document.getElementById("stReset").addEventListener("click",function(){ sIdx=0; renderStep(); });
+  renderStep();
+}
+
+/* ---------- Resaltado vinculado ---------- */
+var ALGO=[
+ {c:'<span class="kw">Inicio</span>',e:"Comienza el algoritmo."},
+ {c:'<span class="kw">Leer</span> EDCE',e:"Se recibe la ecuación; en el ejemplo, $x^2y″ − 2y = 0$."},
+ {c:'Identificar $a$ y $b$ de $ax + b$',e:"Se compara con la forma general; en el ejemplo, $a = 1$ y $b = 0$."},
+ {c:'Sustituir $ax + b = e^w$ en EDCE',e:"En el ejemplo el cambio es $x = e^w$."},
+ {c:'Sustituir cada $\\f{d^ny}{dx^n}$ por su forma en $D$',e:"Se usa $\\f{d^ny}{dx^n} = a^ne^{−nw}[D − (n − 1)]⋯(D − 1)Dy$; en el ejemplo, $y″ = e^{−2w}(D − 1)Dy$."},
+ {c:'Simplificar las potencias de $e^w$',e:"$e^{2w}·e^{−2w} = e^0 = 1$; queda $(D − 1)Dy − 2y = 0$."},
+ {c:'Factorizar el polinomio en $D$',e:"$(D^2 − D − 2)y = 0$, es decir, $(D − 2)(D + 1)y = 0$."},
+ {c:'Establecer la ecuación auxiliar',e:"Se escribe el polinomio en $m$: $(m − 2)(m + 1) = 0$."},
+ {c:'Resolver la ecuación auxiliar',e:"Se obtienen $m_1 = 2$ y $m_2 = −1$."},
+ {c:'<span class="kw">Si</span> $m_1, m_2 ∈ ℝ$ y $m_1 ≠ m_2$ <span class="kw">entonces</span>',e:"Se verifica que las raíces sean reales y distintas, el caso del ejemplo."},
+ {c:'<span class="ind"></span>$y(w) ← C_1e^{m_1w} + C_2e^{m_2w}$',ind:1,e:"En el ejemplo: $y(w) = C_1e^{2w} + C_2e^{−w}$."},
+ {c:'<span class="kw">Fin del paso 10</span>',e:"Cierra la estructura condicional del paso 10."},
+ {c:'Sustituir $e^w$ por $ax + b$ en $y(w)$',e:"Se regresa a $x$; en el ejemplo, $y(x) = C_1x^2 + C_2x^{−1}$."},
+ {c:'<span class="kw">Fin</span>',e:"Termina el algoritmo."}
+];
+function codeRich(s){ /* conserva las etiquetas del algoritmo y procesa solo los fragmentos entre $ */
+  return s.split("$").map(function(p,k){return k%2?M(p):p;}).join("");
+}
+function initLinked(){
+  var A=document.getElementById("algo"), E=document.getElementById("expl");
+  ALGO.forEach(function(r,k){
+    var li=document.createElement("li"), b=document.createElement("button"); b.type="button";
+    b.innerHTML='<span class="ln">'+(k+1)+'</span><span>'+codeRich(r.c)+'</span>'; b.setAttribute("aria-label","Paso "+(k+1));
+    b.addEventListener("click",function(){select(k,"e");}); li.appendChild(b); A.appendChild(li);
+    var li2=document.createElement("li"), b2=document.createElement("button"); b2.type="button";
+    b2.innerHTML='<span class="ln">'+(k+1)+'</span><span>'+rich(r.e)+'</span>';
+    b2.addEventListener("click",function(){select(k,"a");}); li2.appendChild(b2); E.appendChild(li2);
+  });
+  function select(k,scrollSide){
+    [A,E].forEach(function(list){ [].forEach.call(list.querySelectorAll("button"),function(b,j){
+      b.classList.toggle("sel",j===k); b.setAttribute("aria-pressed",j===k?"true":"false"); }); });
+    var target=(scrollSide==="e"?E:A).querySelectorAll("button")[k], box=target.closest("ol");
+    if(box.scrollHeight>box.clientHeight){ box.scrollTop=target.offsetTop-box.offsetTop-box.clientHeight/2+target.offsetHeight/2; }
+  }
+  select(1,"e");
+}
+
+/* ---------- Relacionar ---------- */
+var ML=[{t:"$\\f{dy}{dx}$",why:"Primer orden: un solo factor $D$, con $a$ y $e^{−w}$."},
+        {t:"$\\f{d^2y}{dx^2}$",why:"Segundo orden: $a^2$, $e^{−2w}$ y los factores $(D − 1)D$."},
+        {t:"$\\f{d^3y}{dx^3}$",why:"Tercer orden: $a^3$, $e^{−3w}$ y los factores $(D − 2)(D − 1)D$."},
+        {t:"$\\f{dw}{dx}$",why:"Viene de derivar $ax + b = e^w$; no lleva $D$ porque no actúa sobre $y$."},
+        {t:"$D$",why:"Es el operador derivada respecto a la nueva variable $w$."}];
+var MR=[{t:"$ae^{−w}$",k:3},{t:"$a^3e^{−3w}(D − 2)(D − 1)Dy$",k:2},{t:"$\\f{d}{dw}$",k:4},{t:"$ae^{−w}Dy$",k:0},{t:"$a^2e^{−2w}(D − 1)Dy$",k:1}];
+var pairs={}, picked=null, mL=[], mR=[];
+function initMatch(){
+  var L=document.getElementById("mL"), R=document.getElementById("mR");
+  ML.forEach(function(o,i){ var b=document.createElement("button"); b.type="button"; b.className="mi";
+    b.innerHTML='<span>'+rich(o.t)+'</span><span class="pair" hidden></span>'; b.addEventListener("click",function(){clickL(i);}); L.appendChild(b); mL.push(b); });
+  MR.forEach(function(o,j){ var b=document.createElement("button"); b.type="button"; b.className="mi";
+    b.innerHTML='<span>'+rich(o.t)+'</span><span class="pair" hidden></span>'; b.addEventListener("click",function(){clickR(j);}); R.appendChild(b); mR.push(b); });
+  document.getElementById("mCheck").addEventListener("click",check);
+  document.getElementById("mReset").addEventListener("click",function(){pairs={};picked=null;paint();
+    document.getElementById("mFb").hidden=true;document.getElementById("mStatus").textContent="";});
+  paint();
+}
+function clearMarks(){ mL.concat(mR).forEach(function(b){b.classList.remove("ok","bad");}); document.getElementById("mFb").hidden=true; }
+function clickL(i){ clearMarks(); if(i in pairs){ delete pairs[i]; picked=null; } else picked=(picked===i?null:i); paint(); }
+function clickR(j){ clearMarks();
+  var owner=Object.keys(pairs).find(function(k){return pairs[k]===j;});
+  if(owner!==undefined){ delete pairs[owner]; picked=null; paint(); return; }
+  if(picked===null){ document.getElementById("mStatus").textContent="Primero elige un elemento de la izquierda."; return; }
+  pairs[picked]=j; picked=null; paint(); }
+function paint(){
+  var n=Object.keys(pairs).length;
+  mL.forEach(function(b,i){ var tag=b.querySelector(".pair"); b.classList.toggle("picked",picked===i);
+    if(i in pairs){tag.hidden=false;tag.textContent=i+1;} else tag.hidden=true; b.setAttribute("aria-pressed",picked===i?"true":"false"); });
+  mR.forEach(function(b,j){ var tag=b.querySelector(".pair"), owner=Object.keys(pairs).find(function(k){return pairs[k]===j;});
+    if(owner!==undefined){tag.hidden=false;tag.textContent=Number(owner)+1;} else tag.hidden=true; });
+  document.getElementById("mStatus").textContent=n+" de 5 parejas formadas.";
+}
+function check(){
+  var n=Object.keys(pairs).length, st=document.getElementById("mStatus");
+  if(n<5){ st.textContent="Forma las 5 parejas antes de verificar ("+n+" de 5)."; return; }
+  var good=0, h="<ul>";
+  ML.forEach(function(o,i){ var j=pairs[i], ok=MR[j].k===i; if(ok) good++;
+    mL[i].classList.add(ok?"ok":"bad"); mR[j].classList.add(ok?"ok":"bad");
+    var correct=MR.find(function(r){return r.k===i;});
+    h+='<li><span class="tag '+(ok?"ok":"bad")+'">'+(ok?"correcta":"incorrecta")+'</span>'+rich(o.t+" ↔ "+correct.t+". "+o.why)+'</li>'; });
+  var fb=document.getElementById("mFb");
+  fb.innerHTML='<p class="verdict '+(good===5?"ok":"bad")+'">'+(good===5?"¡Todas correctas!":good+" de 5 correctas. Revisa las marcadas en rojo.")+'</p>'+h+"</ul>";
+  fb.hidden=false; st.textContent=good+" de 5 correctas.";
+}
+
+/* ---------- Revelar ---------- */
+function initReveal(){
+  [].forEach.call(document.querySelectorAll("[data-reveal]"),function(b){
+    b.addEventListener("click",function(){ var t=document.getElementById(b.getAttribute("data-reveal"));
+      t.hidden=!t.hidden; b.setAttribute("aria-expanded",String(!t.hidden)); b.textContent=t.hidden?"Revelar respuesta":"Ocultar respuesta"; });
+  });
+}
+
+/* ---------- Navegación y ficha ---------- */
+var slides=[].slice.call(document.querySelectorAll(".slide")), cur=0;
+var prev=document.getElementById("prev"), next=document.getElementById("next"), ind=document.getElementById("indicator");
+function go(n){
+  n=Math.max(0,Math.min(slides.length-1,n)); cur=n;
+  slides.forEach(function(s,i){s.hidden=i!==n;});
+  ind.textContent=(n+1)+" / "+slides.length;
+  prev.disabled=n===0; next.disabled=n===slides.length-1;
+  document.getElementById("bar").style.width=((n+1)/slides.length*100)+"%";
+  document.getElementById("deck").scrollTop=0;
+}
+var ficha=document.getElementById("ficha"), fBtn=document.getElementById("fichaBtn");
+function setFicha(open){ ficha.hidden=!open; fBtn.setAttribute("aria-expanded",String(open));
+  if(open) document.getElementById("fichaClose").focus(); else fBtn.focus(); }
+fBtn.addEventListener("click",function(){setFicha(ficha.hidden);});
+document.getElementById("fichaClose").addEventListener("click",function(){setFicha(false);});
+prev.addEventListener("click",function(){go(cur-1);});
+next.addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape" && !ficha.hidden){ setFicha(false); return; }
+  var tg=e.target&&e.target.tagName; if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT") return;
+  if(e.key==="ArrowRight"){ e.preventDefault(); go(cur+1); }
+  else if(e.key==="ArrowLeft"){ e.preventDefault(); go(cur-1); }
+});
+document.getElementById("scoreReset").addEventListener("click",function(){
+  scored={}; [].forEach.call(document.querySelectorAll("[data-scored]"),function(b){b._reset();});
+  document.getElementById("score").textContent="Responde las cuatro preguntas para ver tu puntaje.";
+});
+
+renderMath(document.getElementById("deck"));
+renderMath(ficha);
+[].forEach.call(document.querySelectorAll("[data-mc]"),buildMC);
+initStepper(); initLinked(); initMatch(); initReveal();
+go(0);
+})();
+</script>
+
+</body>
+</html>
