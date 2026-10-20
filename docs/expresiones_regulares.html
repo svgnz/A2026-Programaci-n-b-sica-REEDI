@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Patrones que leen texto</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: presentación a pantalla completa — barra superior (ficha + indicador), diapositiva desplazable, barra de navegación inferior */
+:root{
+  --bg:#EDF0F6; --surface:#FFFFFF; --ink:#16203A; --muted:#56617B; --line:#D2D8E5;
+  --accent:#2F5BD3; --accent-ink:#FFFFFF; --soft:#E1E8FB;
+  --ok:#1C7347; --ok-bg:#DFF2E8; --bad:#AE2A1F; --bad-bg:#FBE5E2;
+  --code-bg:#131B2F; --code-fg:#E4E9F5; --code-line:#26314D;
+  --exec:rgba(255,203,107,.20); --exec-bar:#F2B53C;
+  --t-kw:#C9A0F2; --t-str:#A9D98C; --t-fn:#86AEFF; --t-bi:#FFCF70; --t-num:#F79A78; --t-com:#8691AA;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+    --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+    --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+    --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+  --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+  --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+  --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.band{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.inner{max-width:1080px;margin:0 auto}
+
+/* barra superior */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px}
+.top .inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--accent);font-weight:600}
+.counter{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--muted)}
+.progress{height:3px;background:var(--line)}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+
+/* diapositivas */
+main{overflow-y:auto;overflow-x:hidden}
+main .inner{padding-block:28px 40px}
+.slide{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{font-size:1.12rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}
+.grid2>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.activity{border:2px solid var(--accent);background:var(--surface);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tag{align-self:flex-start;font-family:var(--f-mono);font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;background:var(--soft);color:var(--accent);padding:3px 9px;border-radius:4px}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.terms{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.terms dt{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.terms dd{margin:0}
+
+/* código */
+pre.code,.codebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.6;border-radius:8px;margin:0;overflow-x:auto}
+pre.code{padding:14px 16px;white-space:pre}
+.codebox .ln{display:flex;white-space:pre;padding:0 14px 0 0;border-left:3px solid transparent}
+.codebox .ln .no{display:inline-block;width:2.6em;text-align:right;padding-right:12px;color:var(--t-com);user-select:none;flex:none}
+.codebox .ln.exec{background:var(--exec);border-left-color:var(--exec-bar)}
+.codebox{padding-block:10px}
+.t-kw{color:var(--t-kw)} .t-str{color:var(--t-str)} .t-fn{color:var(--t-fn)} .t-bi{color:var(--t-bi)} .t-num{color:var(--t-num)} .t-com{color:var(--t-com);font-style:italic}
+
+/* botones */
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:7px;font-weight:700;font-size:.95rem}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* opción múltiple */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:baseline}
+.opt .k{font-family:var(--f-mono);font-weight:600;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{display:flex;flex-direction:column;gap:8px}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.why{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:.95rem}
+.why li.c{color:var(--ok)}
+
+/* explorador de modos */
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.modes button{font-family:var(--f-mono);font-weight:600;min-width:58px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:7px;padding:8px 12px}
+.modes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.switch{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+.switch button{border:0;background:var(--bg);color:var(--ink);padding:8px 12px;font-size:.92rem}
+.switch button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:700}
+.result{border-left:4px solid var(--accent);background:var(--soft);padding:12px 14px;border-radius:0 8px 8px 0}
+.result.err{border-left-color:var(--bad);background:var(--bad-bg)}
+.result strong{font-family:var(--f-mono)}
+
+/* resaltado vinculado */
+.alg{list-style:none;margin:0;padding:10px 0;font-family:var(--f-mono);font-size:.9rem;background:var(--code-bg);color:var(--code-fg);border-radius:8px;overflow-x:auto}
+.alg li,.exp li{cursor:pointer}
+.alg li{padding:3px 14px;border-left:3px solid transparent;white-space:pre}
+.alg li .no{color:var(--t-com);display:inline-block;width:2em}
+.alg li.on{background:var(--exec);border-left-color:var(--exec-bar)}
+.exp{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.exp li{border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--bg);font-size:.95rem}
+.exp li.on{border-color:var(--exec-bar);background:var(--surface);box-shadow:0 0 0 2px var(--exec)}
+.exp li b{font-family:var(--f-mono);color:var(--accent)}
+
+/* paso a paso */
+.stepper{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.stepper>*{min-width:0}
+.mem{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+.mem th,.mem td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.mem th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mem td{font-family:var(--f-mono);word-break:break-word}
+.mem tr.chg td{background:var(--exec)}
+.mem tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--exec-bar)}
+.tablewrap{overflow-x:auto}
+.console,.filebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.86rem;border-radius:8px;padding:10px 14px;min-height:3.2em;white-space:pre-wrap;word-break:break-word}
+.console .pr{color:var(--t-com)}
+.nl{color:var(--t-num);font-size:.8em}
+.note{background:var(--soft);border-radius:8px;padding:10px 14px;font-size:.95rem}
+.stepcount{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.minilabel{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:0}
+
+/* relacionar */
+.match{display:flex;flex-direction:column;gap:10px}
+.match .mrow{display:grid;grid-template-columns:minmax(110px,auto) 1fr auto;gap:10px;align-items:center}
+.match select{font:inherit;font-size:.95rem;padding:7px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.match .mark{font-weight:700;width:1.4em;text-align:center}
+.mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+@media (max-width:520px){.match .mrow{grid-template-columns:1fr auto}.match .mrow code{grid-column:1/-1;justify-self:start}}
+
+/* errores */
+.errs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.errs div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface);font-size:.94rem}
+.errs b{font-family:var(--f-mono);color:var(--bad);display:block;font-size:.85rem}
+
+/* autoevaluación */
+.score{font-family:var(--f-display);font-size:1.3rem;font-weight:800}
+.quiz{display:flex;flex-direction:column;gap:16px}
+
+/* resumen */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.summary div{border-top:3px solid var(--accent);background:var(--surface);padding:12px 14px;border-radius:0 0 8px 8px}
+.refs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.refs li{padding-left:2em;text-indent:-2em;font-size:.95rem}
+
+/* portada */
+.cover{display:flex;flex-direction:column;gap:22px;padding-top:2vh}
+.cover .obj{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:760px}
+.prompt-line{font-family:var(--f-mono);font-size:.95rem;color:var(--muted)}
+.prompt-line .cur{display:inline-block;width:.6em;height:1.05em;background:var(--accent);vertical-align:-.15em;margin-left:2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.prompt-line .cur{animation:none}.progress span{transition:none}}
+.authors{font-size:.95rem;color:var(--muted)}
+
+/* barra inferior */
+.bottom{background:var(--surface);border-top:1px solid var(--line);padding-block:10px}
+.bottom .inner{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hint{font-size:.8rem;color:var(--muted)}
+@media (max-width:520px){.hint{display:none}}
+
+/* ficha */
+.overlay{position:fixed;inset:0;background:rgba(8,12,24,.55);display:flex;justify-content:flex-end;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:min(560px,100%);height:100%;overflow-y:auto;padding:22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) 22px;padding-top:calc(22px + env(safe-area-inset-top, 0px));display:flex;flex-direction:column;gap:14px}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet dl{margin:0;display:flex;flex-direction:column;gap:12px}
+.sheet dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.sheet dd{margin:2px 0 0}
+.sheet ol{margin:4px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+.sheet .align{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chips span{font-family:var(--f-mono);font-size:.8rem;background:var(--soft);color:var(--accent);padding:2px 8px;border-radius:4px}
+/* probador de patrones */
+mark{background:var(--exec);color:inherit;border-bottom:2px solid var(--exec-bar);border-radius:2px;padding:0 1px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.field input,.field textarea{font-family:var(--f-mono);font-size:.95rem;padding:9px 11px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.field textarea{resize:vertical;min-height:4.2em;line-height:1.5}
+.preview{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-family:var(--f-mono);font-size:.92rem;white-space:pre-wrap;word-break:break-word;line-height:1.7}
+.pyres{font-family:var(--f-mono);font-size:.9rem}
+.pyres.err{color:var(--bad)}
+.modes button.fn{min-width:0}
+.cmp td:last-child{font-family:var(--f-body)}
+</style>
+
+<div class="app">
+  <header class="top band">
+    <div class="inner">
+      <div class="brand"><b>import re</b> · Programación básica · Expresiones regulares</div>
+      <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+      <button class="btn" id="fichaBtn" aria-haspopup="dialog" aria-controls="ficha">Ficha del recurso</button>
+    </div>
+  </header>
+
+  <main id="stage" tabindex="-1">
+    <div class="progress"><span id="bar" style="width:10%"></span></div>
+    <div class="band"><div class="inner">
+
+<!-- 1 -->
+<section class="slide cover" data-n="1" aria-label="Diapositiva 1">
+  <p class="prompt-line">&gt;&gt;&gt; re.findall(r"\d+", "El grupo tiene 35 estudiantes y 4 equipos")<span class="cur"></span></p>
+  <h1>Patrones que leen texto: expresiones regulares en Python</h1>
+  <div class="obj">
+    <p class="eyebrow">Objetivo de aprendizaje</p>
+    <p>Aplicar las funciones del módulo <code>re</code> (<code>findall</code>, <code>search</code>, <code>fullmatch</code>, <code>sub</code> y <code>split</code>) con patrones de símbolos básicos para extraer, validar y transformar texto en Python, prediciendo el resultado de cada llamada.</p>
+  </div>
+  <p class="authors">Dra. Perla Marlene Viera González · Dr. Guillermo Ezequiel Sanchez Guerrero · Dr. Yazmany Jahaziel Guerrero Ceja · Mtro. Osvaldo Habib González González</p>
+  <div class="row"><button class="btn primary" data-go="2">Comenzar</button><span class="hint">También puedes usar las flechas ← → del teclado.</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-n="2" aria-label="Diapositiva 2" hidden>
+  <p class="eyebrow">Idea clave 1</p>
+  <h2>¿Qué son las expresiones regulares?</h2>
+  <p class="lead">Son <strong>patrones</strong> que permiten buscar, identificar, validar y transformar texto según reglas definidas. En Python se usan con el módulo integrado <code>re</code>: no se instala, pero sí se importa.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Antes de usarlo</h3>
+      <pre class="code" data-hl>import re</pre>
+      <h3>¿Para qué sirven?</h3>
+      <ul class="plain">
+        <li>Identificar números dentro de un texto.</li>
+        <li>Verificar si una cadena tiene un formato: matrícula, correo, teléfono, fecha.</li>
+        <li>Buscar palabras o patrones específicos.</li>
+        <li>Reemplazar, extraer o dividir fragmentos de texto.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Ejemplo</h3>
+      <pre class="code" data-hl>import re
+
+texto = "El grupo tiene 35 estudiantes y 4 equipos"
+numeros = re.findall(r"\d+", texto)
+print(numeros)   # ['35', '4']</pre>
+      <p style="font-size:.95rem">El patrón <code>\d+</code> significa "uno o más dígitos consecutivos". La <code>r</code> antes de las comillas indica una cadena cruda; la verás a detalle en la diapositiva 8.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3" aria-label="Diapositiva 3" hidden>
+  <p class="eyebrow">Idea clave 2</p>
+  <h2>Los símbolos de un patrón</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Clases de caracteres</h3>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>\d</dt><dd>Un dígito (0 a 9).</dd>
+        <dt>\w</dt><dd>Letra, dígito o "_". En Python 3 incluye acentos y "ñ".</dd>
+        <dt>\s</dt><dd>Espacio, tabulador o salto de línea.</dd>
+        <dt>\D \W \S</dt><dd>Lo contrario de \d, \w y \s.</dd>
+        <dt>.</dt><dd>Cualquier carácter excepto el salto de línea.</dd>
+        <dt>[abc] [a-z]</dt><dd>Un carácter del conjunto o del rango.</dd>
+        <dt>[^0-9]</dt><dd>Un carácter que NO esté en el conjunto.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>Cuantificadores y anclas</h3>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>+ * ?</dt><dd>Una o más · cero o más · cero o una vez.</dd>
+        <dt>{n} {n,m} {n,}</dt><dd>Exactamente n · entre n y m · n o más.</dd>
+        <dt>^ $</dt><dd>Inicio y final del texto.</dd>
+        <dt>\b</dt><dd>Límite de palabra: <code>\bsol\b</code> no toma "soldado".</dd>
+        <dt>| ( )</dt><dd>Alternativa · agrupar y capturar.</dd>
+        <dt>\</dt><dd>Escapa un especial: <code>\.</code> busca un punto.</dd>
+      </dl>
+      <p style="font-size:.9rem;color:var(--muted)">Se escapan para buscarlos tal cual: <code>. ^ $ * + ? { } [ ] \ | ( )</code></p>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Probador de patrones</h3>
+    <div class="modes" role="group" aria-label="Patrones de ejemplo" id="presets"></div>
+    <div class="grid2">
+      <div class="field"><label for="pat">Patrón</label><input id="pat" type="text" spellcheck="false" autocomplete="off" value="\d+"></div>
+      <div class="field"><label for="txt">Texto</label><textarea id="txt" spellcheck="false">El sol del soldado sale a las 07:45; color o colour; precio 3.5 o 3x5; grupo 307-A</textarea></div>
+    </div>
+    <p class="minilabel">Coincidencias resaltadas</p>
+    <div class="preview" id="tPrev" aria-live="polite"></div>
+    <p class="pyres" id="tRes"></p>
+    <p style="font-size:.85rem;color:var(--muted)">El probador usa el motor de expresiones del navegador; con los símbolos de esta guía da el mismo resultado que Python, salvo <code>\w</code>, que aquí no incluye acentos ni "ñ".</p>
+  </div>
+  <div class="activity mc" data-correct="b">
+    <span class="tag">Actividad 1 · Opción múltiple</span>
+    <p class="q">¿Qué devuelve esta instrucción?</p>
+    <pre class="code" data-hl>re.findall(r"\d{2,3}", "7 45 1234")</pre>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: {2,3} admite como máximo 3 dígitos por coincidencia; &quot;1234&quot; no puede tomarse completo."><span class="k">A</span><code>['45', '1234']</code></button>
+      <button class="opt" data-k="b" data-why="Correcto: &quot;7&quot; tiene un solo dígito y no cumple; &quot;45&quot; cumple; de &quot;1234&quot; se toman 3 dígitos (&quot;123&quot;) y el &quot;4&quot; restante queda solo."><span class="k">B</span><code>['45', '123']</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: &quot;7&quot; no cumple el mínimo de 2 dígitos."><span class="k">C</span><code>['7', '45', '123']</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: el &quot;4&quot; que sobra de &quot;1234&quot; es un solo dígito y no alcanza el mínimo de 2."><span class="k">D</span><code>['45', '123', '4']</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4" aria-label="Diapositiva 4" hidden>
+  <p class="eyebrow">Idea clave 3</p>
+  <h2>Funciones principales del módulo re</h2>
+  <p class="lead">Elige una función para aplicarla al mismo texto y comparar lo que devuelve.</p>
+  <div class="panel">
+    <div class="modes" role="group" aria-label="Función" id="fnBtns"></div>
+    <pre class="code" id="fnCode"></pre>
+    <div class="result" id="fnRes" aria-live="polite"></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Objeto Match</h3>
+      <p style="font-size:.95rem">Lo devuelven <code>search()</code>, <code>match()</code> y <code>fullmatch()</code> cuando hay coincidencia; si no, devuelven <code>None</code>.</p>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>.group()</dt><dd>Texto que coincidió.</dd>
+        <dt>.group(1)</dt><dd>Texto capturado por el primer grupo ( ).</dd>
+        <dt>.start()</dt><dd>Posición donde inicia la coincidencia.</dd>
+        <dt>.end()</dt><dd>Posición donde termina la coincidencia.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>Y además</h3>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>re.compile()</dt><dd>Prepara un patrón para reutilizarlo varias veces.</dd>
+        <dt>re.IGNORECASE</dt><dd>Bandera para ignorar mayúsculas y minúsculas.</dd>
+      </dl>
+      <pre class="code" data-hl>re.findall(r"python", "Python y PYTHON", re.IGNORECASE)
+# ['Python', 'PYTHON']</pre>
+    </div>
+  </div>
+  <div class="activity" id="matchAct">
+    <span class="tag">Actividad 2 · Relacionar conceptos</span>
+    <p>Relaciona cada función con lo que hace.</p>
+    <div class="match" id="match"></div>
+    <div class="row"><button class="btn primary" id="matchCheck">Revisar</button><button class="btn" id="matchReset">Reintentar</button></div>
+    <div class="fb" id="matchFb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5" aria-label="Diapositiva 5" hidden>
+  <p class="eyebrow">Idea clave 4</p>
+  <h2>Del algoritmo al código: extraer números</h2>
+  <p class="lead">Problema: obtener todos los números que aparecen en un texto. Selecciona un paso del algoritmo o de la explicación para ver su correspondencia.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Algoritmo EXTRAER_NUMEROS <span style="font-weight:400;color:var(--muted);font-size:.85rem">(estilo Cairó)</span></h3>
+      <ol class="alg" id="alg">
+        <li data-s="1" tabindex="0"><span class="no">1.</span>Inicio</li>
+        <li data-s="2" tabindex="0"><span class="no">2.</span>TEXTO &lt;- "El grupo tiene 35 estudiantes y 4 equipos"</li>
+        <li data-s="3" tabindex="0"><span class="no">3.</span>PATRON &lt;- "\d+"</li>
+        <li data-s="4" tabindex="0"><span class="no">4.</span>NUMEROS &lt;- Buscar todas las coincidencias de PATRON en TEXTO</li>
+        <li data-s="5" tabindex="0"><span class="no">5.</span>Escribir NUMEROS</li>
+        <li data-s="6" tabindex="0"><span class="no">6.</span>Fin</li>
+      </ol>
+      <p class="minilabel">Descripción de variables</p>
+      <dl class="terms" style="font-size:.92rem">
+        <dt>TEXTO</dt><dd>Cadena. Texto donde se realizará la búsqueda.</dd>
+        <dt>PATRON</dt><dd>Cadena. Expresión regular de uno o más dígitos consecutivos.</dd>
+        <dt>NUMEROS</dt><dd>Lista de cadenas. Coincidencias encontradas.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>¿Qué ocurre en cada paso?</h3>
+      <ul class="exp" id="exp">
+        <li data-s="1" tabindex="0"><b>Paso 1</b> · Comienza el proceso. En Python, antes de todo va <code>import re</code>.</li>
+        <li data-s="2" tabindex="0"><b>Paso 2</b> · <code>texto = "El grupo tiene 35 estudiantes y 4 equipos"</code> guarda los datos de entrada.</li>
+        <li data-s="3" tabindex="0"><b>Paso 3</b> · En el algoritmo el patrón se escribe tal cual; en Python se escribe como cadena cruda: <code>r"\d+"</code>.</li>
+        <li data-s="4" tabindex="0"><b>Paso 4</b> · <code>numeros = re.findall(r"\d+", texto)</code> encuentra todas las coincidencias y las devuelve en una lista.</li>
+        <li data-s="5" tabindex="0"><b>Paso 5</b> · <code>print(numeros)</code> muestra <code>['35', '4']</code>.</li>
+        <li data-s="6" tabindex="0"><b>Paso 6</b> · Termina. Los elementos de la lista son cadenas (str), no enteros.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6" aria-label="Diapositiva 6" hidden>
+  <p class="eyebrow">Idea clave 5</p>
+  <h2>findall() devuelve cadenas: ejecución paso a paso</h2>
+  <p class="lead">Para operar con los números encontrados hay que convertirlos con <code>int()</code>. Avanza línea por línea y observa la memoria, las coincidencias y la consola.</p>
+  <div class="stepper">
+    <div class="panel">
+      <div class="codebox" id="sCode" aria-label="Código del programa"></div>
+      <div class="row">
+        <button class="btn" id="sPrev">← Anterior</button>
+        <button class="btn primary" id="sNext">Siguiente →</button>
+        <button class="btn" id="sReset">Reiniciar</button>
+        <span class="stepcount" id="sCount"></span>
+      </div>
+      <div class="note" id="sNote" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <p class="minilabel">Tabla de memoria</p>
+      <div class="tablewrap">
+        <table class="mem"><thead><tr><th>Variable</th><th>Valor actual</th><th>Valor anterior</th></tr></thead><tbody id="sMem"></tbody></table>
+      </div>
+      <p class="minilabel">Coincidencias de \d+ en texto</p>
+      <div class="filebox" id="sFile"></div>
+      <p class="minilabel">Salida en consola</p>
+      <div class="console" id="sOut"></div>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="c">
+    <span class="tag">Pregunta de predicción</span>
+    <p class="q">Si en la línea 2 <code>texto</code> fuera <code>"Aula 307, 2 turnos"</code>, ¿qué valor tendría <code>numeros</code> después de la línea 3?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: findall() devuelve cadenas; la conversión a enteros ocurre hasta la línea 5 con int()."><span class="k">A</span><code>[307, 2]</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: solo la primera coincidencia es lo que obtendría search(); findall() devuelve todas."><span class="k">B</span><code>['307']</code></button>
+      <button class="opt" data-k="c" data-why="Correcto: findall() devuelve todas las coincidencias de uno o más dígitos consecutivos, como cadenas."><span class="k">C</span><code>['307', '2']</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: dígito por dígito sería el resultado de \d sin el +; el + agrupa los dígitos consecutivos."><span class="k">D</span><code>['3', '0', '7', '2']</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-n="7" aria-label="Diapositiva 7" hidden>
+  <p class="eyebrow">Idea clave 6</p>
+  <h2>Buscar, revisar el inicio o validar todo</h2>
+  <div class="panel">
+    <div class="tablewrap">
+      <table class="mem cmp">
+        <thead><tr><th>Llamada</th><th>Resultado</th><th>¿Por qué?</th></tr></thead>
+        <tbody>
+          <tr><td>re.search(r"\d+", "abc123")</td><td>Match "123"</td><td>Busca en cualquier parte del texto.</td></tr>
+          <tr><td>re.match(r"\d+", "abc123")</td><td>None</td><td>Solo revisa el inicio, y el texto no inicia con dígitos.</td></tr>
+          <tr><td>re.fullmatch(r"\d+", "123")</td><td>Match "123"</td><td>Todo el texto son dígitos.</td></tr>
+          <tr><td>re.fullmatch(r"\d+", "123abc")</td><td>None</td><td>Sobra "abc".</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Verificar antes de usar .group()</h3>
+      <pre class="code" data-hl>texto = "Inscripción: 15/08/2026"
+resultado = re.search(r"\d{2}/\d{2}/\d{4}", texto)
+if resultado:
+    print("Fecha encontrada:", resultado.group())
+else:
+    print("No se encontró fecha")</pre>
+      <p style="font-size:.95rem">Si el resultado es <code>None</code>, llamar a <code>.group()</code> produce <code>AttributeError</code>.</p>
+    </div>
+    <div class="panel">
+      <h3>Capturar partes con grupos ( )</h3>
+      <pre class="code" data-hl>correo = "ana.lopez@uanl.edu.mx"
+r = re.fullmatch(r"([\w.]+)@([\w.]+)", correo)
+if r:
+    print("Usuario:", r.group(1))   # ana.lopez
+    print("Dominio:", r.group(2))   # uanl.edu.mx</pre>
+      <p style="font-size:.95rem">Si el patrón tiene grupos, <code>findall()</code> devuelve solo lo capturado en los grupos.</p>
+    </div>
+  </div>
+  <div class="activity">
+    <span class="tag">Actividad 3 · Revelar respuesta</span>
+    <p>Este código pretende validar una matrícula de 7 dígitos. Con el valor de <code>codigo</code> mostrado, ¿qué imprime, qué problema tiene y cómo se corrige?</p>
+    <pre class="code" data-hl>codigo = "abc1234567xyz"
+if re.search(r"\d{7}", codigo):
+    print("Matrícula válida")
+else:
+    print("Formato incorrecto")</pre>
+    <div class="row"><button class="btn primary" id="revealBtn" aria-expanded="false" aria-controls="revealBox">Revelar respuesta</button></div>
+    <div id="revealBox" class="note" hidden>
+      <p><strong>Imprime:</strong> "Matrícula válida".</p>
+      <p style="margin-top:6px"><strong>Problema:</strong> <code>search()</code> encuentra siete dígitos en cualquier parte del texto y no le importa lo que sobra antes o después. Validar con <code>search()</code> deja pasar textos con letras.</p>
+      <p style="margin-top:6px"><strong>Corrección:</strong> usar <code>fullmatch()</code>, que exige que todo el texto cumpla el patrón.</p>
+      <pre class="code" data-hl style="margin-top:6px">if re.fullmatch(r"\d{7}", codigo):</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-n="8" aria-label="Diapositiva 8" hidden>
+  <p class="eyebrow">Idea clave 7</p>
+  <h2>La r del patrón y los errores comunes</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>La barra invertida significa algo en dos niveles</h3>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>Python</dt><dd>En una cadena normal inicia un escape: <code>"\n"</code> salto, <code>"\t"</code> tabulador, <code>"\b"</code> retroceso.</dd>
+        <dt>Módulo re</dt><dd>Inicia un símbolo: <code>\d</code> dígito, <code>\s</code> espacio, <code>\b</code> límite de palabra.</dd>
+      </dl>
+      <p style="font-size:.95rem">Con <code>r</code> (cadena cruda), el patrón llega al módulo <code>re</code> exactamente como se escribió. La <code>r</code> no forma parte del texto: <code>r"\d+"</code> sigue siendo <code>str</code>.</p>
+      <pre class="code" data-hl>len("\n")    # 1
+len(r"\n")   # 2</pre>
+    </div>
+    <div class="panel">
+      <h3>Cuándo cambia el resultado</h3>
+      <pre class="code" data-hl>texto = "sol soldado"
+re.findall(r"\bsol\b", texto)   # ['sol']</pre>
+      <p style="font-size:.95rem">Sin <code>r</code>, <code>"\d+"</code> todavía funciona, pero desde Python 3.12 muestra <code>SyntaxWarning: invalid escape sequence '\d'</code>. Depender de eso es mala práctica: con otros patrones falla. Alternativa sin <code>r</code>: duplicar barras, <code>"\\d+"</code>, aunque se lee peor.</p>
+    </div>
+  </div>
+  <div class="errs">
+    <div><b>Sin r</b><code>"\b"</code> se vuelve retroceso y el patrón falla.</div>
+    <div><b>match() ≠ buscar</b><code>match()</code> solo revisa el inicio del texto.</div>
+    <div><b>Validar con search()</b>"abc123xyz" pasaría como número. Usa <code>fullmatch()</code>.</div>
+    <div><b>AttributeError</b>Usar <code>.group()</code> sobre <code>None</code>.</div>
+    <div><b>Sin escapar</b>El patrón <code>3.5</code> también toma "3x5"; lo correcto es <code>3\.5</code>.</div>
+    <div><b>+ contra *</b><code>\d*</code> también coincide con cadenas vacías.</div>
+    <div><b>Cadenas, no enteros</b><code>findall()</code> devuelve <code>str</code>; convierte con <code>int()</code>.</div>
+    <div><b>re.error</b>Paréntesis o corchetes sin cerrar.</div>
+    <div><b>Codicioso</b><code>.*</code> toma lo más posible; <code>.*?</code> toma lo menos posible.</div>
+  </div>
+  <div class="activity mc" data-correct="d">
+    <span class="tag">Actividad 4 · Opción múltiple</span>
+    <p class="q">¿Qué devuelve esta instrucción, escrita sin cadena cruda?</p>
+    <pre class="code" data-hl>re.findall("\bsol\b", "sol soldado")</pre>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: ese sería el resultado con r&quot;\bsol\b&quot;; sin la r, Python convierte &quot;\b&quot; en retroceso antes de que llegue al módulo re."><span class="k">A</span><code>['sol']</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: ni siquiera con límites de palabra se tomaría &quot;sol&quot; dentro de &quot;soldado&quot;; y aquí no hay límites de palabra."><span class="k">B</span><code>['sol', 'sol']</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: el patrón es válido para re; solo cambió su significado. re.error aparece con paréntesis o corchetes sin cerrar."><span class="k">C</span>Se lanza <code>re.error</code></button>
+      <button class="opt" data-k="d" data-why="Correcto: &quot;\b&quot; se volvió el carácter de retroceso, que no aparece en el texto; no hay coincidencias y findall() devuelve una lista vacía."><span class="k">D</span><code>[]</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-n="9" aria-label="Diapositiva 9" hidden>
+  <p class="eyebrow">Autoevaluación</p>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p class="lead">Cinco reactivos. Cada respuesta queda fija al elegirla; al final verás tus aciertos. Todos suponen <code>import re</code>.</p>
+  <div class="quiz" id="quiz">
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 1</span>
+      <p class="q">¿Qué devuelve esta instrucción?</p>
+      <pre class="code" data-hl>re.sub(r"\d", "#", "Grupo 307-A")</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: un solo # por número sería el resultado de \d+; \d reemplaza dígito por dígito."><span class="k">A</span><code>'Grupo #-A'</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: \d corresponde a dígitos, no a letras; la A se conserva."><span class="k">B</span><code>'Grupo 307-#'</code></button>
+        <button class="opt" data-k="c" data-why="Correcto: cada uno de los tres dígitos se reemplaza por # y el resto del texto se conserva."><span class="k">C</span><code>'Grupo ###-A'</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: sub() devuelve el texto completo con los reemplazos, no solo la parte reemplazada."><span class="k">D</span><code>'###'</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 2</span>
+      <p class="q">¿Qué instrucción verifica que la cadena <code>tel</code> tenga exactamente 10 dígitos y nada más?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: fullmatch() exige que todo el texto cumpla el patrón de 10 dígitos."><span class="k">A</span><code>re.fullmatch(r"\d{10}", tel)</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: search() acepta 10 dígitos en cualquier parte, aunque sobren letras o más dígitos."><span class="k">B</span><code>re.search(r"\d{10}", tel)</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: match() solo revisa el inicio; aceptaría &quot;1234567890xyz&quot;."><span class="k">C</span><code>re.match(r"\d{10}", tel)</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: findall() devuelve una lista de coincidencias; no comprueba que el texto completo cumpla."><span class="k">D</span><code>re.findall(r"\d{10}", tel)</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="d" data-quiz>
+      <span class="tag">Reactivo 3</span>
+      <p class="q">¿Qué devuelve esta instrucción?</p>
+      <pre class="code" data-hl>re.match(r"\d+", "abc123")</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: encontrar &quot;123&quot; en medio del texto es lo que hace search()."><span class="k">A</span>Un Match con "123"</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: el texto no está formado solo por dígitos, así que no puede coincidir completo."><span class="k">B</span>Un Match con "abc123"</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: una lista de coincidencias la devuelve findall()."><span class="k">C</span>La lista <code>['123']</code></button>
+        <button class="opt" data-k="d" data-why="Correcto: match() solo revisa el inicio del texto, y &quot;abc123&quot; empieza con letras."><span class="k">D</span>El valor <code>None</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="b" data-quiz>
+      <span class="tag">Reactivo 4</span>
+      <p class="q">¿Qué devuelve esta instrucción?</p>
+      <pre class="code" data-hl>re.findall(r"&lt;.*?&gt;", "&lt;a&gt;&lt;b&gt;")</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: tomar todo de una vez es el comportamiento codicioso de .*; el ? lo hace tomar lo menos posible."><span class="k">A</span><code>['&lt;a&gt;&lt;b&gt;']</code></button>
+        <button class="opt" data-k="b" data-why="Correcto: .*? toma lo menos posible, así que cada etiqueta es una coincidencia distinta."><span class="k">B</span><code>['&lt;a&gt;', '&lt;b&gt;']</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: sin grupos ( ), findall() devuelve la coincidencia completa, con los signos &lt; y &gt;."><span class="k">C</span><code>['a', 'b']</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: findall() devuelve todas las coincidencias, no solo la primera."><span class="k">D</span><code>['&lt;a&gt;']</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 5</span>
+      <p class="q">¿Qué muestra este código?</p>
+      <pre class="code" data-hl>numeros = re.findall(r"\d+", "5 y 10")
+print(numeros[0] + numeros[1])</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: los elementos son cadenas; el + las concatena: &quot;5&quot; + &quot;10&quot; da &quot;510&quot;."><span class="k">A</span><code>510</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: para sumar 15 habría que convertir antes con int()."><span class="k">B</span><code>15</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: la concatenación no inserta espacios entre las cadenas."><span class="k">C</span><code>5 10</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: sumar dos cadenas con + es válido en Python; el error aparecería al mezclar str con int."><span class="k">D</span><code>TypeError</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel row" style="justify-content:space-between">
+    <span class="score" id="score" aria-live="polite">Aciertos: 0 / 5</span>
+    <button class="btn" id="quizReset">Reiniciar autoevaluación</button>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-n="10" aria-label="Diapositiva 10" hidden>
+  <p class="eyebrow">Resumen</p>
+  <h2>Lo esencial de las expresiones regulares</h2>
+  <div class="summary">
+    <div><h3>El patrón</h3><p>Clases (<code>\d \w \s</code>), cuantificadores (<code>+ * ? {n}</code>) y anclas (<code>^ $ \b</code>). Escapa los especiales.</p></div>
+    <div><h3>La función</h3><p><code>findall()</code> extrae todo, <code>search()</code> la primera, <code>fullmatch()</code> valida, <code>sub()</code> reemplaza y <code>split()</code> divide.</p></div>
+    <div><h3>El resultado</h3><p>Verifica que no sea <code>None</code> antes de usar <code>.group()</code>. Convierte con <code>int()</code> antes de calcular.</p></div>
+    <div><h3>La r</h3><p>Escribe siempre los patrones como cadenas crudas: <code>r"..."</code>.</p></div>
+  </div>
+  <div class="panel">
+    <h3>Para practicar</h3>
+    <ol class="plain">
+      <li>Extrae todas las palabras de una oración y muestra cuántas son.</li>
+      <li>Obtén todos los números de un texto y calcula su suma.</li>
+      <li>Valida que un número telefónico tenga exactamente 10 dígitos.</li>
+      <li>Reemplaza todos los dígitos de un texto por el carácter "#".</li>
+      <li>Extrae todas las fechas con formato dd/mm/aaaa de un párrafo.</li>
+      <li>Valida un código de grupo de 3 dígitos, guion y 1 letra mayúscula (ejemplo: 307-A).</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h3>Fuentes</h3>
+    <ul class="refs">
+      <li>Cairó, O. (2005). <i>Metodología de la programación: Algoritmos, diagramas de flujo y programas</i> (3.ª ed.). Alfaomega.</li>
+      <li><i>Guía express: Expresiones regulares en Python</i> [Material didáctico no publicado]. (2026). Unidad de aprendizaje Programación básica, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</li>
+    </ul>
+  </div>
+</section>
+
+    </div></div>
+  </main>
+
+  <footer class="bottom band">
+    <div class="inner">
+      <button class="btn" id="prev">← Anterior</button>
+      <span class="hint">Usa ← → para navegar · Esc cierra la ficha</span>
+      <button class="btn primary" id="next">Siguiente →</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle" hidden>
+  <div class="sheet">
+    <header>
+      <div><p class="eyebrow">Ficha del recurso</p><h2 id="fichaTitle" style="font-size:1.4rem">Patrones que leen texto: expresiones regulares en Python</h2></div>
+      <button class="btn" id="fichaClose" aria-label="Cerrar ficha">Cerrar ✕</button>
+    </header>
+    <dl>
+      <div><dt>Objetivo de aprendizaje</dt><dd>Aplicar las funciones del módulo re (findall, search, fullmatch, sub y split) con patrones de símbolos básicos para extraer, validar y transformar texto en Python, prediciendo el resultado de cada llamada.</dd></div>
+      <div><dt>Autores</dt><dd>Dra. Perla Marlene Viera González, Dr. Guillermo Ezequiel Sanchez Guerrero, Dr. Yazmany Jahaziel Guerrero Ceja, Mtro. Osvaldo Habib González González</dd></div>
+      <div><dt>Unidad de aprendizaje</dt><dd>Programación básica · Tema: Expresiones regulares</dd></div>
+      <div><dt>Palabras clave</dt><dd class="chips"><span>expresiones regulares</span><span>módulo re</span><span>cuantificadores</span><span>fullmatch()</span><span>cadena cruda</span></dd></div>
+      <div><dt>Descripción</dt><dd>El estudiante aprende a construir patrones con símbolos básicos y a aplicarlos con el módulo re de Python para buscar, extraer, validar, reemplazar y dividir texto, y comprende por qué los patrones se escriben como cadenas crudas. Interactúa con un probador de patrones, un explorador de funciones, un algoritmo vinculado a su código, una ejecución paso a paso y actividades con retroalimentación inmediata. Tiempo estimado: 35 minutos.</dd></div>
+      <div><dt>Audiencia</dt><dd>Estudiantes universitarios de unidades de aprendizaje relacionadas con las ciencias exactas.</dd></div>
+      <div><dt>Competencias que desarrolla el estudiante</dt><dd><ol>
+        <li>Seleccionar la función del módulo re (findall, search, match, fullmatch, sub o split) adecuada para cada problema de búsqueda, validación o transformación de texto, anticipando resultados como None o listas vacías.<span class="align">Alineada con: Emplear pensamiento lógico, crítico, creativo y propositivo…</span></li>
+        <li>Construir patrones con clases de caracteres, cuantificadores y anclas, y representar un proceso de extracción mediante un algoritmo estilo Cairó y su código Python equivalente.<span class="align">Alineada con: Utilizar los lenguajes lógico, formal, matemático, icónico, verbal y no verbal…</span></li>
+        <li>Programar en Python búsquedas, validaciones y reemplazos con patrones escritos como cadenas crudas, convirtiendo los resultados con int() y rastreando en una tabla de memoria el efecto de cada instrucción.<span class="align">Alineada con: Desarrollar tecnologías computacionales utilizando herramientas de software…</span></li>
+      </ol></dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  /* ---------- resaltado de sintaxis propio ---------- */
+  var KW = {"with":1,"as":1,"for":1,"in":1,"try":1,"except":1,"import":1,"if":1,"else":1,"def":1,"return":1,"None":1};
+  var BI = {"open":1,"print":1,"str":1,"len":1,"int":1,"sum":1,"input":1,"float":1};
+  function hl(src){
+    var re = /(#[^\n]*)|([rRb]?"(?:[^"\\\n]|\\.)*"|[rRb]?'(?:[^'\\\n]|\\.)*')|([A-Za-z_]\w*)|(\d+)/g;
+    var out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += '<span class="t-com">' + esc(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="t-str">' + esc(m[2]) + '</span>';
+      else if (m[3]) {
+        var w = m[3];
+        if (KW[w]) out += '<span class="t-kw">' + w + '</span>';
+        else if (BI[w] && src.charAt(re.lastIndex) === "(") out += '<span class="t-bi">' + w + '</span>';
+        else if (src.charAt(m.index - 1) === "." && src.charAt(re.lastIndex) === "(") out += '<span class="t-fn">' + w + '</span>';
+        else out += w;
+      } else out += '<span class="t-num">' + m[4] + '</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  $$("pre[data-hl]").forEach(function(p){ p.innerHTML = hl(p.textContent); });
+
+  /* ---------- navegación ---------- */
+  var slides = $$(".slide"), total = slides.length, cur = 0;
+  var stage = $("#stage"), prevB = $("#prev"), nextB = $("#next");
+  function go(i){
+    if (i < 0 || i >= total) return;
+    slides[cur].hidden = true; cur = i; slides[cur].hidden = false;
+    $("#counter").textContent = (cur + 1) + " / " + total;
+    $("#bar").style.width = ((cur + 1) / total * 100) + "%";
+    prevB.disabled = cur === 0; nextB.disabled = cur === total - 1;
+    stage.scrollTop = 0;
+  }
+  prevB.addEventListener("click", function(){ go(cur - 1); });
+  nextB.addEventListener("click", function(){ go(cur + 1); });
+  $$("[data-go]").forEach(function(b){ b.addEventListener("click", function(){ go(+b.getAttribute("data-go") - 1); }); });
+
+  /* ---------- ficha ---------- */
+  var ficha = $("#ficha"), fichaBtn = $("#fichaBtn");
+  function openFicha(){ ficha.hidden = false; $("#fichaClose").focus(); }
+  function closeFicha(){ ficha.hidden = true; fichaBtn.focus(); }
+  fichaBtn.addEventListener("click", function(){ ficha.hidden ? openFicha() : closeFicha(); });
+  $("#fichaClose").addEventListener("click", closeFicha);
+  ficha.addEventListener("click", function(e){ if (e.target === ficha) closeFicha(); });
+
+  document.addEventListener("keydown", function(e){
+    if (!ficha.hidden) { if (e.key === "Escape") { e.preventDefault(); closeFicha(); } return; }
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  /* ---------- opción múltiple ---------- */
+  function mcSetup(box){
+    var correct = box.getAttribute("data-correct"), quiz = box.hasAttribute("data-quiz");
+    var opts = $$(".opt", box), fb = $(".fb", box);
+    box._answered = false; box._right = false;
+    function reset(){
+      opts.forEach(function(o){ o.disabled = false; o.classList.remove("ok","bad"); });
+      fb.innerHTML = ""; box._answered = false; box._right = false;
+    }
+    box._reset = reset;
+    opts.forEach(function(o){
+      o.addEventListener("click", function(){
+        if (box._answered) return;
+        var k = o.getAttribute("data-k"), right = k === correct;
+        box._answered = true; box._right = right;
+        opts.forEach(function(x){ x.disabled = true; });
+        o.classList.add(right ? "ok" : "bad");
+        $$(".opt[data-k='" + correct + "']", box)[0].classList.add("ok");
+        var html = '<p class="verdict ' + (right ? "ok" : "bad") + '">' + (right ? "¡Correcto!" : "Respuesta incorrecta.") + '</p><ul class="why">';
+        opts.forEach(function(x){
+          var kk = x.getAttribute("data-k");
+          html += '<li class="' + (kk === correct ? "c" : "") + '"><strong>' + kk.toUpperCase() + ':</strong> ' + esc(x.getAttribute("data-why")) + '</li>';
+        });
+        html += '</ul>';
+        if (!quiz) html += '<div><button class="btn retry">Intentar de nuevo</button></div>';
+        fb.innerHTML = html;
+        var r = $(".retry", fb); if (r) r.addEventListener("click", function(){ reset(); opts[0].focus(); });
+        if (quiz) updateScore();
+      });
+    });
+  }
+  $$(".mc").forEach(mcSetup);
+
+  var qItems = $$(".quiz-item");
+  function updateScore(){
+    var done = 0, ok = 0;
+    qItems.forEach(function(q){ if (q._answered) { done++; if (q._right) ok++; } });
+    var s = "Aciertos: " + ok + " / " + qItems.length;
+    if (done === qItems.length) s += ok === qItems.length ? " · ¡Excelente!" : ok >= 3 ? " · Buen trabajo; repasa los reactivos fallados." : " · Repasa las diapositivas 4, 7 y 8.";
+    $("#score").textContent = s;
+  }
+  $("#quizReset").addEventListener("click", function(){ qItems.forEach(function(q){ q._reset(); }); updateScore(); });
+
+  /* ---------- probador de patrones ---------- */
+  var PRESETS = ["\\d+", "\\d{2}", "\\bsol\\b", "colou?r", "3.5", "3\\.5", "[aeiou]", "[A-Z]", "\\s+"];
+  var pat = $("#pat"), txt = $("#txt");
+  $("#presets").innerHTML = PRESETS.map(function(p){ return '<button type="button" data-p="' + esc(p) + '" aria-pressed="false">' + esc(p) + '</button>'; }).join("");
+  function pyList(arr){ return "[" + arr.map(function(s){ return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'"; }).join(", ") + "]"; }
+  function runTester(){
+    var p = pat.value, t = txt.value, prev = $("#tPrev"), res = $("#tRes");
+    $$("#presets button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-p") === p ? "true" : "false"); });
+    var rx;
+    try { rx = new RegExp(p, "g"); } catch (e) {
+      prev.textContent = t; res.className = "pyres err"; res.textContent = "re.error: el patrón no es válido (revisa paréntesis, corchetes o barras invertidas)."; return;
+    }
+    var html = "", last = 0, found = [], m, guard = 0;
+    rx.lastIndex = 0;
+    while ((m = rx.exec(t)) && guard++ < 2000) {
+      found.push(m[0]);
+      if (m[0].length) { html += esc(t.slice(last, m.index)) + "<mark>" + esc(m[0]) + "</mark>"; last = m.index + m[0].length; }
+      else rx.lastIndex++;
+    }
+    html += esc(t.slice(last));
+    prev.innerHTML = html || "&nbsp;";
+    res.className = "pyres";
+    res.textContent = 're.findall(r"' + p + '", texto) → ' + pyList(found) + "  (" + found.length + " coincidencia" + (found.length === 1 ? "" : "s") + ")";
+  }
+  $$("#presets button").forEach(function(b){ b.addEventListener("click", function(){ pat.value = b.getAttribute("data-p"); runTester(); }); });
+  pat.addEventListener("input", runTester); txt.addEventListener("input", runTester);
+  runTester();
+
+  /* ---------- explorador de funciones ---------- */
+  var FT = 'texto = "abc123 xyz45"\n';
+  var FNS = [
+    { n: "search", code: 're.search(r"\\d+", texto)', res: '&lt;re.Match object; span=(3, 6), match=\'123\'&gt;', exp: "Devuelve la <strong>primera</strong> coincidencia, en cualquier parte del texto." },
+    { n: "match", code: 're.match(r"\\d+", texto)', res: "None", err: 1, exp: "Solo revisa el <strong>inicio</strong>, y el texto empieza con letras." },
+    { n: "fullmatch", code: 're.fullmatch(r"\\d+", texto)', res: "None", err: 1, exp: "Exige que <strong>todo</strong> el texto sean dígitos; sobran letras y el espacio." },
+    { n: "findall", code: 're.findall(r"\\d+", texto)', res: "['123', '45']", exp: "Devuelve una <strong>lista</strong> con todas las coincidencias, como cadenas." },
+    { n: "sub", code: 're.sub(r"\\d+", "#", texto)', res: "'abc# xyz#'", exp: "Devuelve un <strong>nuevo texto</strong> con cada coincidencia reemplazada." },
+    { n: "split", code: 're.split(r"\\s+", texto)', res: "['abc123', 'xyz45']", exp: "Divide el texto donde hay espacios y devuelve una <strong>lista</strong>." }
+  ];
+  var fnSel = "findall";
+  $("#fnBtns").innerHTML = FNS.map(function(f){ return '<button type="button" class="fn" data-fn="' + f.n + '" aria-pressed="false">' + f.n + '()</button>'; }).join("");
+  function renderFn(){
+    var f = FNS.filter(function(x){ return x.n === fnSel; })[0];
+    $$("#fnBtns button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-fn") === fnSel ? "true" : "false"); });
+    $("#fnCode").innerHTML = hl(FT + f.code);
+    var box = $("#fnRes");
+    box.className = "result" + (f.err ? " err" : "");
+    box.innerHTML = "<strong>" + f.res + "</strong><br>" + f.exp;
+  }
+  $$("#fnBtns button").forEach(function(b){ b.addEventListener("click", function(){ fnSel = b.getAttribute("data-fn"); renderFn(); }); });
+  renderFn();
+
+  /* ---------- revelar ---------- */
+  $("#revealBtn").addEventListener("click", function(){
+    var box = $("#revealBox"), open = box.hidden;
+    box.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false");
+    this.textContent = open ? "Ocultar respuesta" : "Revelar respuesta";
+  });
+
+  /* ---------- resaltado vinculado ---------- */
+  function setLinked(s){
+    $$("#alg li, #exp li").forEach(function(li){ li.classList.toggle("on", li.getAttribute("data-s") === s); });
+  }
+  $$("#alg li, #exp li").forEach(function(li){
+    li.addEventListener("click", function(){ setLinked(li.getAttribute("data-s")); });
+    li.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLinked(li.getAttribute("data-s")); } });
+  });
+  setLinked("4");
+
+  /* ---------- ejecución paso a paso ---------- */
+  var SCODE = [
+    'import re',
+    'texto = "El grupo tiene 35 estudiantes y 4 equipos"',
+    'numeros = re.findall(r"\\d+", texto)',
+    'print(numeros)',
+    'enteros = [int(n) for n in numeros]',
+    'print(sum(enteros))'
+  ];
+  var TXT = "El grupo tiene 35 estudiantes y 4 equipos";
+  var D = [
+    { line: 0, view: 0, note: "Estado inicial: el programa aún no se ejecuta." },
+    { line: 1, v: { re: "módulo re" }, note: "Se importa el módulo re. Es parte de la biblioteca estándar: no se instala, pero sí se importa." },
+    { line: 2, v: { texto: '"' + TXT + '"' }, view: 1, note: "texto guarda los datos de entrada donde se buscará el patrón." },
+    { line: 3, v: { numeros: "['35', '4']" }, view: 2, note: "findall() recorre texto y toma cada bloque de uno o más dígitos consecutivos. Devuelve una lista de cadenas." },
+    { line: 4, out: "['35', '4']", note: "print() muestra la lista. Las comillas indican que sus elementos son cadenas (str)." },
+    { line: 5, v: { n: "'35'", enteros: "[35]  (en construcción)" }, note: "Primera vuelta de la comprensión de lista: int('35') convierte la cadena en el entero 35." },
+    { line: 5, v: { n: "'4'", enteros: "[35, 4]" }, note: "Segunda vuelta: int('4') produce 4. Ahora enteros es una lista de enteros; n solo existe dentro de la comprensión." },
+    { line: 6, out: "39", note: "sum() suma los enteros: 35 + 4 = 39. Con las cadenas originales no se podría sumar así." },
+    { line: 0, note: "Fin del programa." }
+  ];
+  var VARS = ["re", "texto", "numeros", "n", "enteros"];
+  var blank = {}; VARS.forEach(function(v){ blank[v] = "—"; });
+  var S = [], st = { vals: Object.assign({}, blank), ant: Object.assign({}, blank), view: 0, out: [] };
+  D.forEach(function(d){
+    var n = { vals: Object.assign({}, st.vals), ant: Object.assign({}, st.ant), view: d.hasOwnProperty("view") ? d.view : st.view, out: st.out.slice(), chg: {}, line: d.line, note: d.note };
+    if (d.v) Object.keys(d.v).forEach(function(k){ n.ant[k] = n.vals[k]; n.vals[k] = d.v[k]; n.chg[k] = true; });
+    if (d.out) n.out.push(d.out);
+    S.push(n); st = n;
+  });
+  var sCode = $("#sCode");
+  sCode.innerHTML = SCODE.map(function(l, i){ return '<div class="ln" data-l="' + (i + 1) + '"><span class="no">' + (i + 1) + '</span><span>' + hl(l) + '</span></div>'; }).join("");
+  var MARKED = esc(TXT).replace(/\d+/g, function(x){ return "<mark>" + x + "</mark>"; });
+  var si = 0;
+  function renderStep(){
+    var s = S[si];
+    $$(".ln", sCode).forEach(function(el){ el.classList.toggle("exec", +el.getAttribute("data-l") === s.line); });
+    $("#sMem").innerHTML = VARS.map(function(v){
+      return '<tr class="' + (s.chg[v] ? "chg" : "") + '"><td>' + v + '</td><td>' + esc(s.vals[v]) + '</td><td>' + esc(s.ant[v]) + '</td></tr>';
+    }).join("");
+    $("#sFile").innerHTML = s.view === 0 ? '<span class="pr">(texto aún no definido)</span>' : s.view === 1 ? esc(TXT) + '\n<span class="pr">(aún no se aplica el patrón)</span>' : MARKED;
+    $("#sOut").innerHTML = s.out.length ? s.out.map(esc).join("\n") : '<span class="pr">(sin salida)</span>';
+    $("#sNote").textContent = (s.line ? "Línea " + s.line + ": " : "") + s.note;
+    $("#sCount").textContent = "Paso " + si + " de " + (S.length - 1);
+    $("#sPrev").disabled = si === 0; $("#sNext").disabled = si === S.length - 1;
+  }
+  $("#sPrev").addEventListener("click", function(){ if (si > 0) { si--; renderStep(); } });
+  $("#sNext").addEventListener("click", function(){ if (si < S.length - 1) { si++; renderStep(); } });
+  $("#sReset").addEventListener("click", function(){ si = 0; renderStep(); });
+  renderStep();
+
+  /* ---------- relacionar ---------- */
+  var PAIRS = [
+    { m: "re.search()", d: "Primera coincidencia en cualquier parte del texto", why: "search() busca en todo el texto y se detiene en la primera coincidencia." },
+    { m: "re.match()", d: "Coincidencia solo al inicio del texto", why: "match() únicamente revisa el comienzo del texto." },
+    { m: "re.fullmatch()", d: "Comprueba que todo el texto cumpla el patrón", why: "fullmatch() es la indicada para validar un formato completo." },
+    { m: "re.findall()", d: "Lista con todas las coincidencias", why: "findall() devuelve todas las coincidencias como cadenas, o [] si no hay." },
+    { m: "re.sub()", d: "Nuevo texto con las coincidencias reemplazadas", why: "sub() no modifica el original: devuelve un texto nuevo." },
+    { m: "re.split()", d: "Lista de fragmentos separados por las coincidencias", why: "split() corta el texto donde coincide el patrón." }
+  ];
+  var DESC = [3, 5, 0, 4, 2, 1].map(function(i){ return PAIRS[i].d; });
+  var mBox = $("#match");
+  mBox.innerHTML = PAIRS.map(function(p, i){
+    return '<div class="mrow"><code>' + p.m + '</code><select id="m' + i + '" aria-label="Descripción de ' + p.m + '"><option value="">Elige una descripción…</option>' +
+      DESC.map(function(d){ return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; }).join("") + '</select><span class="mark" id="mk' + i + '" aria-hidden="true"></span></div>';
+  }).join("");
+  $("#matchCheck").addEventListener("click", function(){
+    var ok = 0, html = '<ul class="why">';
+    PAIRS.forEach(function(p, i){
+      var sel = $("#m" + i).value, right = sel === p.d, mk = $("#mk" + i);
+      if (right) ok++;
+      mk.textContent = right ? "✓" : "✗"; mk.className = "mark " + (right ? "ok" : "bad");
+      html += '<li class="' + (right ? "c" : "") + '"><strong>' + p.m + ':</strong> ' + esc(p.why) + (right || !sel ? "" : " La descripción elegida corresponde a otra función.") + '</li>';
+    });
+    html += '</ul>';
+    $("#matchFb").innerHTML = '<p class="verdict ' + (ok === PAIRS.length ? "ok" : "bad") + '">' + ok + ' de ' + PAIRS.length + ' relaciones correctas.</p>' + html;
+  });
+  $("#matchReset").addEventListener("click", function(){
+    PAIRS.forEach(function(p, i){ $("#m" + i).value = ""; var mk = $("#mk" + i); mk.textContent = ""; mk.className = "mark"; });
+    $("#matchFb").innerHTML = "";
+  });
+
+  go(0);
+})();
+</script>
+
+</html>
