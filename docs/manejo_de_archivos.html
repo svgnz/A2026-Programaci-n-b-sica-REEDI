@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Abre, escribe y lee con open()</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: presentación a pantalla completa — barra superior (ficha + indicador), diapositiva desplazable, barra de navegación inferior */
+:root{
+  --bg:#EDF0F6; --surface:#FFFFFF; --ink:#16203A; --muted:#56617B; --line:#D2D8E5;
+  --accent:#2F5BD3; --accent-ink:#FFFFFF; --soft:#E1E8FB;
+  --ok:#1C7347; --ok-bg:#DFF2E8; --bad:#AE2A1F; --bad-bg:#FBE5E2;
+  --code-bg:#131B2F; --code-fg:#E4E9F5; --code-line:#26314D;
+  --exec:rgba(255,203,107,.20); --exec-bar:#F2B53C;
+  --t-kw:#C9A0F2; --t-str:#A9D98C; --t-fn:#86AEFF; --t-bi:#FFCF70; --t-num:#F79A78; --t-com:#8691AA;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+    --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+    --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+    --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+  --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+  --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+  --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.band{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.inner{max-width:1080px;margin:0 auto}
+
+/* barra superior */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px}
+.top .inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--accent);font-weight:600}
+.counter{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--muted)}
+.progress{height:3px;background:var(--line)}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+
+/* diapositivas */
+main{overflow-y:auto;overflow-x:hidden}
+main .inner{padding-block:28px 40px}
+.slide{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{font-size:1.12rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}
+.grid2>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.activity{border:2px solid var(--accent);background:var(--surface);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tag{align-self:flex-start;font-family:var(--f-mono);font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;background:var(--soft);color:var(--accent);padding:3px 9px;border-radius:4px}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.terms{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.terms dt{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.terms dd{margin:0}
+
+/* código */
+pre.code,.codebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.6;border-radius:8px;margin:0;overflow-x:auto}
+pre.code{padding:14px 16px;white-space:pre}
+.codebox .ln{display:flex;white-space:pre;padding:0 14px 0 0;border-left:3px solid transparent}
+.codebox .ln .no{display:inline-block;width:2.6em;text-align:right;padding-right:12px;color:var(--t-com);user-select:none;flex:none}
+.codebox .ln.exec{background:var(--exec);border-left-color:var(--exec-bar)}
+.codebox{padding-block:10px}
+.t-kw{color:var(--t-kw)} .t-str{color:var(--t-str)} .t-fn{color:var(--t-fn)} .t-bi{color:var(--t-bi)} .t-num{color:var(--t-num)} .t-com{color:var(--t-com);font-style:italic}
+
+/* botones */
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:7px;font-weight:700;font-size:.95rem}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* opción múltiple */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:baseline}
+.opt .k{font-family:var(--f-mono);font-weight:600;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{display:flex;flex-direction:column;gap:8px}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.why{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:.95rem}
+.why li.c{color:var(--ok)}
+
+/* explorador de modos */
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.modes button{font-family:var(--f-mono);font-weight:600;min-width:58px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:7px;padding:8px 12px}
+.modes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.switch{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+.switch button{border:0;background:var(--bg);color:var(--ink);padding:8px 12px;font-size:.92rem}
+.switch button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:700}
+.result{border-left:4px solid var(--accent);background:var(--soft);padding:12px 14px;border-radius:0 8px 8px 0}
+.result.err{border-left-color:var(--bad);background:var(--bad-bg)}
+.result strong{font-family:var(--f-mono)}
+
+/* resaltado vinculado */
+.alg{list-style:none;margin:0;padding:10px 0;font-family:var(--f-mono);font-size:.9rem;background:var(--code-bg);color:var(--code-fg);border-radius:8px;overflow-x:auto}
+.alg li,.exp li{cursor:pointer}
+.alg li{padding:3px 14px;border-left:3px solid transparent;white-space:pre}
+.alg li .no{color:var(--t-com);display:inline-block;width:2em}
+.alg li.on{background:var(--exec);border-left-color:var(--exec-bar)}
+.exp{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.exp li{border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--bg);font-size:.95rem}
+.exp li.on{border-color:var(--exec-bar);background:var(--surface);box-shadow:0 0 0 2px var(--exec)}
+.exp li b{font-family:var(--f-mono);color:var(--accent)}
+
+/* paso a paso */
+.stepper{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.stepper>*{min-width:0}
+.mem{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+.mem th,.mem td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.mem th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mem td{font-family:var(--f-mono);word-break:break-word}
+.mem tr.chg td{background:var(--exec)}
+.mem tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--exec-bar)}
+.tablewrap{overflow-x:auto}
+.console,.filebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.86rem;border-radius:8px;padding:10px 14px;min-height:3.2em;white-space:pre-wrap;word-break:break-word}
+.console .pr{color:var(--t-com)}
+.nl{color:var(--t-num);font-size:.8em}
+.note{background:var(--soft);border-radius:8px;padding:10px 14px;font-size:.95rem}
+.stepcount{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.minilabel{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:0}
+
+/* relacionar */
+.match{display:flex;flex-direction:column;gap:10px}
+.match .mrow{display:grid;grid-template-columns:minmax(110px,auto) 1fr auto;gap:10px;align-items:center}
+.match select{font:inherit;font-size:.95rem;padding:7px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.match .mark{font-weight:700;width:1.4em;text-align:center}
+.mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+@media (max-width:520px){.match .mrow{grid-template-columns:1fr auto}.match .mrow code{grid-column:1/-1;justify-self:start}}
+
+/* errores */
+.errs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.errs div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface);font-size:.94rem}
+.errs b{font-family:var(--f-mono);color:var(--bad);display:block;font-size:.85rem}
+
+/* autoevaluación */
+.score{font-family:var(--f-display);font-size:1.3rem;font-weight:800}
+.quiz{display:flex;flex-direction:column;gap:16px}
+
+/* resumen */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.summary div{border-top:3px solid var(--accent);background:var(--surface);padding:12px 14px;border-radius:0 0 8px 8px}
+.refs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.refs li{padding-left:2em;text-indent:-2em;font-size:.95rem}
+
+/* portada */
+.cover{display:flex;flex-direction:column;gap:22px;padding-top:2vh}
+.cover .obj{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:760px}
+.prompt-line{font-family:var(--f-mono);font-size:.95rem;color:var(--muted)}
+.prompt-line .cur{display:inline-block;width:.6em;height:1.05em;background:var(--accent);vertical-align:-.15em;margin-left:2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.prompt-line .cur{animation:none}.progress span{transition:none}}
+.authors{font-size:.95rem;color:var(--muted)}
+
+/* barra inferior */
+.bottom{background:var(--surface);border-top:1px solid var(--line);padding-block:10px}
+.bottom .inner{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hint{font-size:.8rem;color:var(--muted)}
+@media (max-width:520px){.hint{display:none}}
+
+/* ficha */
+.overlay{position:fixed;inset:0;background:rgba(8,12,24,.55);display:flex;justify-content:flex-end;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:min(560px,100%);height:100%;overflow-y:auto;padding:22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) 22px;padding-top:calc(22px + env(safe-area-inset-top, 0px));display:flex;flex-direction:column;gap:14px}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet dl{margin:0;display:flex;flex-direction:column;gap:12px}
+.sheet dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.sheet dd{margin:2px 0 0}
+.sheet ol{margin:4px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+.sheet .align{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chips span{font-family:var(--f-mono);font-size:.8rem;background:var(--soft);color:var(--accent);padding:2px 8px;border-radius:4px}
+</style>
+
+<div class="app">
+  <header class="top band">
+    <div class="inner">
+      <div class="brand"><b>open()</b> · Programación básica · Manejo de archivos</div>
+      <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+      <button class="btn" id="fichaBtn" aria-haspopup="dialog" aria-controls="ficha">Ficha del recurso</button>
+    </div>
+  </header>
+
+  <main id="stage" tabindex="-1">
+    <div class="progress"><span id="bar" style="width:10%"></span></div>
+    <div class="band"><div class="inner">
+
+<!-- 1 -->
+<section class="slide cover" data-n="1" aria-label="Diapositiva 1">
+  <p class="prompt-line">&gt;&gt;&gt; open("mensaje.txt", "w", encoding="utf-8")<span class="cur"></span></p>
+  <h1>Abre, escribe y lee: archivos en Python con open()</h1>
+  <div class="obj">
+    <p class="eyebrow">Objetivo de aprendizaje</p>
+    <p>Aplicar la función <code>open()</code> con el modo de apertura adecuado para escribir, agregar y leer archivos de texto en Python, a partir de problemas con código breve y prediciendo los errores que puede producir.</p>
+  </div>
+  <p class="authors">Dra. Perla Marlene Viera González · Dr. Guillermo Ezequiel Sanchez Guerrero · Dr. Yazmany Jahaziel Guerrero Ceja · Mtro. Osvaldo Habib González González</p>
+  <div class="row"><button class="btn primary" data-go="2">Comenzar</button><span class="hint">También puedes usar las flechas ← → del teclado.</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-n="2" aria-label="Diapositiva 2" hidden>
+  <p class="eyebrow">Idea clave 1</p>
+  <h2>¿Qué hace la función open()?</h2>
+  <p class="lead">Abre un archivo para leer, escribir o agregar contenido, y devuelve un <strong>objeto archivo</strong>. Con ese objeto se trabaja mediante métodos como <code>read()</code>, <code>write()</code> y <code>close()</code>.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Sintaxis básica</h3>
+      <pre class="code" data-hl>open("nombre_archivo.txt", "modo", encoding="utf-8")</pre>
+    </div>
+    <div class="panel">
+      <h3>Sus tres partes</h3>
+      <dl class="terms">
+        <dt>"nombre_archivo.txt"</dt><dd>Nombre del archivo y, opcionalmente, su ruta.</dd>
+        <dt>"modo"</dt><dd>Operación que se realizará: leer, escribir, agregar o crear.</dd>
+        <dt>encoding="utf-8"</dt><dd>Codificación del texto. Especifícala siempre: la codificación por defecto depende del sistema operativo y puede dañar acentos y la "ñ".</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Ejemplo</h3>
+    <pre class="code" data-hl>archivo = open("mensaje.txt", "w", encoding="utf-8")   # objeto archivo
+archivo.write("Hola, Python")
+archivo.close()</pre>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3" aria-label="Diapositiva 3" hidden>
+  <p class="eyebrow">Idea clave 2</p>
+  <h2>El modo define la operación</h2>
+  <p class="lead">Elige un modo y la situación del archivo para ver qué hace Python. Si no indicas modo, se usa <code>"r"</code> (lectura en modo texto).</p>
+  <div class="panel">
+    <div class="row">
+      <div class="modes" role="group" aria-label="Modo de apertura">
+        <button type="button" data-mode="r" aria-pressed="true">"r"</button>
+        <button type="button" data-mode="w" aria-pressed="false">"w"</button>
+        <button type="button" data-mode="a" aria-pressed="false">"a"</button>
+        <button type="button" data-mode="x" aria-pressed="false">"x"</button>
+      </div>
+      <div class="switch" role="group" aria-label="Situación del archivo">
+        <button type="button" data-exists="1" aria-pressed="true">El archivo existe</button>
+        <button type="button" data-exists="0" aria-pressed="false">No existe</button>
+      </div>
+    </div>
+    <pre class="code" id="modeCode"></pre>
+    <div class="result" id="modeResult" aria-live="polite"></div>
+    <p style="font-size:.93rem;color:var(--muted)">Modificadores: <code>"t"</code> texto (por defecto, <code>"rt"</code> = <code>"r"</code>) · <code>"b"</code> binario para imágenes, audio o PDF (<code>"rb"</code>) · <code>"+"</code> lectura y escritura a la vez (<code>"r+"</code>: el archivo debe existir y no se borra).</p>
+  </div>
+  <div class="activity mc" data-correct="b">
+    <span class="tag">Actividad 1 · Opción múltiple</span>
+    <p class="q">Un programa registra cada día una nueva línea en <code>bitacora.txt</code> y debe conservar las líneas de los días anteriores. El primer día el archivo todavía no existe. ¿Qué modo de apertura corresponde?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: &quot;w&quot; borra el contenido existente cada vez que se abre; solo quedaría la línea del día."><span class="k">A</span><code>"w"</code></button>
+      <button class="opt" data-k="b" data-why="Correcto: &quot;a&quot; agrega al final y conserva lo anterior; si el archivo no existe, lo crea."><span class="k">B</span><code>"a"</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: &quot;r+&quot; exige que el archivo exista; el primer día produciría FileNotFoundError."><span class="k">C</span><code>"r+"</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: &quot;x&quot; funciona el primer día, pero desde el segundo produce FileExistsError."><span class="k">D</span><code>"x"</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4" aria-label="Diapositiva 4" hidden>
+  <p class="eyebrow">Idea clave 3</p>
+  <h2>¿Dónde busca Python el archivo?</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Ruta relativa</h3>
+      <p>Se busca a partir del directorio de trabajo actual.</p>
+      <pre class="code" data-hl>open("datos/mensaje.txt", "r")</pre>
+      <p>Para conocer ese directorio:</p>
+      <pre class="code" data-hl>import os
+print(os.getcwd())</pre>
+    </div>
+    <div class="panel">
+      <h3>Ruta absoluta</h3>
+      <p>Indica la ubicación completa.</p>
+      <pre class="code" data-hl>open("C:/Usuarios/Ana/mensaje.txt", "r")   # Windows
+open("/home/ana/mensaje.txt", "r")         # Linux/macOS</pre>
+      <p>En Windows, la diagonal invertida <code>\</code> puede formar secuencias de escape como <code>\n</code> o <code>\t</code>. Usa diagonal normal o una cadena cruda con prefijo <code>r</code>.</p>
+    </div>
+  </div>
+  <div class="activity">
+    <span class="tag">Actividad 2 · Revelar respuesta</span>
+    <p>Un estudiante ejecuta esta instrucción en Windows y el archivo no aparece donde esperaba. Analiza la cadena de la ruta: ¿qué problema tiene y cómo se corrige?</p>
+    <pre class="code" data-hl>open("C:\Usuarios\nuevo.txt", "w", encoding="utf-8")</pre>
+    <div class="row"><button class="btn primary" id="revealBtn" aria-expanded="false" aria-controls="revealBox">Revelar respuesta</button></div>
+    <div id="revealBox" class="note" hidden>
+      <p><strong>Problema:</strong> dentro de la cadena, <code>\n</code> de <code>\nuevo.txt</code> se interpreta como un salto de línea, no como la diagonal seguida de la letra n. La ruta resultante no es la que se escribió.</p>
+      <p style="margin-top:8px"><strong>Corrección</strong> (cualquiera de las dos):</p>
+      <pre class="code" data-hl style="margin-top:6px">open("C:/Usuarios/nuevo.txt", "w", encoding="utf-8")
+open(r"C:\Usuarios\nuevo.txt", "w", encoding="utf-8")</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5" aria-label="Diapositiva 5" hidden>
+  <p class="eyebrow">Idea clave 4</p>
+  <h2>Del algoritmo al código: escribir un mensaje</h2>
+  <p class="lead">Problema: crear <code>mensaje.txt</code> y guardar en él "Hola, Python". Selecciona un paso del algoritmo o de la explicación para ver su correspondencia.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Algoritmo ESCRIBIR_MENSAJE <span style="font-weight:400;color:var(--muted);font-size:.85rem">(estilo Cairó)</span></h3>
+      <ol class="alg" id="alg">
+        <li data-s="1" tabindex="0"><span class="no">1.</span>Inicio</li>
+        <li data-s="2" tabindex="0"><span class="no">2.</span>NOMBRE &lt;- "mensaje.txt"</li>
+        <li data-s="3" tabindex="0"><span class="no">3.</span>MENSAJE &lt;- "Hola, Python"</li>
+        <li data-s="4" tabindex="0"><span class="no">4.</span>ARCHIVO &lt;- Abrir NOMBRE en modo escritura</li>
+        <li data-s="5" tabindex="0"><span class="no">5.</span>Escribir MENSAJE en ARCHIVO</li>
+        <li data-s="6" tabindex="0"><span class="no">6.</span>Cerrar ARCHIVO</li>
+        <li data-s="7" tabindex="0"><span class="no">7.</span>Fin</li>
+      </ol>
+      <p class="minilabel">Descripción de variables</p>
+      <dl class="terms" style="font-size:.92rem">
+        <dt>NOMBRE</dt><dd>Cadena. Nombre del archivo que se creará.</dd>
+        <dt>MENSAJE</dt><dd>Cadena. Texto que se guardará.</dd>
+        <dt>ARCHIVO</dt><dd>Objeto archivo. Referencia al archivo abierto.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>¿Qué ocurre en cada paso?</h3>
+      <ul class="exp" id="exp">
+        <li data-s="1" tabindex="0"><b>Paso 1</b> · Comienza el proceso.</li>
+        <li data-s="2" tabindex="0"><b>Paso 2</b> · Se asigna el nombre del archivo. En el código Python aparece como primer argumento de <code>open()</code>.</li>
+        <li data-s="3" tabindex="0"><b>Paso 3</b> · Se asigna el texto. En Python es el argumento de <code>write()</code>.</li>
+        <li data-s="4" tabindex="0"><b>Paso 4</b> · <code>archivo = open("mensaje.txt", "w", encoding="utf-8")</code> abre o crea el archivo y guarda el objeto archivo.</li>
+        <li data-s="5" tabindex="0"><b>Paso 5</b> · <code>archivo.write("Hola, Python")</code> escribe el texto. No agrega salto de línea.</li>
+        <li data-s="6" tabindex="0"><b>Paso 6</b> · <code>archivo.close()</code> vacía la escritura pendiente en disco y libera el recurso.</li>
+        <li data-s="7" tabindex="0"><b>Paso 7</b> · Termina: <code>mensaje.txt</code> contiene "Hola, Python".</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6" aria-label="Diapositiva 6" hidden>
+  <p class="eyebrow">Idea clave 5</p>
+  <h2>with open(): ejecución paso a paso</h2>
+  <p class="lead"><code>with open()</code> cierra el archivo automáticamente al terminar el bloque, incluso si ocurre una excepción. Avanza línea por línea y observa la memoria, el archivo y la consola.</p>
+  <div class="stepper">
+    <div class="panel">
+      <div class="codebox" id="sCode" aria-label="Código del programa"></div>
+      <div class="row">
+        <button class="btn" id="sPrev">← Anterior</button>
+        <button class="btn primary" id="sNext">Siguiente →</button>
+        <button class="btn" id="sReset">Reiniciar</button>
+        <span class="stepcount" id="sCount"></span>
+      </div>
+      <div class="note" id="sNote" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <p class="minilabel">Tabla de memoria</p>
+      <div class="tablewrap">
+        <table class="mem"><thead><tr><th>Variable</th><th>Valor actual</th><th>Valor anterior</th></tr></thead><tbody id="sMem"></tbody></table>
+      </div>
+      <p class="minilabel">Contenido de numeros.txt</p>
+      <div class="filebox" id="sFile"></div>
+      <p class="minilabel">Salida en consola</p>
+      <div class="console" id="sOut"></div>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="c">
+    <span class="tag">Pregunta de predicción</span>
+    <p class="q">En el programa anterior, ¿qué valor tendrá <code>linea</code> después de que la línea 7 se ejecute por <strong>cuarta</strong> vez? Responde antes de avanzar el código hasta ese punto.</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: el salto de línea solo se elimina en la línea 8 con strip(); en la línea 7 linea aún lo conserva."><span class="k">A</span><code>"Cuatro"</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: ese es el valor de la tercera vuelta; en la cuarta el for entrega la cuarta línea del archivo."><span class="k">B</span><code>"Tres\n"</code></button>
+      <button class="opt" data-k="c" data-why="Correcto: la cuarta línea es la que agregó el modo &quot;a&quot;, y al recorrer el archivo cada línea incluye su &quot;\n&quot; final."><span class="k">C</span><code>"Cuatro\n"</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: write(&quot;Cuatro\n&quot;) pone el salto al final; el texto anterior ya terminaba en &quot;\n&quot;, así que la línea empieza con C."><span class="k">D</span><code>"\nCuatro"</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-n="7" aria-label="Diapositiva 7" hidden>
+  <p class="eyebrow">Idea clave 6</p>
+  <h2>Leer y agregar contenido</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Leer todo el archivo</h3>
+      <pre class="code" data-hl>with open("mensaje.txt", "r", encoding="utf-8") as archivo:
+    contenido = archivo.read()
+print(contenido)</pre>
+      <h3>Recorrer línea por línea</h3>
+      <p style="font-size:.95rem">Recomendado para archivos grandes: no carga todo en memoria.</p>
+      <pre class="code" data-hl>with open("mensaje.txt", "r", encoding="utf-8") as archivo:
+    for linea in archivo:
+        print(linea.strip())</pre>
+    </div>
+    <div class="panel">
+      <h3>Agregar sin borrar</h3>
+      <pre class="code" data-hl>with open("mensaje.txt", "a", encoding="utf-8") as archivo:
+    archivo.write("\nSegunda línea")</pre>
+      <h3>Escribir varias líneas</h3>
+      <pre class="code" data-hl>lineas = ["Uno\n", "Dos\n", "Tres\n"]
+with open("numeros.txt", "w", encoding="utf-8") as archivo:
+    archivo.writelines(lineas)</pre>
+      <p style="font-size:.95rem"><code>writelines()</code>, igual que <code>write()</code>, no agrega saltos de línea: cada elemento debe incluir su <code>"\n"</code>.</p>
+    </div>
+  </div>
+  <div class="activity" id="matchAct">
+    <span class="tag">Actividad 3 · Relacionar conceptos</span>
+    <p>Relaciona cada método con lo que hace.</p>
+    <div class="match" id="match"></div>
+    <div class="row"><button class="btn primary" id="matchCheck">Revisar</button><button class="btn" id="matchReset">Reintentar</button></div>
+    <div class="fb" id="matchFb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-n="8" aria-label="Diapositiva 8" hidden>
+  <p class="eyebrow">Idea clave 7</p>
+  <h2>Errores comunes y cómo prevenirlos</h2>
+  <div class="errs">
+    <div><b>FileNotFoundError</b>Usar <code>"r"</code> con un archivo inexistente, o una ruta incorrecta.</div>
+    <div><b>FileExistsError</b>Usar <code>"x"</code> con un archivo que ya existe.</div>
+    <div><b>Contenido perdido</b>Usar <code>"w"</code> por accidente borra lo anterior sin aviso.</div>
+    <div><b>Datos incompletos</b>Olvidar cerrar el archivo. Solución: <code>with open()</code>.</div>
+    <div><b>UnicodeDecodeError</b>No especificar <code>encoding</code> al leer acentos y "ñ".</div>
+    <div><b>Solo cadenas</b><code>write()</code> no acepta números: <code>archivo.write(str(25))</code>.</div>
+    <div><b>Sin saltos</b><code>write()</code> no agrega <code>"\n"</code>: escríbelo explícitamente.</div>
+    <div><b>PermissionError</b>No tener permisos sobre el archivo o la carpeta.</div>
+  </div>
+  <div class="panel">
+    <h3>Manejo básico de errores</h3>
+    <pre class="code" data-hl>try:
+    with open("datos.txt", "r", encoding="utf-8") as archivo:
+        print(archivo.read())
+except FileNotFoundError:
+    print("El archivo no existe.")</pre>
+  </div>
+  <div class="activity mc" data-correct="d">
+    <span class="tag">Actividad 4 · Opción múltiple</span>
+    <p class="q">En la carpeta de trabajo ya existe <code>reporte.txt</code> con texto de la semana pasada. ¿Qué ocurre al ejecutar este código?</p>
+    <pre class="code" data-hl>with open("reporte.txt", "x", encoding="utf-8") as archivo:
+    archivo.write("Ventas")</pre>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: FileNotFoundError aparece cuando falta el archivo (por ejemplo, con &quot;r&quot;); aquí el archivo sí existe."><span class="k">A</span>Se lanza FileNotFoundError</button>
+      <button class="opt" data-k="b" data-why="Incorrecto: sobrescribir es lo que haría &quot;w&quot;; &quot;x&quot; se niega a abrir un archivo existente."><span class="k">B</span>Se sobrescribe con Ventas</button>
+      <button class="opt" data-k="c" data-why="Incorrecto: añadir al final es el comportamiento de &quot;a&quot;, no de &quot;x&quot;."><span class="k">C</span>Se añade Ventas al final</button>
+      <button class="opt" data-k="d" data-why="Correcto: &quot;x&quot; solo crea archivos nuevos; si el archivo ya existe, Python lanza FileExistsError."><span class="k">D</span>Se lanza FileExistsError</button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-n="9" aria-label="Diapositiva 9" hidden>
+  <p class="eyebrow">Autoevaluación</p>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p class="lead">Cinco reactivos. Cada respuesta queda fija al elegirla; al final verás tus aciertos.</p>
+  <div class="quiz" id="quiz">
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 1</span>
+      <p class="q">¿Qué sucede al ejecutar este código?</p>
+      <pre class="code" data-hl>with open("datos.txt", "w", encoding="utf-8") as archivo:
+    archivo.write(25)</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: write() no convierte números en texto por su cuenta."><span class="k">A</span>Se guarda el texto 25</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: write() no convierte números ni agrega saltos de línea."><span class="k">B</span>Se guarda 25 y un salto</button>
+        <button class="opt" data-k="c" data-why="Correcto: write() solo acepta cadenas; hay que convertir antes con str(25)."><span class="k">C</span>Falla; se requiere str(25)</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: el modo es texto (&quot;w&quot;); el modo binario requeriría &quot;b&quot;."><span class="k">D</span>Se guarda 25 en binario</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 2</span>
+      <p class="q">¿Cuál es el contenido de <code>saludo.txt</code> al terminar?</p>
+      <pre class="code" data-hl>with open("saludo.txt", "w", encoding="utf-8") as archivo:
+    archivo.write("Hola")
+    archivo.write("Mundo")</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: write() no agrega espacios ni saltos de línea; los textos quedan unidos."><span class="k">A</span><code>HolaMundo</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: write() no inserta espacios entre llamadas."><span class="k">B</span><code>Hola Mundo</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: para separar en dos líneas habría que escribir &quot;\n&quot; explícitamente."><span class="k">C</span><code>Hola↵Mundo</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: dentro del mismo bloque el segundo write() continúa tras el primero; &quot;w&quot; borra solo al abrir."><span class="k">D</span><code>Mundo</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="d" data-quiz>
+      <span class="tag">Reactivo 3</span>
+      <p class="q">¿Cuál es la principal razón para preferir <code>with open()</code> sobre <code>open()</code> con <code>close()</code>?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: la velocidad de lectura es la misma; la ventaja está en el cierre."><span class="k">A</span>Acelera la lectura del archivo</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: crear el archivo depende del modo (&quot;w&quot;, &quot;a&quot;, &quot;x&quot;), no de with."><span class="k">B</span>Crea el archivo cuando falta</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: con with el modo se indica igual que con open()."><span class="k">C</span>Permite omitir el modo de apertura</button>
+        <button class="opt" data-k="d" data-why="Correcto: with cierra el archivo al salir del bloque, incluso si ocurre una excepción."><span class="k">D</span>Cierra el archivo al salir del bloque</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="b" data-quiz>
+      <span class="tag">Reactivo 4</span>
+      <p class="q"><code>notas.txt</code> contiene apuntes importantes. ¿Qué les pasa al ejecutar <code>open("notas.txt", "w", encoding="utf-8")</code>?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: conservar y escribir al final es lo que hace &quot;a&quot;."><span class="k">A</span>Se conservan y se escribe al final</button>
+        <button class="opt" data-k="b" data-why="Correcto: &quot;w&quot; borra el contenido de un archivo existente y escribe desde cero."><span class="k">B</span>Se borran antes de escribir</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: FileExistsError lo produce &quot;x&quot;, no &quot;w&quot;."><span class="k">C</span>Se lanza FileExistsError</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: el modo de solo lectura es &quot;r&quot;."><span class="k">D</span>Se abren solo para lectura</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 5</span>
+      <p class="q">Si se ejecuta <code>open("datos.txt")</code> sin indicar el modo, ¿cómo se abre el archivo?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: sin modo, Python usa &quot;r&quot;: lectura en modo texto."><span class="k">A</span>Lectura en modo texto</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: la escritura requiere indicar &quot;w&quot;, &quot;a&quot; o &quot;x&quot;."><span class="k">B</span>Escritura en modo texto</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: el modo texto es el predeterminado; binario requiere &quot;b&quot;."><span class="k">C</span>Lectura en modo binario</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: agregar requiere indicar &quot;a&quot;."><span class="k">D</span>Agregar en modo texto</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel row" style="justify-content:space-between">
+    <span class="score" id="score" aria-live="polite">Aciertos: 0 / 5</span>
+    <button class="btn" id="quizReset">Reiniciar autoevaluación</button>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-n="10" aria-label="Diapositiva 10" hidden>
+  <p class="eyebrow">Resumen</p>
+  <h2>Lo esencial de open()</h2>
+  <div class="summary">
+    <div><h3>Abrir</h3><p><code>open()</code> devuelve un objeto archivo. Indica siempre <code>encoding="utf-8"</code>.</p></div>
+    <div><h3>Elegir el modo</h3><p><code>"r"</code> lee, <code>"w"</code> borra y escribe, <code>"a"</code> agrega, <code>"x"</code> solo crea.</p></div>
+    <div><h3>Leer y escribir</h3><p><code>read()</code>, <code>readline()</code>, <code>readlines()</code>, <code>write()</code>, <code>writelines()</code>. Los saltos <code>"\n"</code> se escriben a mano.</p></div>
+    <div><h3>Cerrar</h3><p><code>with open()</code> cierra el archivo al terminar el bloque, aun si ocurre una excepción.</p></div>
+  </div>
+  <div class="panel">
+    <h3>Para practicar</h3>
+    <ol class="plain">
+      <li>Crea <code>nombres.txt</code> y guarda tres nombres, uno por línea.</li>
+      <li>Lee <code>nombres.txt</code> y muestra cada nombre sin líneas en blanco adicionales.</li>
+      <li>Agrega un cuarto nombre sin borrar los anteriores.</li>
+      <li>Pide el nombre de un archivo y muestra su contenido; si no existe, muestra un mensaje de error.</li>
+      <li>Cuenta cuántas líneas tiene un archivo de texto.</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h3>Fuentes</h3>
+    <ul class="refs">
+      <li>Cairó, O. (2005). <i>Metodología de la programación: Algoritmos, diagramas de flujo y programas</i> (3.ª ed.). Alfaomega.</li>
+      <li><i>Guía express: Función open() en Python</i> [Material didáctico no publicado]. (2026). Unidad de aprendizaje Programación básica, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</li>
+    </ul>
+  </div>
+</section>
+
+    </div></div>
+  </main>
+
+  <footer class="bottom band">
+    <div class="inner">
+      <button class="btn" id="prev">← Anterior</button>
+      <span class="hint">Usa ← → para navegar · Esc cierra la ficha</span>
+      <button class="btn primary" id="next">Siguiente →</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle" hidden>
+  <div class="sheet">
+    <header>
+      <div><p class="eyebrow">Ficha del recurso</p><h2 id="fichaTitle" style="font-size:1.4rem">Abre, escribe y lee: archivos en Python con open()</h2></div>
+      <button class="btn" id="fichaClose" aria-label="Cerrar ficha">Cerrar ✕</button>
+    </header>
+    <dl>
+      <div><dt>Objetivo de aprendizaje</dt><dd>Aplicar la función open() con el modo de apertura adecuado para escribir, agregar y leer archivos de texto en Python, a partir de problemas con código breve y prediciendo los errores que puede producir.</dd></div>
+      <div><dt>Autores</dt><dd>Dra. Perla Marlene Viera González, Dr. Guillermo Ezequiel Sanchez Guerrero, Dr. Yazmany Jahaziel Guerrero Ceja, Mtro. Osvaldo Habib González González</dd></div>
+      <div><dt>Unidad de aprendizaje</dt><dd>Programación básica · Tema: Manejo de archivos</dd></div>
+      <div><dt>Palabras clave</dt><dd class="chips"><span>open()</span><span>modos de apertura</span><span>with open()</span><span>lectura de archivos</span><span>manejo de errores</span></dd></div>
+      <div><dt>Descripción</dt><dd>El estudiante aprende a usar la función open() de Python para escribir, agregar y leer archivos de texto, elegir el modo de apertura correcto, manejar rutas y prevenir errores comunes. Interactúa con un explorador de modos, un algoritmo vinculado a su código, una ejecución paso a paso con tabla de memoria y consola, y actividades con retroalimentación inmediata. Tiempo estimado: 30 minutos.</dd></div>
+      <div><dt>Audiencia</dt><dd>Estudiantes universitarios de unidades de aprendizaje relacionadas con las ciencias exactas.</dd></div>
+      <div><dt>Competencias que desarrolla el estudiante</dt><dd><ol>
+        <li>Seleccionar el modo de apertura ("r", "w", "a", "x") adecuado a cada problema de manejo de archivos, anticipando errores como FileNotFoundError y FileExistsError.<span class="align">Alineada con: Emplear pensamiento lógico, crítico, creativo y propositivo…</span></li>
+        <li>Representar el proceso de escritura en un archivo mediante un algoritmo estilo Cairó y su código Python equivalente, estableciendo la correspondencia entre cada paso y cada instrucción.<span class="align">Alineada con: Utilizar los lenguajes lógico, formal, matemático, icónico, verbal y no verbal…</span></li>
+        <li>Escribir, agregar y leer archivos de texto con with open() y sus métodos, especificando encoding="utf-8" y rastreando en una tabla de memoria el efecto de cada instrucción.<span class="align">Alineada con: Desarrollar tecnologías computacionales utilizando herramientas de software…</span></li>
+      </ol></dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  /* ---------- resaltado de sintaxis propio ---------- */
+  var KW = {"with":1,"as":1,"for":1,"in":1,"try":1,"except":1,"import":1,"if":1,"else":1,"def":1,"return":1};
+  var BI = {"open":1,"print":1,"str":1,"len":1};
+  function hl(src){
+    var re = /(#[^\n]*)|([rb]?"(?:[^"\\\n]|\\.)*"|[rb]?'(?:[^'\\\n]|\\.)*')|([A-Za-z_]\w*)|(\d+)/g;
+    var out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += '<span class="t-com">' + esc(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="t-str">' + esc(m[2]) + '</span>';
+      else if (m[3]) {
+        var w = m[3];
+        if (KW[w]) out += '<span class="t-kw">' + w + '</span>';
+        else if (BI[w] && src.charAt(re.lastIndex) === "(") out += '<span class="t-bi">' + w + '</span>';
+        else if (src.charAt(m.index - 1) === "." && src.charAt(re.lastIndex) === "(") out += '<span class="t-fn">' + w + '</span>';
+        else out += w;
+      } else out += '<span class="t-num">' + m[4] + '</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  $$("pre[data-hl]").forEach(function(p){ p.innerHTML = hl(p.textContent); });
+
+  /* ---------- navegación ---------- */
+  var slides = $$(".slide"), total = slides.length, cur = 0;
+  var stage = $("#stage"), prevB = $("#prev"), nextB = $("#next");
+  function go(i){
+    if (i < 0 || i >= total) return;
+    slides[cur].hidden = true; cur = i; slides[cur].hidden = false;
+    $("#counter").textContent = (cur + 1) + " / " + total;
+    $("#bar").style.width = ((cur + 1) / total * 100) + "%";
+    prevB.disabled = cur === 0; nextB.disabled = cur === total - 1;
+    stage.scrollTop = 0;
+  }
+  prevB.addEventListener("click", function(){ go(cur - 1); });
+  nextB.addEventListener("click", function(){ go(cur + 1); });
+  $$("[data-go]").forEach(function(b){ b.addEventListener("click", function(){ go(+b.getAttribute("data-go") - 1); }); });
+
+  /* ---------- ficha ---------- */
+  var ficha = $("#ficha"), fichaBtn = $("#fichaBtn");
+  function openFicha(){ ficha.hidden = false; $("#fichaClose").focus(); }
+  function closeFicha(){ ficha.hidden = true; fichaBtn.focus(); }
+  fichaBtn.addEventListener("click", function(){ ficha.hidden ? openFicha() : closeFicha(); });
+  $("#fichaClose").addEventListener("click", closeFicha);
+  ficha.addEventListener("click", function(e){ if (e.target === ficha) closeFicha(); });
+
+  document.addEventListener("keydown", function(e){
+    if (!ficha.hidden) { if (e.key === "Escape") { e.preventDefault(); closeFicha(); } return; }
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  /* ---------- opción múltiple ---------- */
+  function mcSetup(box){
+    var correct = box.getAttribute("data-correct"), quiz = box.hasAttribute("data-quiz");
+    var opts = $$(".opt", box), fb = $(".fb", box);
+    box._answered = false; box._right = false;
+    function reset(){
+      opts.forEach(function(o){ o.disabled = false; o.classList.remove("ok","bad"); });
+      fb.innerHTML = ""; box._answered = false; box._right = false;
+    }
+    box._reset = reset;
+    opts.forEach(function(o){
+      o.addEventListener("click", function(){
+        if (box._answered) return;
+        var k = o.getAttribute("data-k"), right = k === correct;
+        box._answered = true; box._right = right;
+        opts.forEach(function(x){ x.disabled = true; });
+        o.classList.add(right ? "ok" : "bad");
+        $$(".opt[data-k='" + correct + "']", box)[0].classList.add("ok");
+        var html = '<p class="verdict ' + (right ? "ok" : "bad") + '">' + (right ? "¡Correcto!" : "Respuesta incorrecta.") + '</p><ul class="why">';
+        opts.forEach(function(x){
+          var kk = x.getAttribute("data-k");
+          html += '<li class="' + (kk === correct ? "c" : "") + '"><strong>' + kk.toUpperCase() + ':</strong> ' + esc(x.getAttribute("data-why")) + '</li>';
+        });
+        html += '</ul>';
+        if (!quiz) html += '<div><button class="btn retry">Intentar de nuevo</button></div>';
+        fb.innerHTML = html;
+        var r = $(".retry", fb); if (r) r.addEventListener("click", function(){ reset(); opts[0].focus(); });
+        if (quiz) updateScore();
+      });
+    });
+  }
+  $$(".mc").forEach(mcSetup);
+
+  var qItems = $$(".quiz-item");
+  function updateScore(){
+    var done = 0, ok = 0;
+    qItems.forEach(function(q){ if (q._answered) { done++; if (q._right) ok++; } });
+    var s = "Aciertos: " + ok + " / " + qItems.length;
+    if (done === qItems.length) s += ok === qItems.length ? " · ¡Excelente!" : ok >= 3 ? " · Buen trabajo; repasa los reactivos fallados." : " · Repasa las diapositivas 3, 6 y 8.";
+    $("#score").textContent = s;
+  }
+  $("#quizReset").addEventListener("click", function(){ qItems.forEach(function(q){ q._reset(); }); updateScore(); });
+
+  /* ---------- explorador de modos ---------- */
+  var MODES = {
+    r: { 1: ["ok", "Se abre para leer. El contenido no cambia."], 0: ["err", "<strong>FileNotFoundError</strong>: \"r\" solo lee archivos existentes."] },
+    w: { 1: ["err", "Se <strong>BORRA</strong> el contenido y se escribe desde cero."], 0: ["ok", "Se crea el archivo vacío y se escribe en él."] },
+    a: { 1: ["ok", "Se escribe al final; el contenido anterior se conserva."], 0: ["ok", "Se crea el archivo y se escribe en él."] },
+    x: { 1: ["err", "<strong>FileExistsError</strong>: \"x\" solo crea archivos nuevos."], 0: ["ok", "Se crea un archivo nuevo."] }
+  };
+  var mode = "r", exists = "1";
+  function renderMode(){
+    $$(".modes button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-mode") === mode ? "true" : "false"); });
+    $$(".switch button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-exists") === exists ? "true" : "false"); });
+    $("#modeCode").innerHTML = hl('open("notas.txt", "' + mode + '", encoding="utf-8")');
+    var r = MODES[mode][exists], box = $("#modeResult");
+    box.className = "result" + (r[0] === "err" ? " err" : "");
+    box.innerHTML = r[1];
+  }
+  $$(".modes button").forEach(function(b){ b.addEventListener("click", function(){ mode = b.getAttribute("data-mode"); renderMode(); }); });
+  $$(".switch button").forEach(function(b){ b.addEventListener("click", function(){ exists = b.getAttribute("data-exists"); renderMode(); }); });
+  renderMode();
+
+  /* ---------- revelar ---------- */
+  $("#revealBtn").addEventListener("click", function(){
+    var box = $("#revealBox"), open = box.hidden;
+    box.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false");
+    this.textContent = open ? "Ocultar respuesta" : "Revelar respuesta";
+  });
+
+  /* ---------- resaltado vinculado ---------- */
+  function setLinked(s){
+    $$("#alg li, #exp li").forEach(function(li){ li.classList.toggle("on", li.getAttribute("data-s") === s); });
+  }
+  $$("#alg li, #exp li").forEach(function(li){
+    li.addEventListener("click", function(){ setLinked(li.getAttribute("data-s")); });
+    li.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLinked(li.getAttribute("data-s")); } });
+  });
+  setLinked("4");
+
+  /* ---------- ejecución paso a paso ---------- */
+  var SCODE = [
+    'lineas = ["Uno\\n", "Dos\\n", "Tres\\n"]',
+    'with open("numeros.txt", "w", encoding="utf-8") as archivo:',
+    '    archivo.writelines(lineas)',
+    'with open("numeros.txt", "a", encoding="utf-8") as archivo:',
+    '    archivo.write("Cuatro\\n")',
+    'with open("numeros.txt", "r", encoding="utf-8") as archivo:',
+    '    for linea in archivo:',
+    '        print(linea.strip())'
+  ];
+  var LISTA = '["Uno\\n", "Dos\\n", "Tres\\n"]';
+  var D = [
+    { line: 0, file: null, note: "Estado inicial: el programa aún no se ejecuta y numeros.txt no existe." },
+    { line: 1, v: { lineas: LISTA }, note: "Se crea la lista lineas. Cada elemento incluye su \"\\n\" porque writelines() no agrega saltos de línea." },
+    { line: 2, v: { archivo: 'abierto · modo "w"' }, file: [], note: "open() con \"w\" crea numeros.txt (no existía) y devuelve el objeto archivo; as archivo lo guarda en la variable." },
+    { line: 3, file: ["Uno", "Dos", "Tres"], note: "writelines() escribe los tres elementos de la lista tal como están, con sus saltos de línea." },
+    { line: 4, v: { archivo: 'abierto · modo "a"' }, note: "El bloque anterior terminó y el archivo se cerró solo. Ahora se abre con \"a\": el contenido se conserva." },
+    { line: 5, file: ["Uno", "Dos", "Tres", "Cuatro"], note: "write() agrega \"Cuatro\\n\" al final, sin borrar las líneas anteriores." },
+    { line: 6, v: { archivo: 'abierto · modo "r"' }, note: "Se cerró el bloque de \"a\" y se abre en lectura. \"r\" requiere que el archivo exista, y ya existe." },
+    { line: 7, v: { linea: '"Uno\\n"' }, note: "El for entrega la primera línea del archivo, con su salto de línea final." },
+    { line: 8, out: "Uno", note: "strip() quita el \"\\n\" y print() muestra Uno, sin línea en blanco adicional." },
+    { line: 7, v: { linea: '"Dos\\n"' }, note: "Segunda vuelta: linea toma la segunda línea del archivo." },
+    { line: 8, out: "Dos", note: "Se muestra Dos." },
+    { line: 7, v: { linea: '"Tres\\n"' }, note: "Tercera vuelta: linea toma la tercera línea." },
+    { line: 8, out: "Tres", note: "Se muestra Tres." },
+    { line: 7, v: { linea: '"Cuatro\\n"' }, note: "Cuarta vuelta: linea toma la línea que agregó el modo \"a\"." },
+    { line: 8, out: "Cuatro", note: "Se muestra Cuatro." },
+    { line: 0, v: { archivo: "cerrado" }, note: "No quedan líneas: termina el for, termina el bloque with y el archivo se cierra automáticamente. Fin del programa." }
+  ];
+  var VARS = ["lineas", "archivo", "linea"];
+  var S = [], st = { vals: { lineas: "—", archivo: "—", linea: "—" }, ant: { lineas: "—", archivo: "—", linea: "—" }, file: null, out: [] };
+  D.forEach(function(d){
+    var n = { vals: Object.assign({}, st.vals), ant: Object.assign({}, st.ant), file: d.hasOwnProperty("file") ? d.file : st.file, out: st.out.slice(), chg: {}, line: d.line, note: d.note };
+    if (d.v) Object.keys(d.v).forEach(function(k){ n.ant[k] = n.vals[k]; n.vals[k] = d.v[k]; n.chg[k] = true; });
+    if (d.out) n.out.push(d.out);
+    S.push(n); st = n;
+  });
+  var sCode = $("#sCode");
+  sCode.innerHTML = SCODE.map(function(l, i){ return '<div class="ln" data-l="' + (i + 1) + '"><span class="no">' + (i + 1) + '</span><span>' + hl(l) + '</span></div>'; }).join("");
+  var si = 0;
+  function renderStep(){
+    var s = S[si];
+    $$(".ln", sCode).forEach(function(el){ el.classList.toggle("exec", +el.getAttribute("data-l") === s.line); });
+    $("#sMem").innerHTML = VARS.map(function(v){
+      return '<tr class="' + (s.chg[v] ? "chg" : "") + '"><td>' + v + '</td><td>' + esc(s.vals[v]) + '</td><td>' + esc(s.ant[v]) + '</td></tr>';
+    }).join("");
+    $("#sFile").innerHTML = s.file === null ? '<span class="pr">(el archivo no existe)</span>' : s.file.length === 0 ? '<span class="pr">(vacío)</span>' : s.file.map(function(l){ return esc(l) + '<span class="nl">\\n</span>'; }).join("\n");
+    $("#sOut").innerHTML = s.out.length ? s.out.map(esc).join("\n") : '<span class="pr">(sin salida)</span>';
+    $("#sNote").textContent = (s.line ? "Línea " + s.line + ": " : "") + s.note;
+    $("#sCount").textContent = "Paso " + si + " de " + (S.length - 1);
+    $("#sPrev").disabled = si === 0; $("#sNext").disabled = si === S.length - 1;
+  }
+  $("#sPrev").addEventListener("click", function(){ if (si > 0) { si--; renderStep(); } });
+  $("#sNext").addEventListener("click", function(){ if (si < S.length - 1) { si++; renderStep(); } });
+  $("#sReset").addEventListener("click", function(){ si = 0; renderStep(); });
+  renderStep();
+
+  /* ---------- relacionar ---------- */
+  var PAIRS = [
+    { m: "read()", d: "Devuelve todo el contenido en una sola cadena", why: "read() lee el archivo completo y lo entrega como una cadena." },
+    { m: "readline()", d: "Devuelve una línea, incluido su salto final", why: "readline() lee una sola línea y conserva su \"\\n\"." },
+    { m: "readlines()", d: "Devuelve una lista con todas las líneas", why: "readlines() entrega cada línea como elemento de una lista." },
+    { m: "strip()", d: "Quita espacios y saltos al inicio y al final", why: "strip() limpia los extremos de la cadena; por eso se usa al imprimir cada línea." }
+  ];
+  var DESC = [2, 0, 3, 1].map(function(i){ return PAIRS[i].d; });
+  var mBox = $("#match");
+  mBox.innerHTML = PAIRS.map(function(p, i){
+    return '<div class="mrow"><code>' + p.m + '</code><select id="m' + i + '" aria-label="Descripción de ' + p.m + '"><option value="">Elige una descripción…</option>' +
+      DESC.map(function(d){ return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; }).join("") + '</select><span class="mark" id="mk' + i + '" aria-hidden="true"></span></div>';
+  }).join("");
+  $("#matchCheck").addEventListener("click", function(){
+    var ok = 0, html = '<ul class="why">';
+    PAIRS.forEach(function(p, i){
+      var sel = $("#m" + i).value, right = sel === p.d, mk = $("#mk" + i);
+      if (right) ok++;
+      mk.textContent = right ? "✓" : "✗"; mk.className = "mark " + (right ? "ok" : "bad");
+      html += '<li class="' + (right ? "c" : "") + '"><strong>' + p.m + ':</strong> ' + esc(p.why) + (right || !sel ? "" : ' La descripción elegida corresponde a otro método.') + '</li>';
+    });
+    html += '</ul>';
+    $("#matchFb").innerHTML = '<p class="verdict ' + (ok === PAIRS.length ? "ok" : "bad") + '">' + ok + ' de ' + PAIRS.length + ' relaciones correctas.</p>' + html;
+  });
+  $("#matchReset").addEventListener("click", function(){
+    PAIRS.forEach(function(p, i){ $("#m" + i).value = ""; var mk = $("#mk" + i); mk.textContent = ""; mk.className = "mark"; });
+    $("#matchFb").innerHTML = "";
+  });
+
+  go(0);
+})();
+</script>
+
+</html>
