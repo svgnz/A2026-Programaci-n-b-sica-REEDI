@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carpetas bajo control</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: presentación a pantalla completa — barra superior (ficha + indicador), diapositiva desplazable, barra de navegación inferior */
+:root{
+  --bg:#EDF0F6; --surface:#FFFFFF; --ink:#16203A; --muted:#56617B; --line:#D2D8E5;
+  --accent:#2F5BD3; --accent-ink:#FFFFFF; --soft:#E1E8FB;
+  --ok:#1C7347; --ok-bg:#DFF2E8; --bad:#AE2A1F; --bad-bg:#FBE5E2;
+  --code-bg:#131B2F; --code-fg:#E4E9F5; --code-line:#26314D;
+  --exec:rgba(255,203,107,.20); --exec-bar:#F2B53C;
+  --t-kw:#C9A0F2; --t-str:#A9D98C; --t-fn:#86AEFF; --t-bi:#FFCF70; --t-num:#F79A78; --t-com:#8691AA;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+    --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+    --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+    --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+  --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+  --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+  --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.band{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.inner{max-width:1080px;margin:0 auto}
+
+/* barra superior */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px}
+.top .inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--accent);font-weight:600}
+.counter{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--muted)}
+.progress{height:3px;background:var(--line)}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+
+/* diapositivas */
+main{overflow-y:auto;overflow-x:hidden}
+main .inner{padding-block:28px 40px}
+.slide{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{font-size:1.12rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}
+.grid2>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.activity{border:2px solid var(--accent);background:var(--surface);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tag{align-self:flex-start;font-family:var(--f-mono);font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;background:var(--soft);color:var(--accent);padding:3px 9px;border-radius:4px}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.terms{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.terms dt{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.terms dd{margin:0}
+
+/* código */
+pre.code,.codebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.6;border-radius:8px;margin:0;overflow-x:auto}
+pre.code{padding:14px 16px;white-space:pre}
+.codebox .ln{display:flex;white-space:pre;padding:0 14px 0 0;border-left:3px solid transparent}
+.codebox .ln .no{display:inline-block;width:2.6em;text-align:right;padding-right:12px;color:var(--t-com);user-select:none;flex:none}
+.codebox .ln.exec{background:var(--exec);border-left-color:var(--exec-bar)}
+.codebox{padding-block:10px}
+.t-kw{color:var(--t-kw)} .t-str{color:var(--t-str)} .t-fn{color:var(--t-fn)} .t-bi{color:var(--t-bi)} .t-num{color:var(--t-num)} .t-com{color:var(--t-com);font-style:italic}
+
+/* botones */
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:7px;font-weight:700;font-size:.95rem}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* opción múltiple */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:baseline}
+.opt .k{font-family:var(--f-mono);font-weight:600;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{display:flex;flex-direction:column;gap:8px}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.why{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:.95rem}
+.why li.c{color:var(--ok)}
+
+/* explorador de modos */
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.modes button{font-family:var(--f-mono);font-weight:600;min-width:58px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:7px;padding:8px 12px}
+.modes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.switch{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+.switch button{border:0;background:var(--bg);color:var(--ink);padding:8px 12px;font-size:.92rem}
+.switch button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:700}
+.result{border-left:4px solid var(--accent);background:var(--soft);padding:12px 14px;border-radius:0 8px 8px 0}
+.result.err{border-left-color:var(--bad);background:var(--bad-bg)}
+.result strong{font-family:var(--f-mono)}
+
+/* resaltado vinculado */
+.alg{list-style:none;margin:0;padding:10px 0;font-family:var(--f-mono);font-size:.9rem;background:var(--code-bg);color:var(--code-fg);border-radius:8px;overflow-x:auto}
+.alg li,.exp li{cursor:pointer}
+.alg li{padding:3px 14px;border-left:3px solid transparent;white-space:pre}
+.alg li .no{color:var(--t-com);display:inline-block;width:2em}
+.alg li.on{background:var(--exec);border-left-color:var(--exec-bar)}
+.exp{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.exp li{border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--bg);font-size:.95rem}
+.exp li.on{border-color:var(--exec-bar);background:var(--surface);box-shadow:0 0 0 2px var(--exec)}
+.exp li b{font-family:var(--f-mono);color:var(--accent)}
+
+/* paso a paso */
+.stepper{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.stepper>*{min-width:0}
+.mem{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+.mem th,.mem td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.mem th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mem td{font-family:var(--f-mono);word-break:break-word}
+.mem tr.chg td{background:var(--exec)}
+.mem tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--exec-bar)}
+.tablewrap{overflow-x:auto}
+.console,.filebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.86rem;border-radius:8px;padding:10px 14px;min-height:3.2em;white-space:pre-wrap;word-break:break-word}
+.console .pr{color:var(--t-com)}
+.nl{color:var(--t-num);font-size:.8em}
+.note{background:var(--soft);border-radius:8px;padding:10px 14px;font-size:.95rem}
+.stepcount{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.minilabel{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:0}
+
+/* relacionar */
+.match{display:flex;flex-direction:column;gap:10px}
+.match .mrow{display:grid;grid-template-columns:minmax(110px,auto) 1fr auto;gap:10px;align-items:center}
+.match select{font:inherit;font-size:.95rem;padding:7px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.match .mark{font-weight:700;width:1.4em;text-align:center}
+.mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+@media (max-width:520px){.match .mrow{grid-template-columns:1fr auto}.match .mrow code{grid-column:1/-1;justify-self:start}}
+
+/* errores */
+.errs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.errs div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface);font-size:.94rem}
+.errs b{font-family:var(--f-mono);color:var(--bad);display:block;font-size:.85rem}
+
+/* autoevaluación */
+.score{font-family:var(--f-display);font-size:1.3rem;font-weight:800}
+.quiz{display:flex;flex-direction:column;gap:16px}
+
+/* resumen */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.summary div{border-top:3px solid var(--accent);background:var(--surface);padding:12px 14px;border-radius:0 0 8px 8px}
+.refs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.refs li{padding-left:2em;text-indent:-2em;font-size:.95rem}
+
+/* portada */
+.cover{display:flex;flex-direction:column;gap:22px;padding-top:2vh}
+.cover .obj{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:760px}
+.prompt-line{font-family:var(--f-mono);font-size:.95rem;color:var(--muted)}
+.prompt-line .cur{display:inline-block;width:.6em;height:1.05em;background:var(--accent);vertical-align:-.15em;margin-left:2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.prompt-line .cur{animation:none}.progress span{transition:none}}
+.authors{font-size:.95rem;color:var(--muted)}
+
+/* barra inferior */
+.bottom{background:var(--surface);border-top:1px solid var(--line);padding-block:10px}
+.bottom .inner{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hint{font-size:.8rem;color:var(--muted)}
+@media (max-width:520px){.hint{display:none}}
+
+/* ficha */
+.overlay{position:fixed;inset:0;background:rgba(8,12,24,.55);display:flex;justify-content:flex-end;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:min(560px,100%);height:100%;overflow-y:auto;padding:22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) 22px;padding-top:calc(22px + env(safe-area-inset-top, 0px));display:flex;flex-direction:column;gap:14px}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet dl{margin:0;display:flex;flex-direction:column;gap:12px}
+.sheet dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.sheet dd{margin:2px 0 0}
+.sheet ol{margin:4px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+.sheet .align{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chips span{font-family:var(--f-mono);font-size:.8rem;background:var(--soft);color:var(--accent);padding:2px 8px;border-radius:4px}
+/* árbol de carpetas */
+.tree{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.7;border-radius:8px;padding:10px 14px;white-space:pre;overflow-x:auto;margin:0}
+.tree .dir{color:var(--t-fn);font-weight:600}
+.tree .g{color:var(--t-com)}
+.tree .here{background:var(--exec);box-shadow:inset 3px 0 0 var(--exec-bar);border-radius:3px;padding:0 4px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.field input{font-family:var(--f-mono);font-size:.95rem;padding:9px 11px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.modes button.fn{min-width:0;font-size:.85rem}
+.cmp td:last-child{font-family:var(--f-body)}
+</style>
+
+<div class="app">
+  <header class="top band">
+    <div class="inner">
+      <div class="brand"><b>import os</b> · Programación básica · Módulo OS</div>
+      <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+      <button class="btn" id="fichaBtn" aria-haspopup="dialog" aria-controls="ficha">Ficha del recurso</button>
+    </div>
+  </header>
+
+  <main id="stage" tabindex="-1">
+    <div class="progress"><span id="bar" style="width:10%"></span></div>
+    <div class="band"><div class="inner">
+
+<!-- 1 -->
+<section class="slide cover" data-n="1" aria-label="Diapositiva 1">
+  <p class="prompt-line">&gt;&gt;&gt; os.listdir("Evidencias")<span class="cur"></span></p>
+  <h1>Carpetas bajo control: el módulo os de Python</h1>
+  <div class="obj">
+    <p class="eyebrow">Objetivo de aprendizaje</p>
+    <p>Aplicar las funciones del módulo <code>os</code> y del submódulo <code>os.path</code> para crear, consultar y recorrer carpetas en Python, distinguiendo <code>os.listdir()</code> de <code>os.walk()</code> y anticipando los errores de cada operación.</p>
+  </div>
+  <p class="authors">Dra. Perla Marlene Viera González · Dr. Guillermo Ezequiel Sanchez Guerrero · Dr. Yazmany Jahaziel Guerrero Ceja · Mtro. Osvaldo Habib González González</p>
+  <div class="row"><button class="btn primary" data-go="2">Comenzar</button><span class="hint">También puedes usar las flechas ← → del teclado.</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-n="2" aria-label="Diapositiva 2" hidden>
+  <p class="eyebrow">Idea clave 1</p>
+  <h2>¿Qué es el módulo os?</h2>
+  <p class="lead">Permite interactuar con el sistema operativo desde Python: consultar, crear, recorrer, renombrar y eliminar carpetas y archivos. Es parte de la biblioteca estándar: no se instala, pero sí se importa. Su submódulo <code>os.path</code> trabaja con rutas.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Conceptos previos</h3>
+      <dl class="terms" style="font-size:.95rem">
+        <dt>Carpeta</dt><dd>También llamada directorio: contenedor de archivos y otras carpetas.</dd>
+        <dt>Ruta relativa</dt><dd>A partir del directorio de trabajo actual: <code>"Evidencias/Unidad2"</code>.</dd>
+        <dt>Ruta absoluta</dt><dd>Ubicación completa: <code>"C:/Usuarios/Ana/Evidencias"</code> o <code>"/home/ana/Evidencias"</code>.</dd>
+        <dt>Directorio de trabajo</dt><dd>Carpeta desde la que Python resuelve las rutas relativas; normalmente, desde donde se ejecuta el programa.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>Primer contacto</h3>
+      <pre class="code" data-hl>import os
+print(os.getcwd())   # directorio de trabajo actual</pre>
+      <p class="minilabel">Estructura de ejemplo de este recurso</p>
+      <pre class="tree"><span class="dir">Evidencias/</span>
+<span class="g">├──</span> actividad1.py
+<span class="g">└──</span> <span class="dir">Unidad2/</span>
+    <span class="g">└──</span> ejercicio.py</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3" aria-label="Diapositiva 3" hidden>
+  <p class="eyebrow">Idea clave 2</p>
+  <h2>Consultar, crear y eliminar</h2>
+  <p class="lead">Elige una llamada para ver qué devuelve o qué error produce. Cada llamada parte de la estructura de ejemplo; no existen las carpetas <code>Portafolio</code> ni <code>Tareas</code>.</p>
+  <div class="panel">
+    <div class="modes" role="group" aria-label="Llamada" id="fnBtns"></div>
+    <pre class="code" id="fnCode"></pre>
+    <div class="result" id="fnRes" aria-live="polite"></div>
+    <p style="font-size:.93rem;color:var(--muted)">Precaución: <code>os.remove()</code> y <code>os.rmdir()</code> eliminan de forma permanente; no envían a la papelera. <code>os.chdir(ruta)</code> cambia el directorio de trabajo y <code>os.rename(origen, destino)</code> renombra o mueve.</p>
+  </div>
+  <div class="activity mc" data-correct="b">
+    <span class="tag">Actividad 1 · Opción múltiple</span>
+    <p class="q">Existe la carpeta <code>Evidencias</code>, pero no <code>Evidencias/Unidad1</code>. Se necesita crear <code>Evidencias/Unidad1/Actividades</code> con una instrucción que no falle aunque el programa se ejecute dos veces. ¿Cuál es?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: mkdir() crea una sola carpeta; como falta Unidad1, produce FileNotFoundError."><span class="k">A</span><code>os.mkdir("Evidencias/Unidad1/Actividades")</code></button>
+      <button class="opt" data-k="b" data-why="Correcto: makedirs() crea todas las carpetas intermedias que falten, y exist_ok=True evita el error si ya existen."><span class="k">B</span><code>os.makedirs("Evidencias/Unidad1/Actividades", exist_ok=True)</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: la primera vez funciona, pero en la segunda ejecución la carpeta ya existe y produce FileExistsError."><span class="k">C</span><code>os.makedirs("Evidencias/Unidad1/Actividades")</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: chdir() cambia el directorio de trabajo, no crea carpetas; como la ruta no existe, produce FileNotFoundError."><span class="k">D</span><code>os.chdir("Evidencias/Unidad1/Actividades")</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4" aria-label="Diapositiva 4" hidden>
+  <p class="eyebrow">Idea clave 3</p>
+  <h2>Rutas con os.path</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Verificar</h3>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>exists(ruta)</dt><dd>True si la ruta existe (archivo o carpeta).</dd>
+        <dt>isdir(ruta)</dt><dd>True si existe y es una carpeta.</dd>
+        <dt>isfile(ruta)</dt><dd>True si existe y es un archivo.</dd>
+        <dt>getsize(ruta)</dt><dd>Tamaño de un archivo en bytes.</dd>
+        <dt>abspath(ruta)</dt><dd>Convierte una ruta relativa en absoluta.</dd>
+      </dl>
+      <h3>Construir</h3>
+      <pre class="code" data-hl>os.path.join("Evidencias", "Unidad2")
+# une las partes con el separador del sistema</pre>
+    </div>
+    <div class="panel">
+      <h3>Desarmar una ruta</h3>
+      <div class="field"><label for="pathIn">Ruta</label><input id="pathIn" type="text" spellcheck="false" autocomplete="off" value="Evidencias/Unidad2/ejercicio.py"></div>
+      <div class="tablewrap">
+        <table class="mem"><tbody id="pathOut"></tbody></table>
+      </div>
+      <p style="font-size:.85rem;color:var(--muted)">Escribe otra ruta con diagonales normales (/) para ver cómo cambian los resultados.</p>
+    </div>
+  </div>
+  <div class="activity" id="matchAct">
+    <span class="tag">Actividad 2 · Relacionar conceptos</span>
+    <p>Relaciona cada función de <code>os.path</code> con lo que hace.</p>
+    <div class="match" id="match"></div>
+    <div class="row"><button class="btn primary" id="matchCheck">Revisar</button><button class="btn" id="matchReset">Reintentar</button></div>
+    <div class="fb" id="matchFb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5" aria-label="Diapositiva 5" hidden>
+  <p class="eyebrow">Idea clave 4</p>
+  <h2>Crear una carpeta y listar su contenido</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Crear si no existe y listar</h3>
+      <pre class="code" data-hl>import os
+
+carpeta = "Evidencias"
+
+if not os.path.exists(carpeta):
+    os.mkdir(carpeta)
+
+contenido = os.listdir(carpeta)
+print("Carpeta:", carpeta)
+print("Contenido:", contenido)</pre>
+      <p style="font-size:.95rem">Si se acaba de crear, muestra <code>Contenido: []</code>. Forma breve equivalente: <code>os.makedirs(carpeta, exist_ok=True)</code>.</p>
+    </div>
+    <div class="panel">
+      <h3>Distinguir archivos de carpetas</h3>
+      <pre class="code" data-hl>for nombre in os.listdir(carpeta):
+    ruta = os.path.join(carpeta, nombre)
+    if os.path.isdir(ruta):
+        print("[Carpeta]", nombre)
+    else:
+        print("[Archivo]", nombre)</pre>
+      <p style="font-size:.95rem"><code>os.listdir()</code> devuelve solo <strong>nombres</strong> del contenido inmediato, en un orden no garantizado. Por eso <code>isdir()</code> necesita la ruta completa que arma <code>os.path.join()</code>.</p>
+    </div>
+  </div>
+  <div class="activity">
+    <span class="tag">Actividad 3 · Revelar respuesta</span>
+    <p>El programa se ejecuta desde la carpeta que contiene a <code>Evidencias</code>, con la estructura de ejemplo. ¿Qué imprime para <code>Unidad2</code>, por qué y cómo se corrige?</p>
+    <pre class="code" data-hl>for nombre in os.listdir("Evidencias"):
+    if os.path.isdir(nombre):
+        print("[Carpeta]", nombre)
+    else:
+        print("[Archivo]", nombre)</pre>
+    <div class="row"><button class="btn primary" id="revealBtn" aria-expanded="false" aria-controls="revealBox">Revelar respuesta</button></div>
+    <div id="revealBox" class="note" hidden>
+      <p><strong>Imprime:</strong> <code>[Archivo] Unidad2</code>, aunque es una carpeta.</p>
+      <p style="margin-top:6px"><strong>Por qué:</strong> <code>isdir("Unidad2")</code> busca en el directorio de trabajo actual, donde no hay ninguna carpeta <code>Unidad2</code>; devuelve False.</p>
+      <p style="margin-top:6px"><strong>Corrección:</strong> unir la carpeta y el nombre.</p>
+      <pre class="code" data-hl style="margin-top:6px">    if os.path.isdir(os.path.join("Evidencias", nombre)):</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6" aria-label="Diapositiva 6" hidden>
+  <p class="eyebrow">Idea clave 5</p>
+  <h2>Del algoritmo al código: recorrer una carpeta</h2>
+  <p class="lead">Problema: recorrer una carpeta y mostrar los archivos encontrados en cada nivel. Selecciona un paso del algoritmo o de la explicación para ver su correspondencia.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Algoritmo RECORRER_CARPETA <span style="font-weight:400;color:var(--muted);font-size:.85rem">(estilo Cairó)</span></h3>
+      <ol class="alg" id="alg">
+        <li data-s="1" tabindex="0"><span class="no">1.</span>Inicio</li>
+        <li data-s="2" tabindex="0"><span class="no">2.</span>RUTA_INICIAL &lt;- "Evidencias"</li>
+        <li data-s="3" tabindex="0"><span class="no">3.</span>Si RUTA_INICIAL existe entonces</li>
+        <li data-s="4" tabindex="0"><span class="no">4.</span>    Para cada (RUTA, CARPETAS, ARCHIVOS) en el
+       recorrido de RUTA_INICIAL repetir</li>
+        <li data-s="5" tabindex="0"><span class="no">5.</span>        Escribir RUTA</li>
+        <li data-s="6" tabindex="0"><span class="no">6.</span>        Para cada ARCHIVO en ARCHIVOS repetir</li>
+        <li data-s="7" tabindex="0"><span class="no">7.</span>            Escribir ARCHIVO</li>
+        <li data-s="8" tabindex="0"><span class="no">8.</span>        Fin del paso 6</li>
+        <li data-s="9" tabindex="0"><span class="no">9.</span>    Fin del paso 4</li>
+        <li data-s="10" tabindex="0"><span class="no">10.</span>Si no</li>
+        <li data-s="11" tabindex="0"><span class="no">11.</span>    Escribir "La carpeta no existe"</li>
+        <li data-s="12" tabindex="0"><span class="no">12.</span>Fin del paso 3</li>
+        <li data-s="13" tabindex="0"><span class="no">13.</span>Fin</li>
+      </ol>
+      <p class="minilabel">Descripción de variables</p>
+      <dl class="terms" style="font-size:.9rem">
+        <dt>RUTA_INICIAL</dt><dd>Cadena. Carpeta donde inicia el recorrido.</dd>
+        <dt>RUTA</dt><dd>Cadena. Carpeta que se visita en cada vuelta.</dd>
+        <dt>CARPETAS</dt><dd>Lista de cadenas. Subcarpetas de RUTA.</dd>
+        <dt>ARCHIVOS</dt><dd>Lista de cadenas. Archivos de RUTA.</dd>
+        <dt>ARCHIVO</dt><dd>Cadena. Nombre de cada archivo.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>¿Qué ocurre en cada paso?</h3>
+      <ul class="exp" id="exp">
+        <li data-s="1" tabindex="0"><b>Paso 1</b> · Comienza. En Python, antes de todo va <code>import os</code>.</li>
+        <li data-s="2" tabindex="0"><b>Paso 2</b> · <code>ruta_inicial = "Evidencias"</code></li>
+        <li data-s="3" tabindex="0"><b>Paso 3</b> · <code>if os.path.isdir(ruta_inicial):</code> verifica la carpeta, porque <code>os.walk()</code> no produce error si no existe.</li>
+        <li data-s="4" tabindex="0"><b>Paso 4</b> · <code>for ruta, carpetas, archivos in os.walk(ruta_inicial):</code> visita cada carpeta, empezando por la inicial.</li>
+        <li data-s="5" tabindex="0"><b>Paso 5</b> · <code>print("Carpeta:", ruta)</code></li>
+        <li data-s="6" tabindex="0"><b>Paso 6</b> · <code>for archivo in archivos:</code> procesa cada archivo de la carpeta visitada.</li>
+        <li data-s="7" tabindex="0"><b>Paso 7</b> · <code>print("Archivo:", archivo)</code></li>
+        <li data-s="8" tabindex="0"><b>Paso 8</b> · En Python no hay instrucción: el ciclo interno termina donde termina su indentación.</li>
+        <li data-s="9" tabindex="0"><b>Paso 9</b> · Igual: el ciclo de <code>os.walk()</code> termina con su indentación.</li>
+        <li data-s="10" tabindex="0"><b>Paso 10</b> · <code>else:</code></li>
+        <li data-s="11" tabindex="0"><b>Paso 11</b> · <code>print("La carpeta no existe")</code></li>
+        <li data-s="12" tabindex="0"><b>Paso 12</b> · Termina el <code>if</code>, también por indentación.</li>
+        <li data-s="13" tabindex="0"><b>Paso 13</b> · Fin del programa.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-n="7" aria-label="Diapositiva 7" hidden>
+  <p class="eyebrow">Idea clave 6</p>
+  <h2>os.walk(): ejecución paso a paso</h2>
+  <p class="lead">En cada vuelta, <code>os.walk()</code> entrega tres datos de la carpeta visitada: su ruta, la lista de sus subcarpetas y la lista de sus archivos. Avanza y observa el recorrido.</p>
+  <div class="stepper">
+    <div class="panel">
+      <div class="codebox" id="sCode" aria-label="Código del programa"></div>
+      <div class="row">
+        <button class="btn" id="sPrev">← Anterior</button>
+        <button class="btn primary" id="sNext">Siguiente →</button>
+        <button class="btn" id="sReset">Reiniciar</button>
+        <span class="stepcount" id="sCount"></span>
+      </div>
+      <div class="note" id="sNote" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <p class="minilabel">Tabla de memoria</p>
+      <div class="tablewrap">
+        <table class="mem"><thead><tr><th>Variable</th><th>Valor actual</th><th>Valor anterior</th></tr></thead><tbody id="sMem"></tbody></table>
+      </div>
+      <p class="minilabel">Recorrido de la estructura</p>
+      <div class="tree" id="sFile"></div>
+      <p class="minilabel">Salida en consola</p>
+      <div class="console" id="sOut"></div>
+    </div>
+  </div>
+  <p style="font-size:.9rem;color:var(--muted)">En Windows la ruta se muestra como <code>Evidencias\Unidad2</code>. La carpeta inicial siempre aparece primero; el orden dentro de cada carpeta puede variar según el sistema operativo.</p>
+  <div class="activity mc" data-correct="c">
+    <span class="tag">Pregunta de predicción</span>
+    <p class="q">¿Qué valor tendrá <code>carpetas</code> después de que la línea 4 se ejecute por <strong>segunda</strong> vez? Responde antes de avanzar el código hasta ese punto.</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: ['Unidad2'] es el valor de la primera vuelta; en cada vuelta las tres variables se actualizan con la carpeta visitada."><span class="k">A</span><code>['Unidad2']</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: ese es el contenido de archivos; carpetas solo lista subcarpetas."><span class="k">B</span><code>['ejercicio.py']</code></button>
+      <button class="opt" data-k="c" data-why="Correcto: en la segunda vuelta se visita Evidencias/Unidad2, que no tiene subcarpetas; carpetas es una lista vacía."><span class="k">C</span><code>[]</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: esa cadena es el valor de ruta en la segunda vuelta, no una lista de subcarpetas."><span class="k">D</span><code>'Evidencias/Unidad2'</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-n="8" aria-label="Diapositiva 8" hidden>
+  <p class="eyebrow">Idea clave 7</p>
+  <h2>Errores comunes y cómo prevenirlos</h2>
+  <div class="errs">
+    <div><b>FileExistsError</b><code>os.mkdir()</code> con una carpeta que ya existe.</div>
+    <div><b>FileNotFoundError</b><code>os.mkdir("A/B")</code> si "A" no existe. Usa <code>os.makedirs()</code>.</div>
+    <div><b>OSError</b><code>os.rmdir()</code> con una carpeta que tiene contenido.</div>
+    <div><b>remove() con carpeta</b>IsADirectoryError en Linux; PermissionError en Windows y macOS.</div>
+    <div><b>listdir() sin ruta válida</b>Produce FileNotFoundError.</div>
+    <div><b>walk() silencioso</b>Con la ruta mal escrita no hay error, pero tampoco resultados.</div>
+    <div><b>Solo el nombre</b><code>open()</code>, <code>isfile()</code> o <code>getsize()</code> necesitan la ruta de <code>os.path.join()</code>.</div>
+    <div><b>Windows sin r</b><code>"C:\nueva"</code> contiene un salto de línea. Usa <code>r"C:\nueva"</code> o <code>"C:/nueva"</code>.</div>
+    <div><b>Otra carpeta</b>Las rutas relativas se resuelven desde el directorio de trabajo, no desde el .py.</div>
+    <div><b>NameError</b>Olvidar <code>import os</code>.</div>
+  </div>
+  <div class="panel">
+    <h3>Eliminar una carpeta vacía de forma segura</h3>
+    <pre class="code" data-hl>try:
+    os.rmdir("Temporal")
+except FileNotFoundError:
+    print("La carpeta no existe.")
+except OSError:
+    print("La carpeta no está vacía.")</pre>
+    <p style="font-size:.95rem">FileNotFoundError es un tipo de OSError; por eso va primero.</p>
+  </div>
+  <div class="activity mc" data-correct="d">
+    <span class="tag">Actividad 4 · Opción múltiple</span>
+    <p class="q">La carpeta <code>Temporal</code> existe y contiene el archivo <code>notas.txt</code>. ¿Qué ocurre al ejecutar el código anterior?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: FileNotFoundError solo ocurre si la carpeta no existe; aquí sí existe."><span class="k">A</span>Muestra "La carpeta no existe."</button>
+      <button class="opt" data-k="b" data-why="Incorrecto: rmdir() elimina únicamente carpetas vacías; no borra su contenido."><span class="k">B</span>Borra la carpeta con su contenido</button>
+      <button class="opt" data-k="c" data-why="Incorrecto: rmdir() no elimina archivos; para un archivo se usa os.remove()."><span class="k">C</span>Borra solo el archivo notas.txt</button>
+      <button class="opt" data-k="d" data-why="Correcto: la carpeta tiene contenido, rmdir() produce OSError y el segundo except muestra el mensaje."><span class="k">D</span>Muestra "La carpeta no está vacía."</button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-n="9" aria-label="Diapositiva 9" hidden>
+  <p class="eyebrow">Autoevaluación</p>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p class="lead">Cinco reactivos. Cada respuesta queda fija al elegirla; al final verás tus aciertos. Todos suponen <code>import os</code> y la estructura de ejemplo.</p>
+  <pre class="tree"><span class="dir">Evidencias/</span>
+<span class="g">├──</span> actividad1.py
+<span class="g">└──</span> <span class="dir">Unidad2/</span>
+    <span class="g">└──</span> ejercicio.py</pre>
+  <div class="quiz" id="quiz">
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 1</span>
+      <p class="q">¿Qué devuelve <code>os.listdir("Evidencias")</code>? (El orden puede variar).</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: listdir() no entra en las subcarpetas; recorrer varios niveles es tarea de os.walk()."><span class="k">A</span><code>['actividad1.py', 'ejercicio.py']</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: listdir() devuelve solo nombres, no rutas completas."><span class="k">B</span><code>['Evidencias/actividad1.py', 'Evidencias/Unidad2']</code></button>
+        <button class="opt" data-k="c" data-why="Correcto: devuelve los nombres de lo que está directamente dentro: un archivo y una carpeta."><span class="k">C</span><code>['actividad1.py', 'Unidad2']</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: listdir() incluye tanto archivos como carpetas."><span class="k">D</span><code>['actividad1.py']</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 2</span>
+      <p class="q">¿Qué devuelve <code>os.path.splitext("tarea.py")</code>?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: devuelve una tupla con el nombre y la extensión, que conserva el punto."><span class="k">A</span><code>('tarea', '.py')</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: la extensión conserva el punto inicial."><span class="k">B</span><code>('tarea', 'py')</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: el resultado es una tupla, no una lista."><span class="k">C</span><code>['tarea', '.py']</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: splitext() devuelve ambas partes, no solo el nombre."><span class="k">D</span><code>'tarea'</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="d" data-quiz>
+      <span class="tag">Reactivo 3</span>
+      <p class="q">Por error se escribe <code>for ruta, carpetas, archivos in os.walk("Evidenzias"):</code> y esa carpeta no existe. ¿Qué ocurre?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: FileNotFoundError lo produce listdir(), no walk()."><span class="k">A</span>Se produce FileNotFoundError</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: walk() solo recorre; nunca crea carpetas."><span class="k">B</span>Se crea la carpeta Evidenzias</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: walk() no sustituye la ruta por el directorio actual."><span class="k">C</span>Se recorre el directorio actual</button>
+        <button class="opt" data-k="d" data-why="Correcto: walk() no hace ninguna vuelta y no avisa; por eso conviene verificar antes con isdir()."><span class="k">D</span>No hay error ni resultados</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="b" data-quiz>
+      <span class="tag">Reactivo 4</span>
+      <p class="q">La carpeta <code>Portafolio</code> no existe. ¿Qué ocurre con <code>os.mkdir("Portafolio/Unidad1")</code>?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: crear las carpetas intermedias es lo que hace makedirs()."><span class="k">A</span>Crea las dos carpetas</button>
+        <button class="opt" data-k="b" data-why="Correcto: mkdir() crea una sola carpeta y la carpeta padre debe existir."><span class="k">B</span>Produce FileNotFoundError</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: FileExistsError aparece cuando la carpeta que se quiere crear ya existe."><span class="k">C</span>Produce FileExistsError</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: mkdir() no crea la carpeta padre por su cuenta."><span class="k">D</span>Crea solo Portafolio</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 5</span>
+      <p class="q">¿Qué devuelve <code>os.path.basename("Evidencias/Unidad2/ejercicio.py")</code>?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: basename() devuelve el último elemento de la ruta."><span class="k">A</span><code>'ejercicio.py'</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: la ruta sin el último elemento la devuelve dirname()."><span class="k">B</span><code>'Evidencias/Unidad2'</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: basename() toma el último elemento, no el primero."><span class="k">C</span><code>'Evidencias'</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: basename() conserva la extensión; quitarla requiere splitext()."><span class="k">D</span><code>'ejercicio'</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel row" style="justify-content:space-between">
+    <span class="score" id="score" aria-live="polite">Aciertos: 0 / 5</span>
+    <button class="btn" id="quizReset">Reiniciar autoevaluación</button>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-n="10" aria-label="Diapositiva 10" hidden>
+  <p class="eyebrow">Resumen</p>
+  <h2>Lo esencial del módulo os</h2>
+  <div class="summary">
+    <div><h3>Crear</h3><p><code>os.mkdir()</code> crea una carpeta; <code>os.makedirs(ruta, exist_ok=True)</code> crea las intermedias sin error.</p></div>
+    <div><h3>Consultar</h3><p><code>os.listdir()</code> da el contenido inmediato; <code>os.walk()</code> recorre todos los niveles en un ciclo for.</p></div>
+    <div><h3>Rutas</h3><p>Ambas devuelven nombres: arma la ruta completa con <code>os.path.join()</code> y verifica con <code>exists()</code> o <code>isdir()</code>.</p></div>
+    <div><h3>Eliminar</h3><p><code>os.rmdir()</code> solo carpetas vacías; <code>os.remove()</code> solo archivos. Es permanente.</p></div>
+  </div>
+  <div class="panel">
+    <h3>Para practicar</h3>
+    <ol class="plain">
+      <li>Muestra el directorio de trabajo actual y su contenido.</li>
+      <li>Crea Portafolio/Unidad1, Portafolio/Unidad2 y Portafolio/Unidad3 con una instrucción por carpeta.</li>
+      <li>Lista el contenido de una carpeta indicando si cada elemento es archivo o carpeta.</li>
+      <li>Pide el nombre de una carpeta y muestra todos sus archivos; si no existe, muestra un mensaje de error.</li>
+      <li>Cuenta cuántos archivos hay en total dentro de una carpeta y sus subcarpetas.</li>
+      <li>Muestra solo los archivos .txt de una carpeta y sus subcarpetas, con su ruta completa.</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h3>Para saber más: pathlib</h3>
+    <p style="font-size:.95rem">Desde Python 3.4, el módulo <code>pathlib</code> trabaja las rutas como objetos y aparece en mucho código actual.</p>
+    <pre class="code" data-hl>from pathlib import Path
+
+carpeta = Path("Evidencias")
+carpeta.mkdir(exist_ok=True)
+for archivo in carpeta.rglob("*.py"):
+    print(archivo)</pre>
+  </div>
+  <div class="panel">
+    <h3>Fuentes</h3>
+    <ul class="refs">
+      <li>Cairó, O. (2005). <i>Metodología de la programación: Algoritmos, diagramas de flujo y programas</i> (3.ª ed.). Alfaomega.</li>
+      <li><i>Guía express: Manejo de carpetas con os en Python</i> [Material didáctico no publicado]. (2026). Unidad de aprendizaje Programación básica, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</li>
+    </ul>
+  </div>
+</section>
+
+    </div></div>
+  </main>
+
+  <footer class="bottom band">
+    <div class="inner">
+      <button class="btn" id="prev">← Anterior</button>
+      <span class="hint">Usa ← → para navegar · Esc cierra la ficha</span>
+      <button class="btn primary" id="next">Siguiente →</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle" hidden>
+  <div class="sheet">
+    <header>
+      <div><p class="eyebrow">Ficha del recurso</p><h2 id="fichaTitle" style="font-size:1.4rem">Carpetas bajo control: el módulo os de Python</h2></div>
+      <button class="btn" id="fichaClose" aria-label="Cerrar ficha">Cerrar ✕</button>
+    </header>
+    <dl>
+      <div><dt>Objetivo de aprendizaje</dt><dd>Aplicar las funciones del módulo os y del submódulo os.path para crear, consultar y recorrer carpetas en Python, distinguiendo os.listdir() de os.walk() y anticipando los errores de cada operación.</dd></div>
+      <div><dt>Autores</dt><dd>Dra. Perla Marlene Viera González, Dr. Guillermo Ezequiel Sanchez Guerrero, Dr. Yazmany Jahaziel Guerrero Ceja, Mtro. Osvaldo Habib González González</dd></div>
+      <div><dt>Unidad de aprendizaje</dt><dd>Programación básica · Tema: Módulo OS</dd></div>
+      <div><dt>Palabras clave</dt><dd class="chips"><span>módulo os</span><span>os.path</span><span>os.walk()</span><span>directorio de trabajo</span><span>rutas</span></dd></div>
+      <div><dt>Descripción</dt><dd>El estudiante aprende a usar el módulo os de Python para crear, listar, recorrer y eliminar carpetas, construir rutas con os.path y prevenir los errores más comunes. Interactúa con un explorador de llamadas, un desarmador de rutas, un algoritmo vinculado a su código, una ejecución paso a paso de os.walk() y actividades con retroalimentación inmediata. Tiempo estimado: 35 minutos.</dd></div>
+      <div><dt>Audiencia</dt><dd>Estudiantes universitarios de unidades de aprendizaje relacionadas con las ciencias exactas.</dd></div>
+      <div><dt>Competencias que desarrolla el estudiante</dt><dd><ol>
+        <li>Seleccionar la función del módulo os adecuada para crear, consultar, recorrer o eliminar carpetas según el problema, anticipando errores como FileExistsError, FileNotFoundError y OSError.<span class="align">Alineada con: Emplear pensamiento lógico, crítico, creativo y propositivo…</span></li>
+        <li>Representar el recorrido de una estructura de carpetas mediante un algoritmo estilo Cairó con estructuras anidadas y su código Python equivalente, estableciendo la correspondencia entre cada paso y cada instrucción.<span class="align">Alineada con: Utilizar los lenguajes lógico, formal, matemático, icónico, verbal y no verbal…</span></li>
+        <li>Programar en Python la creación, el listado y el recorrido de carpetas con os y os.path, construyendo rutas completas con os.path.join() y rastreando en una tabla de memoria los valores que entrega os.walk().<span class="align">Alineada con: Desarrollar tecnologías computacionales utilizando herramientas de software…</span></li>
+      </ol></dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  /* ---------- resaltado de sintaxis propio ---------- */
+  var KW = {"with":1,"as":1,"for":1,"in":1,"try":1,"except":1,"import":1,"from":1,"if":1,"else":1,"not":1,"and":1,"def":1,"return":1,"None":1,"True":1,"False":1};
+  var BI = {"open":1,"print":1,"str":1,"len":1,"int":1,"sum":1,"input":1};
+  function hl(src){
+    var re = /(#[^\n]*)|([rRb]?"(?:[^"\\\n]|\\.)*"|[rRb]?'(?:[^'\\\n]|\\.)*')|([A-Za-z_]\w*)|(\d+)/g;
+    var out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += '<span class="t-com">' + esc(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="t-str">' + esc(m[2]) + '</span>';
+      else if (m[3]) {
+        var w = m[3];
+        if (KW[w]) out += '<span class="t-kw">' + w + '</span>';
+        else if (BI[w] && src.charAt(re.lastIndex) === "(") out += '<span class="t-bi">' + w + '</span>';
+        else if (src.charAt(m.index - 1) === "." && src.charAt(re.lastIndex) === "(") out += '<span class="t-fn">' + w + '</span>';
+        else out += w;
+      } else out += '<span class="t-num">' + m[4] + '</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  $$("pre[data-hl]").forEach(function(p){ p.innerHTML = hl(p.textContent); });
+
+  /* ---------- navegación ---------- */
+  var slides = $$(".slide"), total = slides.length, cur = 0;
+  var stage = $("#stage"), prevB = $("#prev"), nextB = $("#next");
+  function go(i){
+    if (i < 0 || i >= total) return;
+    slides[cur].hidden = true; cur = i; slides[cur].hidden = false;
+    $("#counter").textContent = (cur + 1) + " / " + total;
+    $("#bar").style.width = ((cur + 1) / total * 100) + "%";
+    prevB.disabled = cur === 0; nextB.disabled = cur === total - 1;
+    stage.scrollTop = 0;
+  }
+  prevB.addEventListener("click", function(){ go(cur - 1); });
+  nextB.addEventListener("click", function(){ go(cur + 1); });
+  $$("[data-go]").forEach(function(b){ b.addEventListener("click", function(){ go(+b.getAttribute("data-go") - 1); }); });
+
+  /* ---------- ficha ---------- */
+  var ficha = $("#ficha"), fichaBtn = $("#fichaBtn");
+  function openFicha(){ ficha.hidden = false; $("#fichaClose").focus(); }
+  function closeFicha(){ ficha.hidden = true; fichaBtn.focus(); }
+  fichaBtn.addEventListener("click", function(){ ficha.hidden ? openFicha() : closeFicha(); });
+  $("#fichaClose").addEventListener("click", closeFicha);
+  ficha.addEventListener("click", function(e){ if (e.target === ficha) closeFicha(); });
+
+  document.addEventListener("keydown", function(e){
+    if (!ficha.hidden) { if (e.key === "Escape") { e.preventDefault(); closeFicha(); } return; }
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  /* ---------- opción múltiple ---------- */
+  function mcSetup(box){
+    var correct = box.getAttribute("data-correct"), quiz = box.hasAttribute("data-quiz");
+    var opts = $$(".opt", box), fb = $(".fb", box);
+    box._answered = false; box._right = false;
+    function reset(){
+      opts.forEach(function(o){ o.disabled = false; o.classList.remove("ok","bad"); });
+      fb.innerHTML = ""; box._answered = false; box._right = false;
+    }
+    box._reset = reset;
+    opts.forEach(function(o){
+      o.addEventListener("click", function(){
+        if (box._answered) return;
+        var k = o.getAttribute("data-k"), right = k === correct;
+        box._answered = true; box._right = right;
+        opts.forEach(function(x){ x.disabled = true; });
+        o.classList.add(right ? "ok" : "bad");
+        $$(".opt[data-k='" + correct + "']", box)[0].classList.add("ok");
+        var html = '<p class="verdict ' + (right ? "ok" : "bad") + '">' + (right ? "¡Correcto!" : "Respuesta incorrecta.") + '</p><ul class="why">';
+        opts.forEach(function(x){
+          var kk = x.getAttribute("data-k");
+          html += '<li class="' + (kk === correct ? "c" : "") + '"><strong>' + kk.toUpperCase() + ':</strong> ' + esc(x.getAttribute("data-why")) + '</li>';
+        });
+        html += '</ul>';
+        if (!quiz) html += '<div><button class="btn retry">Intentar de nuevo</button></div>';
+        fb.innerHTML = html;
+        var r = $(".retry", fb); if (r) r.addEventListener("click", function(){ reset(); opts[0].focus(); });
+        if (quiz) updateScore();
+      });
+    });
+  }
+  $$(".mc").forEach(mcSetup);
+
+  var qItems = $$(".quiz-item");
+  function updateScore(){
+    var done = 0, ok = 0;
+    qItems.forEach(function(q){ if (q._answered) { done++; if (q._right) ok++; } });
+    var s = "Aciertos: " + ok + " / " + qItems.length;
+    if (done === qItems.length) s += ok === qItems.length ? " · ¡Excelente!" : ok >= 3 ? " · Buen trabajo; repasa los reactivos fallados." : " · Repasa las diapositivas 3, 4 y 7.";
+    $("#score").textContent = s;
+  }
+  $("#quizReset").addEventListener("click", function(){ qItems.forEach(function(q){ q._reset(); }); updateScore(); });
+
+  /* ---------- explorador de llamadas ---------- */
+  var FNS = [
+    { n: "getcwd", code: 'os.getcwd()', res: "'/home/ana'", exp: "Devuelve la ruta del <strong>directorio de trabajo actual</strong> (el valor depende de tu equipo)." },
+    { n: "listdir", code: 'os.listdir("Evidencias")', res: "['actividad1.py', 'Unidad2']", exp: "Lista los <strong>nombres</strong> de lo que está directamente dentro. No entra en Unidad2 y el orden no está garantizado." },
+    { n: "listdir ✗", code: 'os.listdir("Tareas")', res: "FileNotFoundError", err: 1, exp: "La carpeta no existe." },
+    { n: "mkdir ✗", code: 'os.mkdir("Evidencias")', res: "FileExistsError", err: 1, exp: "<code>mkdir()</code> falla si la carpeta <strong>ya existe</strong>." },
+    { n: "mkdir A/B", code: 'os.mkdir("Portafolio/Unidad1")', res: "FileNotFoundError", err: 1, exp: "<code>mkdir()</code> crea <strong>una</strong> carpeta, y la carpeta padre Portafolio no existe." },
+    { n: "makedirs", code: 'os.makedirs("Portafolio/Unidad1", exist_ok=True)', res: "None · se crean Portafolio y Portafolio/Unidad1", exp: "Crea la carpeta y todas las <strong>intermedias</strong>. Con <code>exist_ok=True</code> no falla si ya existen." },
+    { n: "rmdir", code: 'os.rmdir("Evidencias")', res: "OSError", err: 1, exp: "<code>rmdir()</code> solo elimina carpetas <strong>vacías</strong>, y Evidencias tiene contenido." },
+    { n: "remove", code: 'os.remove("Evidencias/Unidad2")', res: "IsADirectoryError (Linux) · PermissionError (Windows, macOS)", err: 1, exp: "<code>remove()</code> elimina <strong>archivos</strong>, no carpetas." },
+    { n: "rename", code: 'os.rename("Evidencias", "Portafolio")', res: "None · Evidencias ahora se llama Portafolio", exp: "Renombra o mueve un archivo o carpeta." }
+  ];
+  var fnSel = "listdir";
+  $("#fnBtns").innerHTML = FNS.map(function(f){ return '<button type="button" class="fn" data-fn="' + esc(f.n) + '" aria-pressed="false">' + esc(f.n) + '</button>'; }).join("");
+  function renderFn(){
+    var f = FNS.filter(function(x){ return x.n === fnSel; })[0];
+    $$("#fnBtns button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-fn") === fnSel ? "true" : "false"); });
+    $("#fnCode").innerHTML = hl(f.code);
+    var box = $("#fnRes");
+    box.className = "result" + (f.err ? " err" : "");
+    box.innerHTML = "<strong>" + esc(f.res) + "</strong><br>" + f.exp;
+  }
+  $$("#fnBtns button").forEach(function(b){ b.addEventListener("click", function(){ fnSel = b.getAttribute("data-fn"); renderFn(); }); });
+  renderFn();
+
+  /* ---------- desarmar una ruta (comportamiento de os.path con "/") ---------- */
+  function pyStr(s){ return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'"; }
+  function basename(p){ var i = p.lastIndexOf("/"); return p.slice(i + 1); }
+  function dirname(p){ var i = p.lastIndexOf("/"); if (i < 0) return ""; var h = p.slice(0, i + 1); return /^\/+$/.test(h) ? h : h.replace(/\/+$/, ""); }
+  function splitext(p){
+    var b = basename(p), start = p.length - b.length, i = b.lastIndexOf("."), j = 0;
+    while (j < b.length && b.charAt(j) === ".") j++;
+    if (i <= j - 1 || i < 0) return [p, ""];
+    return [p.slice(0, start + i), p.slice(start + i)];
+  }
+  function renderPath(){
+    var p = $("#pathIn").value, sx = splitext(p);
+    var rows = [
+      ["os.path.basename(ruta)", pyStr(basename(p))],
+      ["os.path.dirname(ruta)", pyStr(dirname(p))],
+      ["os.path.splitext(ruta)", "(" + pyStr(sx[0]) + ", " + pyStr(sx[1]) + ")"]
+    ];
+    $("#pathOut").innerHTML = rows.map(function(r){ return "<tr><td>" + r[0] + "</td><td>" + esc(r[1]) + "</td></tr>"; }).join("");
+  }
+  $("#pathIn").addEventListener("input", renderPath);
+  renderPath();
+
+  /* ---------- revelar ---------- */
+  $("#revealBtn").addEventListener("click", function(){
+    var box = $("#revealBox"), open = box.hidden;
+    box.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false");
+    this.textContent = open ? "Ocultar respuesta" : "Revelar respuesta";
+  });
+
+  /* ---------- resaltado vinculado ---------- */
+  function setLinked(s){
+    $$("#alg li, #exp li").forEach(function(li){ li.classList.toggle("on", li.getAttribute("data-s") === s); });
+  }
+  $$("#alg li, #exp li").forEach(function(li){
+    li.addEventListener("click", function(){ setLinked(li.getAttribute("data-s")); });
+    li.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLinked(li.getAttribute("data-s")); } });
+  });
+  setLinked("4");
+
+  /* ---------- ejecución paso a paso ---------- */
+  var SCODE = [
+    'import os',
+    'ruta_inicial = "Evidencias"',
+    'if os.path.isdir(ruta_inicial):',
+    '    for ruta, carpetas, archivos in os.walk(ruta_inicial):',
+    '        print("Carpeta:", ruta)',
+    '        for archivo in archivos:',
+    '            print("Archivo:", archivo)',
+    'else:',
+    '    print("La carpeta no existe")'
+  ];
+  var D = [
+    { line: 0, note: "Estado inicial: el programa aún no se ejecuta." },
+    { line: 1, note: "Se importa el módulo os." },
+    { line: 2, v: { ruta_inicial: "'Evidencias'" }, note: "ruta_inicial guarda la carpeta donde iniciará el recorrido." },
+    { line: 3, note: "os.path.isdir() devuelve True: Evidencias existe y es una carpeta. Se entra al bloque del if." },
+    { line: 4, v: { ruta: "'Evidencias'", carpetas: "['Unidad2']", archivos: "['actividad1.py']" }, dir: "E", note: "Primera vuelta: os.walk() visita la carpeta inicial y entrega su ruta, sus subcarpetas y sus archivos." },
+    { line: 5, out: "Carpeta: Evidencias", dir: "E", note: "Se muestra la carpeta visitada." },
+    { line: 6, v: { archivo: "'actividad1.py'" }, dir: "E", file: "a1", note: "El ciclo interno toma el primer (y único) archivo de la lista archivos." },
+    { line: 7, out: "Archivo: actividad1.py", dir: "E", file: "a1", note: "Se muestra el nombre del archivo; os.walk() no lo abre ni lo lee." },
+    { line: 6, dir: "E", note: "Ya no hay más archivos en esta carpeta: termina el ciclo interno y se regresa al ciclo de os.walk()." },
+    { line: 4, v: { ruta: "'Evidencias/Unidad2'", carpetas: "[]", archivos: "['ejercicio.py']" }, dir: "U", note: "Segunda vuelta: os.walk() baja a la subcarpeta Unidad2, que no tiene subcarpetas." },
+    { line: 5, out: "Carpeta: Evidencias/Unidad2", dir: "U", note: "Se muestra la nueva carpeta visitada." },
+    { line: 6, v: { archivo: "'ejercicio.py'" }, dir: "U", file: "ej", note: "El ciclo interno toma el archivo de Unidad2." },
+    { line: 7, out: "Archivo: ejercicio.py", dir: "U", file: "ej", note: "Se muestra el nombre del archivo." },
+    { line: 4, note: "No quedan carpetas por visitar: termina el recorrido de os.walk()." },
+    { line: 0, note: "Fin del programa. El bloque else no se ejecutó porque la carpeta sí existía." }
+  ];
+  var VARS = ["ruta_inicial", "ruta", "carpetas", "archivos", "archivo"];
+  var blank = {}; VARS.forEach(function(v){ blank[v] = "—"; });
+  var S = [], st = { vals: Object.assign({}, blank), ant: Object.assign({}, blank), out: [] };
+  D.forEach(function(d){
+    var n = { vals: Object.assign({}, st.vals), ant: Object.assign({}, st.ant), out: st.out.slice(), chg: {}, line: d.line, note: d.note, dir: d.dir || "", file: d.file || "" };
+    if (d.v) Object.keys(d.v).forEach(function(k){ n.ant[k] = n.vals[k]; n.vals[k] = d.v[k]; n.chg[k] = true; });
+    if (d.out) n.out.push(d.out);
+    S.push(n); st = n;
+  });
+  var sCode = $("#sCode");
+  sCode.innerHTML = SCODE.map(function(l, i){ return '<div class="ln" data-l="' + (i + 1) + '"><span class="no">' + (i + 1) + '</span><span>' + hl(l) + '</span></div>'; }).join("");
+  function tree(dir, file){
+    function w(on, html){ return on ? '<span class="here">' + html + '</span>' : html; }
+    return w(dir === "E", '<span class="dir">Evidencias/</span>') + "\n" +
+      '<span class="g">├──</span> ' + w(file === "a1", "actividad1.py") + "\n" +
+      '<span class="g">└──</span> ' + w(dir === "U", '<span class="dir">Unidad2/</span>') + "\n" +
+      '    <span class="g">└──</span> ' + w(file === "ej", "ejercicio.py");
+  }
+  var si = 0;
+  function renderStep(){
+    var s = S[si];
+    $$(".ln", sCode).forEach(function(el){ el.classList.toggle("exec", +el.getAttribute("data-l") === s.line); });
+    $("#sMem").innerHTML = VARS.map(function(v){
+      return '<tr class="' + (s.chg[v] ? "chg" : "") + '"><td>' + v + '</td><td>' + esc(s.vals[v]) + '</td><td>' + esc(s.ant[v]) + '</td></tr>';
+    }).join("");
+    $("#sFile").innerHTML = tree(s.dir, s.file);
+    $("#sOut").innerHTML = s.out.length ? s.out.map(esc).join("\n") : '<span class="pr">(sin salida)</span>';
+    $("#sNote").textContent = (s.line ? "Línea " + s.line + ": " : "") + s.note;
+    $("#sCount").textContent = "Paso " + si + " de " + (S.length - 1);
+    $("#sPrev").disabled = si === 0; $("#sNext").disabled = si === S.length - 1;
+  }
+  $("#sPrev").addEventListener("click", function(){ if (si > 0) { si--; renderStep(); } });
+  $("#sNext").addEventListener("click", function(){ if (si < S.length - 1) { si++; renderStep(); } });
+  $("#sReset").addEventListener("click", function(){ si = 0; renderStep(); });
+  renderStep();
+
+  /* ---------- relacionar ---------- */
+  var PAIRS = [
+    { m: "os.path.join()", d: "Une partes de una ruta con el separador del sistema", why: "join() arma rutas sin depender de \"/\" o \"\\\"." },
+    { m: "os.path.basename()", d: "Devuelve el último elemento de la ruta", why: "basename(\"Evidencias/Unidad2/ejercicio.py\") da \"ejercicio.py\"." },
+    { m: "os.path.dirname()", d: "Devuelve la ruta sin su último elemento", why: "dirname(\"Evidencias/Unidad2/ejercicio.py\") da \"Evidencias/Unidad2\"." },
+    { m: "os.path.splitext()", d: "Separa el nombre y la extensión", why: "splitext(\"tarea.py\") da (\"tarea\", \".py\")." },
+    { m: "os.path.isdir()", d: "Indica si la ruta existe y es una carpeta", why: "isdir() devuelve True solo para carpetas existentes." }
+  ];
+  var DESC = [2, 4, 0, 3, 1].map(function(i){ return PAIRS[i].d; });
+  var mBox = $("#match");
+  mBox.innerHTML = PAIRS.map(function(p, i){
+    return '<div class="mrow"><code>' + p.m + '</code><select id="m' + i + '" aria-label="Descripción de ' + p.m + '"><option value="">Elige una descripción…</option>' +
+      DESC.map(function(d){ return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; }).join("") + '</select><span class="mark" id="mk' + i + '" aria-hidden="true"></span></div>';
+  }).join("");
+  $("#matchCheck").addEventListener("click", function(){
+    var ok = 0, html = '<ul class="why">';
+    PAIRS.forEach(function(p, i){
+      var sel = $("#m" + i).value, right = sel === p.d, mk = $("#mk" + i);
+      if (right) ok++;
+      mk.textContent = right ? "✓" : "✗"; mk.className = "mark " + (right ? "ok" : "bad");
+      html += '<li class="' + (right ? "c" : "") + '"><strong>' + p.m + ':</strong> ' + esc(p.why) + (right || !sel ? "" : " La descripción elegida corresponde a otra función.") + '</li>';
+    });
+    html += '</ul>';
+    $("#matchFb").innerHTML = '<p class="verdict ' + (ok === PAIRS.length ? "ok" : "bad") + '">' + ok + ' de ' + PAIRS.length + ' relaciones correctas.</p>' + html;
+  });
+  $("#matchReset").addEventListener("click", function(){
+    PAIRS.forEach(function(p, i){ $("#m" + i).value = ""; var mk = $("#mk" + i); mk.textContent = ""; mk.className = "mark"; });
+    $("#matchFb").innerHTML = "";
+  });
+
+  go(0);
+})();
+</script>
+
+</html>
