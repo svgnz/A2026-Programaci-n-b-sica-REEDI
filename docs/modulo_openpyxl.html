@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Excel desde Python</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: presentación a pantalla completa — barra superior (ficha + indicador), diapositiva desplazable, barra de navegación inferior */
+:root{
+  --bg:#EDF0F6; --surface:#FFFFFF; --ink:#16203A; --muted:#56617B; --line:#D2D8E5;
+  --accent:#2F5BD3; --accent-ink:#FFFFFF; --soft:#E1E8FB;
+  --ok:#1C7347; --ok-bg:#DFF2E8; --bad:#AE2A1F; --bad-bg:#FBE5E2;
+  --code-bg:#131B2F; --code-fg:#E4E9F5; --code-line:#26314D;
+  --exec:rgba(255,203,107,.20); --exec-bar:#F2B53C;
+  --t-kw:#C9A0F2; --t-str:#A9D98C; --t-fn:#86AEFF; --t-bi:#FFCF70; --t-num:#F79A78; --t-com:#8691AA;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+    --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+    --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+    --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+  --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+  --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+  --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.band{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.inner{max-width:1080px;margin:0 auto}
+
+/* barra superior */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px}
+.top .inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--accent);font-weight:600}
+.counter{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--muted)}
+.progress{height:3px;background:var(--line)}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+
+/* diapositivas */
+main{overflow-y:auto;overflow-x:hidden}
+main .inner{padding-block:28px 40px}
+.slide{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{font-size:1.12rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}
+.grid2>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.activity{border:2px solid var(--accent);background:var(--surface);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tag{align-self:flex-start;font-family:var(--f-mono);font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;background:var(--soft);color:var(--accent);padding:3px 9px;border-radius:4px}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.terms{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.terms dt{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.terms dd{margin:0}
+
+/* código */
+pre.code,.codebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.6;border-radius:8px;margin:0;overflow-x:auto}
+pre.code{padding:14px 16px;white-space:pre}
+.codebox .ln{display:flex;white-space:pre;padding:0 14px 0 0;border-left:3px solid transparent}
+.codebox .ln .no{display:inline-block;width:2.6em;text-align:right;padding-right:12px;color:var(--t-com);user-select:none;flex:none}
+.codebox .ln.exec{background:var(--exec);border-left-color:var(--exec-bar)}
+.codebox{padding-block:10px}
+.t-kw{color:var(--t-kw)} .t-str{color:var(--t-str)} .t-fn{color:var(--t-fn)} .t-bi{color:var(--t-bi)} .t-num{color:var(--t-num)} .t-com{color:var(--t-com);font-style:italic}
+
+/* botones */
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:7px;font-weight:700;font-size:.95rem}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* opción múltiple */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:baseline}
+.opt .k{font-family:var(--f-mono);font-weight:600;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{display:flex;flex-direction:column;gap:8px}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.why{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:.95rem}
+.why li.c{color:var(--ok)}
+
+/* explorador de modos */
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.modes button{font-family:var(--f-mono);font-weight:600;min-width:58px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:7px;padding:8px 12px}
+.modes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.switch{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+.switch button{border:0;background:var(--bg);color:var(--ink);padding:8px 12px;font-size:.92rem}
+.switch button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:700}
+.result{border-left:4px solid var(--accent);background:var(--soft);padding:12px 14px;border-radius:0 8px 8px 0}
+.result.err{border-left-color:var(--bad);background:var(--bad-bg)}
+.result strong{font-family:var(--f-mono)}
+
+/* resaltado vinculado */
+.alg{list-style:none;margin:0;padding:10px 0;font-family:var(--f-mono);font-size:.9rem;background:var(--code-bg);color:var(--code-fg);border-radius:8px;overflow-x:auto}
+.alg li,.exp li{cursor:pointer}
+.alg li{padding:3px 14px;border-left:3px solid transparent;white-space:pre}
+.alg li .no{color:var(--t-com);display:inline-block;width:2em}
+.alg li.on{background:var(--exec);border-left-color:var(--exec-bar)}
+.exp{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.exp li{border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--bg);font-size:.95rem}
+.exp li.on{border-color:var(--exec-bar);background:var(--surface);box-shadow:0 0 0 2px var(--exec)}
+.exp li b{font-family:var(--f-mono);color:var(--accent)}
+
+/* paso a paso */
+.stepper{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.stepper>*{min-width:0}
+.mem{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+.mem th,.mem td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.mem th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mem td{font-family:var(--f-mono);word-break:break-word}
+.mem tr.chg td{background:var(--exec)}
+.mem tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--exec-bar)}
+.tablewrap{overflow-x:auto}
+.console,.filebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.86rem;border-radius:8px;padding:10px 14px;min-height:3.2em;white-space:pre-wrap;word-break:break-word}
+.console .pr{color:var(--t-com)}
+.nl{color:var(--t-num);font-size:.8em}
+.note{background:var(--soft);border-radius:8px;padding:10px 14px;font-size:.95rem}
+.stepcount{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.minilabel{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:0}
+
+/* relacionar */
+.match{display:flex;flex-direction:column;gap:10px}
+.match .mrow{display:grid;grid-template-columns:minmax(110px,auto) 1fr auto;gap:10px;align-items:center}
+.match select{font:inherit;font-size:.95rem;padding:7px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.match .mark{font-weight:700;width:1.4em;text-align:center}
+.mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+@media (max-width:520px){.match .mrow{grid-template-columns:1fr auto}.match .mrow code{grid-column:1/-1;justify-self:start}}
+
+/* errores */
+.errs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.errs div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface);font-size:.94rem}
+.errs b{font-family:var(--f-mono);color:var(--bad);display:block;font-size:.85rem}
+
+/* autoevaluación */
+.score{font-family:var(--f-display);font-size:1.3rem;font-weight:800}
+.quiz{display:flex;flex-direction:column;gap:16px}
+
+/* resumen */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.summary div{border-top:3px solid var(--accent);background:var(--surface);padding:12px 14px;border-radius:0 0 8px 8px}
+.refs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.refs li{padding-left:2em;text-indent:-2em;font-size:.95rem}
+
+/* portada */
+.cover{display:flex;flex-direction:column;gap:22px;padding-top:2vh}
+.cover .obj{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:760px}
+.prompt-line{font-family:var(--f-mono);font-size:.95rem;color:var(--muted)}
+.prompt-line .cur{display:inline-block;width:.6em;height:1.05em;background:var(--accent);vertical-align:-.15em;margin-left:2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.prompt-line .cur{animation:none}.progress span{transition:none}}
+.authors{font-size:.95rem;color:var(--muted)}
+
+/* barra inferior */
+.bottom{background:var(--surface);border-top:1px solid var(--line);padding-block:10px}
+.bottom .inner{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hint{font-size:.8rem;color:var(--muted)}
+@media (max-width:520px){.hint{display:none}}
+
+/* ficha */
+.overlay{position:fixed;inset:0;background:rgba(8,12,24,.55);display:flex;justify-content:flex-end;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:min(560px,100%);height:100%;overflow-y:auto;padding:22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) 22px;padding-top:calc(22px + env(safe-area-inset-top, 0px));display:flex;flex-direction:column;gap:14px}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet dl{margin:0;display:flex;flex-direction:column;gap:12px}
+.sheet dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.sheet dd{margin:2px 0 0}
+.sheet ol{margin:4px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+.sheet .align{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chips span{font-family:var(--f-mono);font-size:.8rem;background:var(--soft);color:var(--accent);padding:2px 8px;border-radius:4px}
+/* hoja de cálculo */
+.xl{overflow-x:auto}
+.xl table{border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums;background:var(--surface)}
+.xl th,.xl td{border:1px solid var(--line);padding:5px 10px;min-width:5.5em;height:2em;text-align:left}
+.xl th{background:var(--soft);color:var(--muted);font-family:var(--f-mono);font-size:.78rem;font-weight:600;text-align:center;min-width:2.4em}
+.xl td.num{text-align:right}
+.xl td.sel{outline:2.5px solid var(--accent);outline-offset:-2px;background:var(--soft)}
+.xl td.new{background:var(--exec);box-shadow:inset 3px 0 0 var(--exec-bar)}
+.xl td.hdr{font-weight:700}
+.xl td[tabindex]{cursor:pointer}
+.xl .tabs{display:flex;gap:4px;margin-top:6px;font-size:.8rem}
+.xl .tabs span{border:1px solid var(--line);border-top:0;border-radius:0 0 6px 6px;padding:3px 10px;background:var(--surface);font-weight:700;color:var(--ok)}
+.disk{font-family:var(--f-mono);font-size:.86rem;padding:8px 12px;border-radius:8px;border:1.5px dashed var(--line);color:var(--muted)}
+.disk.saved{border-style:solid;border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}
+.chain{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.93rem}
+.chain span{background:var(--soft);border-radius:6px;padding:6px 10px}
+.chain b{color:var(--muted)}
+.ctrl{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.ctrl .lbl{font-family:var(--f-mono);font-size:.85rem;color:var(--muted)}
+.switch button{font-family:var(--f-mono);font-size:.85rem}
+</style>
+
+<div class="app">
+  <header class="top band">
+    <div class="inner">
+      <div class="brand"><b>from openpyxl import Workbook</b> · Programación básica · Manejo de archivos Excel</div>
+      <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+      <button class="btn" id="fichaBtn" aria-haspopup="dialog" aria-controls="ficha">Ficha del recurso</button>
+    </div>
+  </header>
+
+  <main id="stage" tabindex="-1">
+    <div class="progress"><span id="bar" style="width:10%"></span></div>
+    <div class="band"><div class="inner">
+
+<!-- 1 -->
+<section class="slide cover" data-n="1" aria-label="Diapositiva 1">
+  <p class="prompt-line">&gt;&gt;&gt; hoja.append(["Ana", 95])<span class="cur"></span></p>
+  <h1>Excel desde Python: crear y leer hojas de cálculo con openpyxl</h1>
+  <div class="obj">
+    <p class="eyebrow">Objetivo de aprendizaje</p>
+    <p>Aplicar las funciones de la biblioteca <code>openpyxl</code> para crear, leer y modificar archivos de Excel (.xlsx) desde Python, ubicando celdas por dirección o por fila y columna, y anticipando los errores más comunes al abrir y guardar libros.</p>
+  </div>
+  <p class="authors">Dra. Perla Marlene Viera González · Dr. Guillermo Ezequiel Sanchez Guerrero · Dr. Yazmany Jahaziel Guerrero Ceja · Mtro. Osvaldo Habib González González</p>
+  <div class="row"><button class="btn primary" data-go="2">Comenzar</button><span class="hint">También puedes usar las flechas ← → del teclado.</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-n="2" aria-label="Diapositiva 2" hidden>
+  <p class="eyebrow">Idea clave 1</p>
+  <h2>¿Qué es openpyxl?</h2>
+  <p class="lead">Una biblioteca que lee, crea y modifica archivos de Excel en formato .xlsx sin necesidad de tener Microsoft Excel instalado: leer y escribir celdas, crear libros y hojas, agregar filas, aplicar formato básico y escribir fórmulas.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Instalarla en el entorno virtual</h3>
+      <p style="font-size:.95rem">No es parte de la biblioteca estándar. Con el entorno del proyecto activado:</p>
+      <pre class="code">python -m pip install openpyxl
+python -m pip freeze &gt; requirements.txt
+python -c "import openpyxl; print(openpyxl.__version__)"</pre>
+      <p style="font-size:.93rem">La segunda línea actualiza las dependencias; la tercera verifica la instalación.</p>
+    </div>
+    <div class="panel">
+      <h3>Conceptos básicos</h3>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>Libro</dt><dd>Archivo de Excel completo (.xlsx). <i>workbook</i></dd>
+        <dt>Hoja</dt><dd>Pestaña dentro del libro; puede haber varias. <i>worksheet</i></dd>
+        <dt>Celda</dt><dd>Columna + fila. Contiene texto, número, fecha, fórmula o nada (None).</dd>
+        <dt>Fila</dt><dd>Horizontal; se identifica con número: 1, 2, 3…</dd>
+        <dt>Columna</dt><dd>Vertical; con letra (A, B, C…) o número (1, 2, 3…).</dd>
+      </dl>
+      <div class="chain"><span>libro</span><b>→</b><span>libro["Hoja"]</span><b>→</b><span>hoja["A1"]</span></div>
+      <p style="font-size:.93rem"><strong>Importante:</strong> filas y columnas inician en <strong>1</strong>, no en 0 como las listas de Python.</p>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="c">
+    <span class="tag">Actividad 1 · Opción múltiple</span>
+    <p class="q">¿Qué instrucción accede a la celda B3?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: esos números corresponden a contar desde 0, como en las listas; en openpyxl se cuenta desde 1, así que row=2, column=1 es A2."><span class="k">A</span><code>hoja.cell(row=2, column=1)</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: fila y columna están invertidas; row=2, column=3 es la celda C2."><span class="k">B</span><code>hoja.cell(row=2, column=3)</code></button>
+      <button class="opt" data-k="c" data-why="Correcto: B es la columna 2 y la fila es 3; openpyxl cuenta ambas desde 1."><span class="k">C</span><code>hoja.cell(row=3, column=2)</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: en la dirección va primero la letra de la columna; &quot;3B&quot; no es una coordenada válida y produce ValueError."><span class="k">D</span><code>hoja["3B"]</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3" aria-label="Diapositiva 3" hidden>
+  <p class="eyebrow">Idea clave 2</p>
+  <h2>Libros, hojas y celdas</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Libros y hojas</h3>
+      <dl class="terms" style="font-size:.9rem">
+        <dt>Workbook()</dt><dd>Crea un libro nuevo en memoria, con una hoja "Sheet".</dd>
+        <dt>load_workbook("archivo.xlsx")</dt><dd>Abre un libro existente.</dd>
+        <dt>libro.save("archivo.xlsx")</dt><dd>Guarda el libro en un archivo.</dd>
+        <dt>libro.sheetnames</dt><dd>Lista con los nombres de las hojas.</dd>
+        <dt>libro.active</dt><dd>Hoja activa (la que se ve al abrir).</dd>
+        <dt>libro["Calificaciones"]</dt><dd>Hoja por su nombre.</dd>
+        <dt>libro.create_sheet("Nombre")</dt><dd>Crea una hoja nueva.</dd>
+        <dt>hoja.title</dt><dd>Nombre de la hoja (leer o cambiar).</dd>
+        <dt>hoja.max_row · max_column</dt><dd>Última fila y última columna con datos.</dd>
+      </dl>
+      <p class="minilabel">Formas de importar</p>
+      <pre class="code" data-hl>import openpyxl                     # openpyxl.Workbook()
+from openpyxl import Workbook       # Workbook()
+from openpyxl import load_workbook  # load_workbook()</pre>
+    </div>
+    <div class="panel">
+      <h3>Explorador de celdas</h3>
+      <p style="font-size:.9rem;color:var(--muted)">Hoja "Calificaciones". Selecciona una celda para ver cómo se accede a ella.</p>
+      <div class="xl" id="cellGrid"></div>
+      <pre class="code" id="cellCode"></pre>
+      <p style="font-size:.9rem"><code>hoja.append([v1, v2, …])</code> agrega una fila después de la última con datos, y <code>hoja.iter_rows(…)</code> recorre las filas.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4" aria-label="Diapositiva 4" hidden>
+  <p class="eyebrow">Idea clave 3</p>
+  <h2>Crear un archivo Excel</h2>
+  <p class="lead">Problema: crear <code>calificaciones.xlsx</code> con los nombres de tres estudiantes y sus calificaciones.</p>
+  <div class="grid2">
+    <div class="panel">
+      <pre class="code" data-hl>from openpyxl import Workbook
+
+libro = Workbook()
+hoja = libro.active
+hoja.title = "Calificaciones"
+
+hoja.append(["Estudiante", "Calificación"])
+hoja.append(["Ana", 95])
+hoja.append(["Luis", 88])
+hoja.append(["Marta", 92])
+
+libro.save("calificaciones.xlsx")
+print("Archivo creado correctamente")</pre>
+      <ol class="plain" style="font-size:.92rem">
+        <li><code>Workbook()</code> crea el libro en memoria; el archivo aún no existe.</li>
+        <li><code>libro.active</code> obtiene la hoja activa, llamada "Sheet"; <code>hoja.title</code> la renombra.</li>
+        <li><code>append()</code> agrega cada lista como fila: cada elemento ocupa una columna.</li>
+        <li><code>save()</code> crea el archivo en la carpeta de trabajo. Hasta aquí no se guarda nada en disco.</li>
+      </ol>
+    </div>
+    <div class="panel">
+      <h3>Resultado en Excel</h3>
+      <div class="xl" id="resGrid"></div>
+      <ul class="plain" style="font-size:.92rem">
+        <li><code>append()</code> siempre agrega al final; no modifica una celda específica.</li>
+        <li>Los números van sin comillas (<code>95</code>, no <code>"95"</code>) para poder sumarlos o promediarlos.</li>
+        <li>Si ya existe un archivo con el mismo nombre, <code>save()</code> lo reemplaza sin avisar.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="activity" id="matchAct">
+    <span class="tag">Actividad 2 · Relacionar conceptos</span>
+    <p>Relaciona cada instrucción con lo que hace.</p>
+    <div class="match" id="match"></div>
+    <div class="row"><button class="btn primary" id="matchCheck">Revisar</button><button class="btn" id="matchReset">Reintentar</button></div>
+    <div class="fb" id="matchFb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5" aria-label="Diapositiva 5" hidden>
+  <p class="eyebrow">Idea clave 4</p>
+  <h2>Del algoritmo al código: crear el Excel con un ciclo</h2>
+  <p class="lead">Con un ciclo, el mismo programa funciona para 3 o para 300 estudiantes. Selecciona un paso del algoritmo o de la explicación para ver su correspondencia.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Algoritmo CREAR_EXCEL_CALIFICACIONES <span style="font-weight:400;color:var(--muted);font-size:.85rem">(estilo Cairó)</span></h3>
+      <ol class="alg" id="alg">
+        <li data-s="1" tabindex="0"><span class="no">1.</span>Inicio</li>
+        <li data-s="2" tabindex="0"><span class="no">2.</span>DATOS &lt;- [["Ana", 95], ["Luis", 88], ["Marta", 92]]</li>
+        <li data-s="3" tabindex="0"><span class="no">3.</span>LIBRO &lt;- Crear libro nuevo</li>
+        <li data-s="4" tabindex="0"><span class="no">4.</span>HOJA &lt;- Hoja activa de LIBRO</li>
+        <li data-s="5" tabindex="0"><span class="no">5.</span>Nombre de HOJA &lt;- "Calificaciones"</li>
+        <li data-s="6" tabindex="0"><span class="no">6.</span>Agregar fila ["Estudiante", "Calificación"] a HOJA</li>
+        <li data-s="7" tabindex="0"><span class="no">7.</span>Para cada FILA en DATOS repetir</li>
+        <li data-s="8" tabindex="0"><span class="no">8.</span>    Agregar FILA a HOJA</li>
+        <li data-s="9" tabindex="0"><span class="no">9.</span>Fin del paso 7</li>
+        <li data-s="10" tabindex="0"><span class="no">10.</span>Guardar LIBRO como "calificaciones.xlsx"</li>
+        <li data-s="11" tabindex="0"><span class="no">11.</span>Escribir "Archivo creado correctamente"</li>
+        <li data-s="12" tabindex="0"><span class="no">12.</span>Fin</li>
+      </ol>
+      <p class="minilabel">Descripción de variables</p>
+      <dl class="terms" style="font-size:.9rem">
+        <dt>DATOS</dt><dd>Lista de listas: nombre (cadena) y calificación (entero) de cada estudiante.</dd>
+        <dt>LIBRO</dt><dd>Objeto libro de Excel (Workbook).</dd>
+        <dt>HOJA</dt><dd>Objeto hoja de cálculo (Worksheet).</dd>
+        <dt>FILA</dt><dd>Lista. Datos de un estudiante en cada repetición.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>¿Qué ocurre en cada paso?</h3>
+      <ul class="exp" id="exp">
+        <li data-s="1" tabindex="0"><b>Paso 1</b> · Comienza. En Python, antes de todo va <code>from openpyxl import Workbook</code>.</li>
+        <li data-s="2" tabindex="0"><b>Paso 2</b> · <code>datos = [["Ana", 95], ["Luis", 88], ["Marta", 92]]</code></li>
+        <li data-s="3" tabindex="0"><b>Paso 3</b> · <code>libro = Workbook()</code> crea el libro en memoria.</li>
+        <li data-s="4" tabindex="0"><b>Paso 4</b> · <code>hoja = libro.active</code></li>
+        <li data-s="5" tabindex="0"><b>Paso 5</b> · <code>hoja.title = "Calificaciones"</code></li>
+        <li data-s="6" tabindex="0"><b>Paso 6</b> · <code>hoja.append(["Estudiante", "Calificación"])</code> escribe los encabezados en la fila 1.</li>
+        <li data-s="7" tabindex="0"><b>Paso 7</b> · <code>for fila in datos:</code> toma un estudiante en cada vuelta.</li>
+        <li data-s="8" tabindex="0"><b>Paso 8</b> · <code>hoja.append(fila)</code> agrega al estudiante en la siguiente fila libre.</li>
+        <li data-s="9" tabindex="0"><b>Paso 9</b> · En Python el ciclo termina donde termina su indentación.</li>
+        <li data-s="10" tabindex="0"><b>Paso 10</b> · <code>libro.save("calificaciones.xlsx")</code>: ahora sí existe el archivo en disco.</li>
+        <li data-s="11" tabindex="0"><b>Paso 11</b> · <code>print("Archivo creado correctamente")</code></li>
+        <li data-s="12" tabindex="0"><b>Paso 12</b> · Fin: archivo con encabezados y tres filas de datos.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6" aria-label="Diapositiva 6" hidden>
+  <p class="eyebrow">Idea clave 5</p>
+  <h2>Crear el Excel: ejecución paso a paso</h2>
+  <p class="lead">Avanza línea por línea y observa la memoria, la hoja que se va llenando y el momento en que el archivo llega al disco.</p>
+  <div class="stepper">
+    <div class="panel">
+      <div class="codebox" id="sCode" aria-label="Código del programa"></div>
+      <div class="row">
+        <button class="btn" id="sPrev">← Anterior</button>
+        <button class="btn primary" id="sNext">Siguiente →</button>
+        <button class="btn" id="sReset">Reiniciar</button>
+        <span class="stepcount" id="sCount"></span>
+      </div>
+      <div class="note" id="sNote" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <p class="minilabel">Tabla de memoria</p>
+      <div class="tablewrap">
+        <table class="mem"><thead><tr><th>Variable</th><th>Valor actual</th><th>Valor anterior</th></tr></thead><tbody id="sMem"></tbody></table>
+      </div>
+      <p class="minilabel">Hoja en memoria</p>
+      <div class="xl" id="sFile"></div>
+      <div class="disk" id="sDisk"></div>
+      <p class="minilabel">Salida en consola</p>
+      <div class="console" id="sOut"></div>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="b">
+    <span class="tag">Pregunta de predicción</span>
+    <p class="q">¿Qué valor tendrá <code>hoja.max_row</code> después de que la línea 8 se ejecute por <strong>segunda</strong> vez? Responde antes de avanzar el código hasta ese punto.</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: 2 cuenta solo a los estudiantes agregados; max_row también incluye la fila 1 de encabezados."><span class="k">A</span><code>2</code></button>
+      <button class="opt" data-k="b" data-why="Correcto: la fila 1 tiene los encabezados, la 2 a Ana y la 3 a Luis; la última fila con datos es la 3."><span class="k">B</span><code>3</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: 4 es el valor al terminar el ciclo, cuando ya se agregó también a Marta."><span class="k">C</span><code>4</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: las filas en openpyxl se cuentan desde 1, no desde 0; además, max_row indica una fila, no una posición de lista."><span class="k">D</span><code>1</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-n="7" aria-label="Diapositiva 7" hidden>
+  <p class="eyebrow">Idea clave 6</p>
+  <h2>Leer un archivo Excel</h2>
+  <div class="grid2">
+    <div class="panel">
+      <pre class="code" data-hl>from openpyxl import load_workbook
+
+libro = load_workbook("calificaciones.xlsx")
+hoja = libro.active
+
+for fila in hoja.iter_rows(min_row=2, values_only=True):
+    print(fila)</pre>
+      <dl class="terms" style="font-size:.9rem">
+        <dt>min_row, max_row</dt><dd>Primera y última fila a recorrer.</dd>
+        <dt>min_col, max_col</dt><dd>Primera y última columna (números).</dd>
+        <dt>values_only=True</dt><dd>Devuelve los valores en una tupla, en lugar de objetos celda.</dd>
+      </dl>
+      <h3>Desempaquetar y leer celdas</h3>
+      <pre class="code" data-hl>for nombre, calificacion in hoja.iter_rows(min_row=2, max_col=2,
+                                          values_only=True):
+    print(nombre, "obtuvo", calificacion)
+
+print(hoja["A2"].value)                   # Ana
+print(hoja.cell(row=3, column=2).value)   # 88</pre>
+      <p style="font-size:.9rem"><code>max_col=2</code> asegura dos valores por fila; con más columnas el desempaquetado fallaría con ValueError.</p>
+    </div>
+    <div class="panel">
+      <h3>Explorador de iter_rows()</h3>
+      <div class="ctrl">
+        <span class="lbl">min_row</span>
+        <div class="switch" role="group" aria-label="min_row"><button type="button" data-ir="min" data-v="1" aria-pressed="false">1</button><button type="button" data-ir="min" data-v="2" aria-pressed="true">2</button></div>
+        <span class="lbl">max_col</span>
+        <div class="switch" role="group" aria-label="max_col"><button type="button" data-ir="col" data-v="0" aria-pressed="true">sin indicar</button><button type="button" data-ir="col" data-v="1" aria-pressed="false">1</button></div>
+        <span class="lbl">values_only</span>
+        <div class="switch" role="group" aria-label="values_only"><button type="button" data-ir="vo" data-v="1" aria-pressed="true">True</button><button type="button" data-ir="vo" data-v="0" aria-pressed="false">False</button></div>
+      </div>
+      <pre class="code" id="irCode"></pre>
+      <p class="minilabel">Salida</p>
+      <div class="console" id="irOut" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="activity">
+    <span class="tag">Actividad 3 · Revelar respuesta</span>
+    <p>Se quiere mostrar el encabezado de la columna A del libro <code>calificaciones.xlsx</code> (hoja "Calificaciones"). ¿Qué muestra este código, por qué y cómo se corrige?</p>
+    <pre class="code" data-hl>print(hoja["A1"])</pre>
+    <div class="row"><button class="btn primary" id="revealBtn" aria-expanded="false" aria-controls="revealBox">Revelar respuesta</button></div>
+    <div id="revealBox" class="note" hidden>
+      <p><strong>Muestra:</strong> <code>&lt;Cell 'Calificaciones'.A1&gt;</code>.</p>
+      <p style="margin-top:6px"><strong>Por qué:</strong> <code>hoja["A1"]</code> es la celda (el objeto), no su contenido.</p>
+      <p style="margin-top:6px"><strong>Corrección:</strong> leer su valor con <code>.value</code>.</p>
+      <pre class="code" data-hl style="margin-top:6px">print(hoja["A1"].value)   # Estudiante</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-n="8" aria-label="Diapositiva 8" hidden>
+  <p class="eyebrow">Idea clave 7</p>
+  <h2>Modificar, calcular y evitar errores</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Modificar una celda y guardar</h3>
+      <pre class="code" data-hl>libro = load_workbook("calificaciones.xlsx")
+hoja = libro["Calificaciones"]
+hoja["B3"] = 90                  # Luis: de 88 a 90
+libro.save("calificaciones.xlsx")</pre>
+      <h3>Escribir una fórmula</h3>
+      <pre class="code" data-hl>hoja["D1"] = "Promedio"
+hoja["D2"] = "=AVERAGE(B2:B4)"</pre>
+      <p style="font-size:.9rem">Texto que inicia con <code>=</code> y funciones en <strong>inglés</strong> (AVERAGE, SUM, MAX), aunque Excel esté en español. Excel la calcula al abrir el archivo; openpyxl no.</p>
+    </div>
+    <div class="panel">
+      <h3>Calcular el promedio con Python</h3>
+      <pre class="code" data-hl>suma = 0
+cantidad = 0
+for nombre, calificacion in hoja.iter_rows(min_row=2, max_col=2,
+                                          values_only=True):
+    suma = suma + calificacion
+    cantidad = cantidad + 1
+print("Promedio:", suma / cantidad)</pre>
+      <h3>Manejo básico de errores</h3>
+      <pre class="code" data-hl>try:
+    libro = load_workbook("calificaciones.xlsx")
+    hoja = libro.active
+    hoja.append(["Pedro", 85])
+    libro.save("calificaciones.xlsx")
+except FileNotFoundError:
+    print("El archivo no existe.")
+except PermissionError:
+    print("Cierre el archivo en Excel e intente de nuevo.")</pre>
+    </div>
+  </div>
+  <div class="errs">
+    <div><b>FileNotFoundError</b><code>load_workbook()</code> con un archivo inexistente o ruta incorrecta.</div>
+    <div><b>PermissionError</b>En Windows, <code>save()</code> con el archivo abierto en Excel.</div>
+    <div><b>Sin save()</b>Los cambios se pierden al terminar el programa.</div>
+    <div><b>InvalidFileException</b>Archivos .xls antiguos; guárdalos como .xlsx. Para .csv usa <code>open()</code> o csv.</div>
+    <div><b>Fórmulas</b>Se leen como texto; con <code>data_only=True</code>, el último resultado guardado por Excel o None.</div>
+    <div><b>ValueError</b><code>hoja.cell(row=0, column=0)</code>: filas y columnas inician en 1.</div>
+    <div><b>KeyError</b><code>libro["Calificacion"]</code> si la hoja no existe; revisa <code>sheetnames</code>.</div>
+    <div><b>Texto, no número</b><code>append(["Ana", "95"])</code> guarda texto; usa 95 o <code>int("95")</code>.</div>
+    <div><b>None</b>Celdas vacías: valida antes de operar para evitar TypeError.</div>
+    <div><b>Datos sensibles</b>Revisa que no haya matrículas, calificaciones o correos antes de compartir.</div>
+  </div>
+  <div class="activity mc" data-correct="a">
+    <span class="tag">Actividad 4 · Opción múltiple</span>
+    <p class="q">Un programa escribió <code>hoja["D2"] = "=AVERAGE(B2:B4)"</code> y guardó el archivo, que nunca se ha abierto en Excel. Otro programa lo abre con <code>load_workbook("calificaciones.xlsx")</code>. ¿Qué muestra <code>print(hoja["D2"].value)</code>?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Correcto: openpyxl no calcula fórmulas; al leer, obtiene el texto de la fórmula."><span class="k">A</span><code>=AVERAGE(B2:B4)</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: ese es el promedio que calcularía Excel al abrir el archivo; openpyxl no lo calcula."><span class="k">B</span><code>91.66666666666667</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: None se obtendría con data_only=True, porque Excel nunca guardó un resultado."><span class="k">C</span><code>None</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: las fórmulas se escriben con nombres en inglés y openpyxl conserva exactamente el texto escrito."><span class="k">D</span><code>=PROMEDIO(B2:B4)</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-n="9" aria-label="Diapositiva 9" hidden>
+  <p class="eyebrow">Autoevaluación</p>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p class="lead">Cinco reactivos. Cada respuesta queda fija al elegirla; al final verás tus aciertos. Todos usan el libro <code>calificaciones.xlsx</code> de este recurso.</p>
+  <div class="quiz" id="quiz">
+    <div class="activity mc quiz-item" data-correct="d" data-quiz>
+      <span class="tag">Reactivo 1</span>
+      <p class="q">El programa modifica una celda y termina. Al abrir el archivo en Excel, B3 sigue valiendo 88. ¿Qué faltó?</p>
+      <pre class="code" data-hl>libro = load_workbook("calificaciones.xlsx")
+hoja = libro["Calificaciones"]
+hoja["B3"] = 90</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: .value sirve para leer o asignar, pero hoja[&quot;B3&quot;] = 90 también asigna el valor en memoria."><span class="k">A</span>Escribir <code>hoja["B3"].value</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: append() agrega una fila nueva al final; no modifica una celda específica."><span class="k">B</span>Usar <code>hoja.append([90])</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: la hoja ya se obtuvo por su nombre; usar active daría la misma hoja."><span class="k">C</span>Usar <code>libro.active</code></button>
+        <button class="opt" data-k="d" data-why="Correcto: el cambio quedó en memoria; sin save() se pierde al terminar el programa."><span class="k">D</span>Ejecutar <code>libro.save(…)</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="b" data-quiz>
+      <span class="tag">Reactivo 2</span>
+      <p class="q">¿Qué produce <code>libro["Calificacion"]</code> si la hoja se llama "Calificaciones"?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: openpyxl no crea hojas al consultarlas por nombre; para eso está create_sheet()."><span class="k">A</span>Crea la hoja "Calificacion"</button>
+        <button class="opt" data-k="b" data-why="Correcto: la hoja no existe con ese nombre exacto; se revisa con libro.sheetnames."><span class="k">B</span>Se produce KeyError</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: no busca nombres parecidos; el nombre debe ser exacto."><span class="k">C</span>Devuelve "Calificaciones"</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: None es el valor de una celda vacía, no el resultado de pedir una hoja inexistente."><span class="k">D</span>Devuelve el valor None</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 3</span>
+      <p class="q">El libro tiene encabezados en la fila 1 y datos hasta la fila 4. ¿Qué filas recorre este ciclo?</p>
+      <pre class="code" data-hl>for fila in range(2, hoja.max_row + 1):
+    print(hoja.cell(row=fila, column=1).value)</pre>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: range() empieza en 2, así que omite la fila 1 de encabezados."><span class="k">A</span>De la 1 a la 4</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: se suma 1 a max_row precisamente para incluir la fila 4, porque range() no incluye el último número."><span class="k">B</span>De la 2 a la 3</button>
+        <button class="opt" data-k="c" data-why="Correcto: max_row vale 4 y range(2, 5) produce 2, 3 y 4: todas las filas de datos."><span class="k">C</span>De la 2 a la 4</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: range(2, 5) no llega a 5; además, la fila 5 está vacía."><span class="k">D</span>De la 2 a la 5</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 4</span>
+      <p class="q">Se ejecuta <code>hoja.append(["Pedro", "85"])</code> y luego se calcula el promedio sumando la columna B con Python. ¿Qué ocurre al llegar a Pedro?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: &quot;85&quot; quedó guardado como texto; sumar un entero con una cadena produce TypeError. Debía ser 85 o int(&quot;85&quot;)."><span class="k">A</span>Se produce TypeError</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: openpyxl guarda el valor tal como se escribe; no convierte el texto en número."><span class="k">B</span>Suma 85 sin problema</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: el valor no está vacío; contiene el texto &quot;85&quot;."><span class="k">C</span>Lee el valor None</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: append() acepta texto; el problema aparece hasta que se intenta operar con él."><span class="k">D</span>append() rechaza la fila</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="d" data-quiz>
+      <span class="tag">Reactivo 5</span>
+      <p class="q">Un compañero comparte <code>reporte.xls</code>, guardado en una versión antigua de Excel. ¿Qué ocurre con <code>load_workbook("reporte.xls")</code>?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: openpyxl no lee el formato .xls antiguo."><span class="k">A</span>Lo abre de forma normal</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: el archivo sí existe; FileNotFoundError aparece cuando no se encuentra."><span class="k">B</span>Se produce FileNotFoundError</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: openpyxl no convierte formatos; hay que abrirlo en Excel y guardarlo como .xlsx."><span class="k">C</span>Lo convierte a .xlsx solo</button>
+        <button class="opt" data-k="d" data-why="Correcto: el formato .xls no es compatible y openpyxl genera InvalidFileException."><span class="k">D</span>Se produce InvalidFileException</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel row" style="justify-content:space-between">
+    <span class="score" id="score" aria-live="polite">Aciertos: 0 / 5</span>
+    <button class="btn" id="quizReset">Reiniciar autoevaluación</button>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-n="10" aria-label="Diapositiva 10" hidden>
+  <p class="eyebrow">Resumen</p>
+  <h2>Lo esencial de openpyxl</h2>
+  <div class="summary">
+    <div><h3>Abrir</h3><p><code>Workbook()</code> crea un libro nuevo; <code>load_workbook()</code> abre uno existente.</p></div>
+    <div><h3>Ubicar</h3><p><code>hoja["B3"]</code> o <code>hoja.cell(row=3, column=2)</code>; filas y columnas desde 1; el contenido, con <code>.value</code>.</p></div>
+    <div><h3>Escribir y leer</h3><p><code>append()</code> agrega filas al final; <code>iter_rows(values_only=True)</code> las recorre.</p></div>
+    <div><h3>Guardar</h3><p><code>save()</code> lleva los cambios al disco y reemplaza sin avisar.</p></div>
+  </div>
+  <div class="panel">
+    <h3>Para practicar</h3>
+    <ol class="plain">
+      <li>Crea inventario.xlsx con los encabezados Producto, Cantidad y Precio, y cinco productos.</li>
+      <li>Lee inventario.xlsx y muestra cada producto con su cantidad.</li>
+      <li>Calcula con Python el valor total del inventario (cantidad × precio de cada producto).</li>
+      <li>Pide un nombre y una calificación y agrégalos a calificaciones.xlsx sin borrar los anteriores.</li>
+      <li>Muestra solo los estudiantes con calificación menor a 70.</li>
+      <li>Crea un libro con dos hojas (Grupo_A y Grupo_B) con tres estudiantes en cada una.</li>
+      <li>Pon en negritas los encabezados de calificaciones.xlsx y agrega en D2 una fórmula que calcule el promedio.</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h3>Para saber más: varias hojas y formato</h3>
+    <pre class="code" data-hl>from openpyxl import Workbook
+from openpyxl.styles import Font
+
+libro = Workbook()
+hoja1 = libro.active
+hoja1.title = "Grupo_A"
+hoja2 = libro.create_sheet("Grupo_B")
+print(libro.sheetnames)          # ['Grupo_A', 'Grupo_B']
+
+for celda in hoja1[1]:           # fila 1 (encabezados)
+    celda.font = Font(bold=True)
+hoja1.column_dimensions["A"].width = 15</pre>
+  </div>
+  <div class="panel">
+    <h3>Fuentes</h3>
+    <ul class="refs">
+      <li>Cairó, O. (2005). <i>Metodología de la programación: Algoritmos, diagramas de flujo y programas</i> (3.ª ed.). Alfaomega.</li>
+      <li><i>Guía express: Módulo openpyxl en Python</i> [Material didáctico no publicado]. (2026). Unidad de aprendizaje Programación básica, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</li>
+    </ul>
+  </div>
+</section>
+
+    </div></div>
+  </main>
+
+  <footer class="bottom band">
+    <div class="inner">
+      <button class="btn" id="prev">← Anterior</button>
+      <span class="hint">Usa ← → para navegar · Esc cierra la ficha</span>
+      <button class="btn primary" id="next">Siguiente →</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle" hidden>
+  <div class="sheet">
+    <header>
+      <div><p class="eyebrow">Ficha del recurso</p><h2 id="fichaTitle" style="font-size:1.4rem">Excel desde Python: crear y leer hojas de cálculo con openpyxl</h2></div>
+      <button class="btn" id="fichaClose" aria-label="Cerrar ficha">Cerrar ✕</button>
+    </header>
+    <dl>
+      <div><dt>Objetivo de aprendizaje</dt><dd>Aplicar las funciones de la biblioteca openpyxl para crear, leer y modificar archivos de Excel (.xlsx) desde Python, ubicando celdas por dirección o por fila y columna, y anticipando los errores más comunes al abrir y guardar libros.</dd></div>
+      <div><dt>Autores</dt><dd>Dra. Perla Marlene Viera González, Dr. Guillermo Ezequiel Sanchez Guerrero, Dr. Yazmany Jahaziel Guerrero Ceja, Mtro. Osvaldo Habib González González</dd></div>
+      <div><dt>Unidad de aprendizaje</dt><dd>Programación básica · Tema: Manejo de archivos Excel</dd></div>
+      <div><dt>Palabras clave</dt><dd class="chips"><span>openpyxl</span><span>Excel</span><span>libro y hoja de cálculo</span><span>celdas</span><span>iter_rows()</span></dd></div>
+      <div><dt>Descripción</dt><dd>El estudiante aprende a usar la biblioteca openpyxl para crear, leer y modificar archivos de Excel desde Python, ubicar celdas por dirección o por fila y columna, y prevenir errores comunes como olvidar guardar o almacenar números como texto. Interactúa con un explorador de celdas, un algoritmo vinculado a su código, una ejecución paso a paso que llena la hoja, un explorador de iter_rows() y actividades con retroalimentación inmediata. Tiempo estimado: 40 minutos.</dd></div>
+      <div><dt>Audiencia</dt><dd>Estudiantes universitarios de unidades de aprendizaje relacionadas con las ciencias exactas.</dd></div>
+      <div><dt>Competencias que desarrolla el estudiante</dt><dd><ol>
+        <li>Seleccionar la función de openpyxl adecuada para crear, leer, modificar o recorrer un libro de Excel según el problema, anticipando errores como KeyError, PermissionError o datos guardados como texto.<span class="align">Alineada con: Emplear pensamiento lógico, crítico, creativo y propositivo…</span></li>
+        <li>Representar la generación de un libro de Excel mediante un algoritmo estilo Cairó con ciclo y su código Python equivalente, relacionando las coordenadas de las celdas con su número de fila y columna.<span class="align">Alineada con: Utilizar los lenguajes lógico, formal, matemático, icónico, verbal y no verbal…</span></li>
+        <li>Programar en Python la creación, la lectura y la modificación de archivos .xlsx con openpyxl, guardando los cambios con save() y rastreando en una tabla de memoria el efecto de cada instrucción sobre la hoja.<span class="align">Alineada con: Desarrollar tecnologías computacionales utilizando herramientas de software…</span></li>
+      </ol></dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  /* ---------- resaltado de sintaxis propio ---------- */
+  var KW = {"with":1,"as":1,"for":1,"in":1,"try":1,"except":1,"import":1,"from":1,"if":1,"else":1,"not":1,"and":1,"is":1,"def":1,"return":1,"None":1,"True":1,"False":1};
+  var BI = {"print":1,"str":1,"len":1,"int":1,"range":1,"Workbook":1,"load_workbook":1,"Font":1};
+  function hl(src){
+    var re = /(#[^\n]*)|([rRbf]?"(?:[^"\\\n]|\\.)*"|[rRbf]?'(?:[^'\\\n]|\\.)*')|([A-Za-z_]\w*)|(\d+)/g;
+    var out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += '<span class="t-com">' + esc(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="t-str">' + esc(m[2]) + '</span>';
+      else if (m[3]) {
+        var w = m[3];
+        if (KW[w]) out += '<span class="t-kw">' + w + '</span>';
+        else if (BI[w] && src.charAt(re.lastIndex) === "(") out += '<span class="t-bi">' + w + '</span>';
+        else if (src.charAt(m.index - 1) === "." && src.charAt(re.lastIndex) === "(") out += '<span class="t-fn">' + w + '</span>';
+        else out += w;
+      } else out += '<span class="t-num">' + m[4] + '</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  $$("pre[data-hl]").forEach(function(p){ p.innerHTML = hl(p.textContent); });
+
+  /* ---------- navegación ---------- */
+  var slides = $$(".slide"), total = slides.length, cur = 0;
+  var stage = $("#stage"), prevB = $("#prev"), nextB = $("#next");
+  function go(i){
+    if (i < 0 || i >= total) return;
+    slides[cur].hidden = true; cur = i; slides[cur].hidden = false;
+    $("#counter").textContent = (cur + 1) + " / " + total;
+    $("#bar").style.width = ((cur + 1) / total * 100) + "%";
+    prevB.disabled = cur === 0; nextB.disabled = cur === total - 1;
+    stage.scrollTop = 0;
+  }
+  prevB.addEventListener("click", function(){ go(cur - 1); });
+  nextB.addEventListener("click", function(){ go(cur + 1); });
+  $$("[data-go]").forEach(function(b){ b.addEventListener("click", function(){ go(+b.getAttribute("data-go") - 1); }); });
+
+  /* ---------- ficha ---------- */
+  var ficha = $("#ficha"), fichaBtn = $("#fichaBtn");
+  function openFicha(){ ficha.hidden = false; $("#fichaClose").focus(); }
+  function closeFicha(){ ficha.hidden = true; fichaBtn.focus(); }
+  fichaBtn.addEventListener("click", function(){ ficha.hidden ? openFicha() : closeFicha(); });
+  $("#fichaClose").addEventListener("click", closeFicha);
+  ficha.addEventListener("click", function(e){ if (e.target === ficha) closeFicha(); });
+
+  document.addEventListener("keydown", function(e){
+    if (!ficha.hidden) { if (e.key === "Escape") { e.preventDefault(); closeFicha(); } return; }
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  /* ---------- opción múltiple ---------- */
+  function mcSetup(box){
+    var correct = box.getAttribute("data-correct"), quiz = box.hasAttribute("data-quiz");
+    var opts = $$(".opt", box), fb = $(".fb", box);
+    box._answered = false; box._right = false;
+    function reset(){
+      opts.forEach(function(o){ o.disabled = false; o.classList.remove("ok","bad"); });
+      fb.innerHTML = ""; box._answered = false; box._right = false;
+    }
+    box._reset = reset;
+    opts.forEach(function(o){
+      o.addEventListener("click", function(){
+        if (box._answered) return;
+        var k = o.getAttribute("data-k"), right = k === correct;
+        box._answered = true; box._right = right;
+        opts.forEach(function(x){ x.disabled = true; });
+        o.classList.add(right ? "ok" : "bad");
+        $$(".opt[data-k='" + correct + "']", box)[0].classList.add("ok");
+        var html = '<p class="verdict ' + (right ? "ok" : "bad") + '">' + (right ? "¡Correcto!" : "Respuesta incorrecta.") + '</p><ul class="why">';
+        opts.forEach(function(x){
+          var kk = x.getAttribute("data-k");
+          html += '<li class="' + (kk === correct ? "c" : "") + '"><strong>' + kk.toUpperCase() + ':</strong> ' + esc(x.getAttribute("data-why")) + '</li>';
+        });
+        html += '</ul>';
+        if (!quiz) html += '<div><button class="btn retry">Intentar de nuevo</button></div>';
+        fb.innerHTML = html;
+        var r = $(".retry", fb); if (r) r.addEventListener("click", function(){ reset(); opts[0].focus(); });
+        if (quiz) updateScore();
+      });
+    });
+  }
+  $$(".mc").forEach(mcSetup);
+
+  var qItems = $$(".quiz-item");
+  function updateScore(){
+    var done = 0, ok = 0;
+    qItems.forEach(function(q){ if (q._answered) { done++; if (q._right) ok++; } });
+    var s = "Aciertos: " + ok + " / " + qItems.length;
+    if (done === qItems.length) s += ok === qItems.length ? " · ¡Excelente!" : ok >= 3 ? " · Buen trabajo; repasa los reactivos fallados." : " · Repasa las diapositivas 3, 7 y 8.";
+    $("#score").textContent = s;
+  }
+  $("#quizReset").addEventListener("click", function(){ qItems.forEach(function(q){ q._reset(); }); updateScore(); });
+
+  /* ---------- hoja de cálculo reutilizable ---------- */
+  var COLS = ["A", "B", "C"];
+  var DATA = [["Estudiante", "Calificación"], ["Ana", 95], ["Luis", 88], ["Marta", 92]];
+  function gridHTML(rows, opt){
+    opt = opt || {};
+    var nRows = opt.nRows || 5, h = '<table><thead><tr><th></th>' + COLS.map(function(c){ return "<th>" + c + "</th>"; }).join("") + "</tr></thead><tbody>";
+    for (var r = 1; r <= nRows; r++) {
+      h += "<tr><th>" + r + "</th>";
+      COLS.forEach(function(c, ci){
+        var v = rows[r - 1] ? rows[r - 1][ci] : undefined, cls = [];
+        if (typeof v === "number") cls.push("num");
+        if (r === 1 && v !== undefined) cls.push("hdr");
+        if (opt.sel === c + r) cls.push("sel");
+        if (opt.newRow === r && v !== undefined) cls.push("new");
+        h += '<td class="' + cls.join(" ") + '"' + (opt.click ? ' tabindex="0" data-c="' + c + r + '"' : "") + ">" + (v === undefined ? "" : esc(v)) + "</td>";
+      });
+      h += "</tr>";
+    }
+    h += "</tbody></table>";
+    if (opt.tab) h += '<div class="tabs"><span>' + esc(opt.tab) + "</span></div>";
+    return h;
+  }
+  $("#resGrid").innerHTML = gridHTML(DATA, { tab: "Calificaciones" });
+
+  /* ---------- explorador de celdas ---------- */
+  var cellSel = "B3";
+  function pyVal(v){ return v === undefined ? "None" : typeof v === "number" ? String(v) : "'" + v + "'"; }
+  function renderCells(){
+    $("#cellGrid").innerHTML = gridHTML(DATA, { sel: cellSel, click: 1, tab: "Calificaciones" });
+    var col = cellSel.charAt(0), row = +cellSel.slice(1), ci = COLS.indexOf(col);
+    var v = DATA[row - 1] ? DATA[row - 1][ci] : undefined;
+    $("#cellCode").innerHTML = hl('hoja["' + cellSel + '"].value                    # ' + pyVal(v) + '\nhoja.cell(row=' + row + ', column=' + (ci + 1) + ').value       # ' + pyVal(v) + (v === undefined ? "\n# celda vacía: su valor es None" : ""));
+    $$("#cellGrid td[data-c]").forEach(function(td){
+      td.addEventListener("click", function(){ cellSel = td.getAttribute("data-c"); renderCells(); $('#cellGrid td[data-c="' + cellSel + '"]').focus(); });
+      td.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); td.click(); } });
+    });
+  }
+  renderCells();
+
+  /* ---------- explorador de iter_rows ---------- */
+  var IR = { min: "2", col: "0", vo: "1" };
+  function renderIR(){
+    $$(".switch [data-ir]").forEach(function(b){ b.setAttribute("aria-pressed", IR[b.getAttribute("data-ir")] === b.getAttribute("data-v") ? "true" : "false"); });
+    var args = ["min_row=" + IR.min]; if (IR.col !== "0") args.push("max_col=" + IR.col); args.push("values_only=" + (IR.vo === "1" ? "True" : "False"));
+    $("#irCode").innerHTML = hl("for fila in hoja.iter_rows(" + args.join(", ") + "):\n    print(fila)");
+    var nc = IR.col === "0" ? 2 : 1, lines = [];
+    for (var r = +IR.min; r <= 4; r++) {
+      var parts = [];
+      for (var c = 0; c < nc; c++) parts.push(IR.vo === "1" ? pyVal(DATA[r - 1][c]) : "<Cell 'Calificaciones'." + COLS[c] + r + ">");
+      lines.push("(" + parts.join(", ") + (nc === 1 ? "," : "") + ")");
+    }
+    $("#irOut").textContent = lines.join("\n");
+  }
+  $$(".switch [data-ir]").forEach(function(b){ b.addEventListener("click", function(){ IR[b.getAttribute("data-ir")] = b.getAttribute("data-v"); renderIR(); }); });
+  renderIR();
+
+  /* ---------- revelar ---------- */
+  $("#revealBtn").addEventListener("click", function(){
+    var box = $("#revealBox"), open = box.hidden;
+    box.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false");
+    this.textContent = open ? "Ocultar respuesta" : "Revelar respuesta";
+  });
+
+  /* ---------- resaltado vinculado ---------- */
+  function setLinked(s){
+    $$("#alg li, #exp li").forEach(function(li){ li.classList.toggle("on", li.getAttribute("data-s") === s); });
+  }
+  $$("#alg li, #exp li").forEach(function(li){
+    li.addEventListener("click", function(){ setLinked(li.getAttribute("data-s")); });
+    li.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLinked(li.getAttribute("data-s")); } });
+  });
+  setLinked("8");
+
+  /* ---------- ejecución paso a paso ---------- */
+  var SCODE = [
+    'from openpyxl import Workbook',
+    'datos = [["Ana", 95], ["Luis", 88], ["Marta", 92]]',
+    'libro = Workbook()',
+    'hoja = libro.active',
+    'hoja.title = "Calificaciones"',
+    'hoja.append(["Estudiante", "Calificación"])',
+    'for fila in datos:',
+    '    hoja.append(fila)',
+    'libro.save("calificaciones.xlsx")',
+    'print("Archivo creado correctamente")'
+  ];
+  var DATOS = '[["Ana", 95], ["Luis", 88], ["Marta", 92]]';
+  var D = [
+    { line: 0, note: "Estado inicial: el programa aún no se ejecuta y calificaciones.xlsx no existe." },
+    { line: 1, note: "Se importa Workbook desde la biblioteca openpyxl (instalada en el entorno virtual)." },
+    { line: 2, v: { datos: DATOS }, note: "datos es una lista de listas: cada elemento tiene un nombre y una calificación." },
+    { line: 3, v: { libro: "Workbook (en memoria)", "hoja.max_row": "1" }, tab: "Sheet", rows: 0, note: "Workbook() crea un libro nuevo en memoria con una hoja llamada \"Sheet\". Aún no hay archivo en disco." },
+    { line: 4, v: { hoja: "Worksheet 'Sheet'" }, note: "hoja guarda la hoja activa del libro." },
+    { line: 5, v: { hoja: "Worksheet 'Calificaciones'" }, tab: "Calificaciones", note: "hoja.title cambia el nombre de la pestaña." },
+    { line: 6, rows: 1, nr: 1, note: "append() escribe los encabezados en la fila 1: cada elemento de la lista ocupa una columna. max_row sigue en 1." },
+    { line: 7, v: { fila: '["Ana", 95]' }, note: "Primera vuelta del ciclo: fila toma los datos de Ana." },
+    { line: 8, v: { "hoja.max_row": "2" }, rows: 2, nr: 2, note: "append() agrega a Ana en la siguiente fila libre: la 2." },
+    { line: 7, v: { fila: '["Luis", 88]' }, note: "Segunda vuelta: fila toma los datos de Luis." },
+    { line: 8, v: { "hoja.max_row": "3" }, rows: 3, nr: 3, note: "Luis queda en la fila 3." },
+    { line: 7, v: { fila: '["Marta", 92]' }, note: "Tercera vuelta: fila toma los datos de Marta." },
+    { line: 8, v: { "hoja.max_row": "4" }, rows: 4, nr: 4, note: "Marta queda en la fila 4." },
+    { line: 7, note: "No quedan elementos en datos: termina el ciclo." },
+    { line: 9, disk: 1, note: "save() crea calificaciones.xlsx en la carpeta de trabajo. Si ya existiera, lo reemplazaría sin avisar." },
+    { line: 10, out: "Archivo creado correctamente", note: "Se muestra el mensaje de confirmación." },
+    { line: 0, note: "Fin del programa." }
+  ];
+  var VARS = ["datos", "libro", "hoja", "fila", "hoja.max_row"];
+  var blank = {}; VARS.forEach(function(v){ blank[v] = "—"; });
+  var S = [], st = { vals: Object.assign({}, blank), ant: Object.assign({}, blank), out: [], rows: -1, tab: "", disk: 0 };
+  D.forEach(function(d){
+    var n = { vals: Object.assign({}, st.vals), ant: Object.assign({}, st.ant), out: st.out.slice(), chg: {}, line: d.line, note: d.note,
+      rows: d.hasOwnProperty("rows") ? d.rows : st.rows, tab: d.tab || st.tab, disk: d.disk || st.disk, nr: d.nr || 0 };
+    if (d.v) Object.keys(d.v).forEach(function(k){ n.ant[k] = n.vals[k]; n.vals[k] = d.v[k]; n.chg[k] = true; });
+    if (d.out) n.out.push(d.out);
+    S.push(n); st = n;
+  });
+  var sCode = $("#sCode");
+  sCode.innerHTML = SCODE.map(function(l, i){ return '<div class="ln" data-l="' + (i + 1) + '"><span class="no">' + (i + 1) + '</span><span>' + hl(l) + '</span></div>'; }).join("");
+  var si = 0;
+  function renderStep(){
+    var s = S[si];
+    $$(".ln", sCode).forEach(function(el){ el.classList.toggle("exec", +el.getAttribute("data-l") === s.line); });
+    $("#sMem").innerHTML = VARS.map(function(v){
+      return '<tr class="' + (s.chg[v] ? "chg" : "") + '"><td>' + v + '</td><td>' + esc(s.vals[v]) + '</td><td>' + esc(s.ant[v]) + '</td></tr>';
+    }).join("");
+    $("#sFile").innerHTML = s.rows < 0 ? '<span class="pr" style="color:var(--muted)">(aún no hay libro en memoria)</span>' : gridHTML(DATA.slice(0, s.rows), { tab: s.tab, newRow: s.nr });
+    var dk = $("#sDisk");
+    dk.className = "disk" + (s.disk ? " saved" : "");
+    dk.textContent = s.disk ? "En disco: calificaciones.xlsx guardado" : "En disco: calificaciones.xlsx todavía no existe";
+    $("#sOut").innerHTML = s.out.length ? s.out.map(esc).join("\n") : '<span class="pr">(sin salida)</span>';
+    $("#sNote").textContent = (s.line ? "Línea " + s.line + ": " : "") + s.note;
+    $("#sCount").textContent = "Paso " + si + " de " + (S.length - 1);
+    $("#sPrev").disabled = si === 0; $("#sNext").disabled = si === S.length - 1;
+  }
+  $("#sPrev").addEventListener("click", function(){ if (si > 0) { si--; renderStep(); } });
+  $("#sNext").addEventListener("click", function(){ if (si < S.length - 1) { si++; renderStep(); } });
+  $("#sReset").addEventListener("click", function(){ si = 0; renderStep(); });
+  renderStep();
+
+  /* ---------- relacionar ---------- */
+  var PAIRS = [
+    { m: "Workbook()", d: "Crea un libro nuevo en memoria", why: "Workbook() crea el libro; el archivo existe hasta llamar a save()." },
+    { m: "load_workbook()", d: "Abre un libro existente", why: "load_workbook() lee un archivo .xlsx que ya está en disco." },
+    { m: "libro.active", d: "Obtiene la hoja activa", why: "active da la hoja que se ve al abrir el archivo." },
+    { m: "hoja.append()", d: "Agrega una fila después de la última con datos", why: "append() siempre escribe al final; no modifica celdas específicas." },
+    { m: "libro.save()", d: "Guarda el libro en un archivo", why: "save() lleva los cambios de la memoria al disco." },
+    { m: "libro.sheetnames", d: "Lista los nombres de las hojas", why: "sheetnames sirve para revisar nombres antes de pedir una hoja." }
+  ];
+  var DESC = [3, 5, 0, 4, 2, 1].map(function(i){ return PAIRS[i].d; });
+  var mBox = $("#match");
+  mBox.innerHTML = PAIRS.map(function(p, i){
+    return '<div class="mrow"><code>' + esc(p.m) + '</code><select id="m' + i + '" aria-label="Qué hace ' + esc(p.m) + '"><option value="">Elige qué hace…</option>' +
+      DESC.map(function(d){ return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; }).join("") + '</select><span class="mark" id="mk' + i + '" aria-hidden="true"></span></div>';
+  }).join("");
+  $("#matchCheck").addEventListener("click", function(){
+    var ok = 0, html = '<ul class="why">';
+    PAIRS.forEach(function(p, i){
+      var sel = $("#m" + i).value, right = sel === p.d, mk = $("#mk" + i);
+      if (right) ok++;
+      mk.textContent = right ? "✓" : "✗"; mk.className = "mark " + (right ? "ok" : "bad");
+      html += '<li class="' + (right ? "c" : "") + '"><strong>' + esc(p.m) + ':</strong> ' + esc(p.why) + (right || !sel ? "" : " La acción elegida corresponde a otra instrucción.") + '</li>';
+    });
+    html += '</ul>';
+    $("#matchFb").innerHTML = '<p class="verdict ' + (ok === PAIRS.length ? "ok" : "bad") + '">' + ok + ' de ' + PAIRS.length + ' relaciones correctas.</p>' + html;
+  });
+  $("#matchReset").addEventListener("click", function(){
+    PAIRS.forEach(function(p, i){ $("#m" + i).value = ""; var mk = $("#mk" + i); mk.textContent = ""; mk.className = "mark"; });
+    $("#matchFb").innerHTML = "";
+  });
+
+  go(0);
+})();
+</script>
+
+</html>

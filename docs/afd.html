@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estados que deciden</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: presentación a pantalla completa — barra superior (ficha + indicador), diapositiva desplazable, barra de navegación inferior */
+:root{
+  --bg:#EDF0F6; --surface:#FFFFFF; --ink:#16203A; --muted:#56617B; --line:#D2D8E5;
+  --accent:#2F5BD3; --accent-ink:#FFFFFF; --soft:#E1E8FB;
+  --ok:#1C7347; --ok-bg:#DFF2E8; --bad:#AE2A1F; --bad-bg:#FBE5E2;
+  --code-bg:#131B2F; --code-fg:#E4E9F5; --code-line:#26314D;
+  --exec:rgba(255,203,107,.20); --exec-bar:#F2B53C;
+  --t-kw:#C9A0F2; --t-str:#A9D98C; --t-fn:#86AEFF; --t-bi:#FFCF70; --t-num:#F79A78; --t-com:#8691AA;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+    --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+    --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+    --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+  --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+  --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+  --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.band{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.inner{max-width:1080px;margin:0 auto}
+
+/* barra superior */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px}
+.top .inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--accent);font-weight:600}
+.counter{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--muted)}
+.progress{height:3px;background:var(--line)}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+
+/* diapositivas */
+main{overflow-y:auto;overflow-x:hidden}
+main .inner{padding-block:28px 40px}
+.slide{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{font-size:1.12rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}
+.grid2>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.activity{border:2px solid var(--accent);background:var(--surface);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tag{align-self:flex-start;font-family:var(--f-mono);font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;background:var(--soft);color:var(--accent);padding:3px 9px;border-radius:4px}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.terms{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.terms dt{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.terms dd{margin:0}
+
+/* código */
+pre.code,.codebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.6;border-radius:8px;margin:0;overflow-x:auto}
+pre.code{padding:14px 16px;white-space:pre}
+.codebox .ln{display:flex;white-space:pre;padding:0 14px 0 0;border-left:3px solid transparent}
+.codebox .ln .no{display:inline-block;width:2.6em;text-align:right;padding-right:12px;color:var(--t-com);user-select:none;flex:none}
+.codebox .ln.exec{background:var(--exec);border-left-color:var(--exec-bar)}
+.codebox{padding-block:10px}
+.t-kw{color:var(--t-kw)} .t-str{color:var(--t-str)} .t-fn{color:var(--t-fn)} .t-bi{color:var(--t-bi)} .t-num{color:var(--t-num)} .t-com{color:var(--t-com);font-style:italic}
+
+/* botones */
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:7px;font-weight:700;font-size:.95rem}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* opción múltiple */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:baseline}
+.opt .k{font-family:var(--f-mono);font-weight:600;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{display:flex;flex-direction:column;gap:8px}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.why{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:.95rem}
+.why li.c{color:var(--ok)}
+
+/* explorador de modos */
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.modes button{font-family:var(--f-mono);font-weight:600;min-width:58px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:7px;padding:8px 12px}
+.modes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.switch{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+.switch button{border:0;background:var(--bg);color:var(--ink);padding:8px 12px;font-size:.92rem}
+.switch button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:700}
+.result{border-left:4px solid var(--accent);background:var(--soft);padding:12px 14px;border-radius:0 8px 8px 0}
+.result.err{border-left-color:var(--bad);background:var(--bad-bg)}
+.result strong{font-family:var(--f-mono)}
+
+/* resaltado vinculado */
+.alg{list-style:none;margin:0;padding:10px 0;font-family:var(--f-mono);font-size:.9rem;background:var(--code-bg);color:var(--code-fg);border-radius:8px;overflow-x:auto}
+.alg li,.exp li{cursor:pointer}
+.alg li{padding:3px 14px;border-left:3px solid transparent;white-space:pre}
+.alg li .no{color:var(--t-com);display:inline-block;width:2em}
+.alg li.on{background:var(--exec);border-left-color:var(--exec-bar)}
+.exp{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.exp li{border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--bg);font-size:.95rem}
+.exp li.on{border-color:var(--exec-bar);background:var(--surface);box-shadow:0 0 0 2px var(--exec)}
+.exp li b{font-family:var(--f-mono);color:var(--accent)}
+
+/* paso a paso */
+.stepper{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.stepper>*{min-width:0}
+.mem{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+.mem th,.mem td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.mem th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mem td{font-family:var(--f-mono);word-break:break-word}
+.mem tr.chg td{background:var(--exec)}
+.mem tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--exec-bar)}
+.tablewrap{overflow-x:auto}
+.console,.filebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.86rem;border-radius:8px;padding:10px 14px;min-height:3.2em;white-space:pre-wrap;word-break:break-word}
+.console .pr{color:var(--t-com)}
+.nl{color:var(--t-num);font-size:.8em}
+.note{background:var(--soft);border-radius:8px;padding:10px 14px;font-size:.95rem}
+.stepcount{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.minilabel{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:0}
+
+/* relacionar */
+.match{display:flex;flex-direction:column;gap:10px}
+.match .mrow{display:grid;grid-template-columns:minmax(110px,auto) 1fr auto;gap:10px;align-items:center}
+.match select{font:inherit;font-size:.95rem;padding:7px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.match .mark{font-weight:700;width:1.4em;text-align:center}
+.mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+@media (max-width:520px){.match .mrow{grid-template-columns:1fr auto}.match .mrow code{grid-column:1/-1;justify-self:start}}
+
+/* errores */
+.errs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.errs div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface);font-size:.94rem}
+.errs b{font-family:var(--f-mono);color:var(--bad);display:block;font-size:.85rem}
+
+/* autoevaluación */
+.score{font-family:var(--f-display);font-size:1.3rem;font-weight:800}
+.quiz{display:flex;flex-direction:column;gap:16px}
+
+/* resumen */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.summary div{border-top:3px solid var(--accent);background:var(--surface);padding:12px 14px;border-radius:0 0 8px 8px}
+.refs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.refs li{padding-left:2em;text-indent:-2em;font-size:.95rem}
+
+/* portada */
+.cover{display:flex;flex-direction:column;gap:22px;padding-top:2vh}
+.cover .obj{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:760px}
+.prompt-line{font-family:var(--f-mono);font-size:.95rem;color:var(--muted)}
+.prompt-line .cur{display:inline-block;width:.6em;height:1.05em;background:var(--accent);vertical-align:-.15em;margin-left:2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.prompt-line .cur{animation:none}.progress span{transition:none}}
+.authors{font-size:.95rem;color:var(--muted)}
+
+/* barra inferior */
+.bottom{background:var(--surface);border-top:1px solid var(--line);padding-block:10px}
+.bottom .inner{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hint{font-size:.8rem;color:var(--muted)}
+@media (max-width:520px){.hint{display:none}}
+
+/* ficha */
+.overlay{position:fixed;inset:0;background:rgba(8,12,24,.55);display:flex;justify-content:flex-end;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:min(560px,100%);height:100%;overflow-y:auto;padding:22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) 22px;padding-top:calc(22px + env(safe-area-inset-top, 0px));display:flex;flex-direction:column;gap:14px}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet dl{margin:0;display:flex;flex-direction:column;gap:12px}
+.sheet dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.sheet dd{margin:2px 0 0}
+.sheet ol{margin:4px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+.sheet .align{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chips span{font-family:var(--f-mono);font-size:.8rem;background:var(--soft);color:var(--accent);padding:2px 8px;border-radius:4px}
+/* diagrama de estados */
+.dfa{width:100%;max-width:600px;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.dfa .st{fill:var(--surface);stroke:var(--ink);stroke-width:2}
+.dfa .st.on{fill:var(--exec);stroke:var(--exec-bar);stroke-width:3}
+.dfa .ring{fill:none;stroke:var(--ink);stroke-width:1.6}
+.dfa .ring.on{stroke:var(--exec-bar)}
+.dfa .nm{fill:var(--ink);font-family:var(--f-mono);font-size:15px;font-weight:600}
+.dfa .ed{fill:none;stroke:var(--muted);stroke-width:1.6}
+.dfa .ed.on{stroke:var(--accent);stroke-width:3}
+.dfa .lb{fill:var(--ink);font-family:var(--f-mono);font-size:13px}
+.dfa .lb.on{fill:var(--accent);font-weight:700}
+.dfa .arrowhead{fill:var(--muted)}
+.dfa .arrowhead.on{fill:var(--accent)}
+.dfa .ini{fill:var(--muted);font-family:var(--f-body);font-size:12px}
+.tape{display:flex;flex-wrap:wrap;gap:4px;font-family:var(--f-mono)}
+.tape span{min-width:2em;text-align:center;padding:6px 4px;border:1.5px solid var(--line);border-radius:5px;background:var(--bg);font-weight:600}
+.tape span.done{color:var(--muted)}
+.tape span.now{border-color:var(--accent);background:var(--soft);color:var(--accent)}
+.tape span.bad{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+.tape .empty{color:var(--muted);font-family:var(--f-body);font-size:.9rem;border:0;background:none}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.field input{font-family:var(--f-mono);font-size:1rem;padding:9px 11px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.verdict-big{font-family:var(--f-display);font-weight:800;font-size:1.2rem}
+.verdict-big.acc{color:var(--ok)} .verdict-big.rej{color:var(--bad)} .verdict-big.inv{color:var(--exec-bar)}
+.compact{font-family:var(--f-mono);font-size:.9rem;overflow-x:auto;white-space:nowrap}
+.modes button.fn{min-width:0;font-size:.85rem;font-family:var(--f-body)}
+.ttab td,.ttab th{text-align:center}
+.ttab td:first-child,.ttab th:first-child{text-align:left}
+.tuple{font-family:var(--f-mono);font-size:1.15rem;font-weight:600;color:var(--accent)}
+</style>
+
+<div class="app">
+  <header class="top band">
+    <div class="inner">
+      <div class="brand"><b>M = (Q, Σ, δ, q0, F)</b> · Teoría de autómatas · Autómatas finitos deterministas</div>
+      <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+      <button class="btn" id="fichaBtn" aria-haspopup="dialog" aria-controls="ficha">Ficha del recurso</button>
+    </div>
+  </header>
+
+  <main id="stage" tabindex="-1">
+    <div class="progress"><span id="bar" style="width:10%"></span></div>
+    <div class="band"><div class="inner">
+
+<!-- 1 -->
+<section class="slide cover" data-n="1" aria-label="Diapositiva 1">
+  <p class="prompt-line">q0 -1-&gt; q1 -0-&gt; q0 -1-&gt; q1 -1-&gt; q1  ⇒  aceptada<span class="cur"></span></p>
+  <h1>Estados que deciden: autómatas finitos deterministas en Python</h1>
+  <div class="obj">
+    <p class="eyebrow">Objetivo de aprendizaje</p>
+    <p>Diseñar y simular en Python autómatas finitos deterministas a partir de su 5-tupla (Q, Σ, δ, q0, F), su tabla de transición y su diagrama de estados, determinando mediante pruebas de escritorio si una cadena es aceptada, rechazada o inválida.</p>
+  </div>
+  <p class="authors">Dra. Perla Marlene Viera González · Dr. Guillermo Ezequiel Sanchez Guerrero · Dr. Yazmany Jahaziel Guerrero Ceja · Mtro. Osvaldo Habib González González</p>
+  <div class="row"><button class="btn primary" data-go="2">Comenzar</button><span class="hint">También puedes usar las flechas ← → del teclado.</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-n="2" aria-label="Diapositiva 2" hidden>
+  <p class="eyebrow">Idea clave 1</p>
+  <h2>¿Qué es un autómata finito determinista?</h2>
+  <p class="lead">Un modelo matemático de cómputo que lee una cadena de símbolos, uno por uno, y decide si cumple una regla: la <strong>acepta</strong> o la <strong>rechaza</strong>. Es "finito" porque tiene un número limitado de estados y no tiene más memoria que el estado en el que se encuentra.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Definición formal: una 5-tupla</h3>
+      <p class="tuple">M = (Q, Σ, δ, q0, F)</p>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>Q</dt><dd>Conjunto finito de estados.</dd>
+        <dt>Σ</dt><dd>Alfabeto: conjunto finito de símbolos permitidos.</dd>
+        <dt>δ</dt><dd>Función de transición, δ: Q × Σ → Q. "Recibe un estado y un símbolo, y devuelve un estado". Ej.: δ(q0, 1) = q1.</dd>
+        <dt>q0</dt><dd>Estado inicial (q0 ∈ Q). Es único.</dd>
+        <dt>F</dt><dd>Estados finales o de aceptación (F ⊆ Q): uno, varios o ninguno.</dd>
+      </dl>
+      <p style="font-size:.93rem"><strong>¿Por qué determinista?</strong> Para cada estado y símbolo existe <strong>exactamente una</strong> transición: la tabla no tiene celdas vacías ni celdas con dos estados.</p>
+    </div>
+    <div class="panel">
+      <h3>Conceptos relacionados</h3>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>Símbolo</dt><dd>Elemento del alfabeto: 0, 1, a, b.</dd>
+        <dt>Cadena</dt><dd>Secuencia finita de símbolos: 1011.</dd>
+        <dt>Cadena vacía</dt><dd>Sin símbolos; se escribe ε o λ. Su longitud es 0.</dd>
+        <dt>Lenguaje</dt><dd>Conjunto de cadenas. L(M) es el conjunto de todas las cadenas que acepta M.</dd>
+      </dl>
+      <h3>Se usa para</h3>
+      <ul class="plain" style="font-size:.93rem">
+        <li>Reconocer patrones en texto: las expresiones regulares se implementan con autómatas.</li>
+        <li>Validar formatos: números, identificadores, matrículas, correos.</li>
+        <li>El analizador léxico de un compilador.</li>
+        <li>Modelar sistemas con estados: semáforos, máquinas expendedoras, elevadores, protocolos.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="b">
+    <span class="tag">Actividad 1 · Opción múltiple</span>
+    <p class="q">En la tabla de transición de un autómata, la celda del estado q0 con entrada 1 contiene dos estados: q0 y q1. ¿Qué implica?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: una celda con dos estados no hace que se acepten más cadenas; cambia el tipo de autómata."><span class="k">A</span>El autómata acepta cualquier cadena</button>
+      <button class="opt" data-k="b" data-why="Correcto: un AFD tiene exactamente una transición por estado y símbolo; con dos opciones deja de ser determinista."><span class="k">B</span>El autómata deja de ser determinista</button>
+      <button class="opt" data-k="c" data-why="Incorrecto: KeyError aparece cuando falta una transición en el diccionario, no cuando sobran opciones."><span class="k">C</span>Python genera un KeyError al leer 1</button>
+      <button class="opt" data-k="d" data-why="Incorrecto: un estado de error se agrega para completar celdas vacías, no aparece por tener dos destinos."><span class="k">D</span>q0 se convierte en estado de error</button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3" aria-label="Diapositiva 3" hidden>
+  <p class="eyebrow">Idea clave 2</p>
+  <h2>¿Cómo funciona? Simulador de AFD</h2>
+  <p class="lead">Comienza en q0, lee la cadena de izquierda a derecha, cambia de estado con δ(estado actual, símbolo) y, solo al terminar de leer <strong>toda</strong> la cadena, acepta si el estado actual pertenece a F.</p>
+  <div class="panel">
+    <div class="modes" role="group" aria-label="Autómata" id="afdBtns"></div>
+    <p style="font-size:.93rem" id="afdDesc"></p>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div id="simDiagram"></div>
+      <div class="tablewrap"><table class="mem ttab" id="simTable"></table></div>
+      <p style="font-size:.85rem;color:var(--muted)">Convención: → marca el estado inicial y * los estados finales. En el diagrama, el estado final lleva doble círculo.</p>
+    </div>
+    <div class="panel">
+      <div class="field"><label for="simIn">Cadena de entrada</label><input id="simIn" type="text" spellcheck="false" autocomplete="off" value="1011"></div>
+      <div class="modes" role="group" aria-label="Cadenas de ejemplo" id="simEx"></div>
+      <p class="minilabel">Cinta</p>
+      <div class="tape" id="simTape"></div>
+      <div class="row">
+        <button class="btn" id="simPrev">← Anterior</button>
+        <button class="btn primary" id="simNext">Leer símbolo →</button>
+        <button class="btn" id="simReset">Reiniciar</button>
+        <button class="btn" id="simEnd">Hasta el final</button>
+      </div>
+      <div class="note" id="simNote" aria-live="polite"></div>
+      <p class="minilabel">Prueba de escritorio</p>
+      <div class="tablewrap"><table class="mem" id="simDesk"></table></div>
+      <p class="compact" id="simCompact"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4" aria-label="Diapositiva 4" hidden>
+  <p class="eyebrow">Idea clave 3</p>
+  <h2>Del algoritmo al código: ¿la cadena termina en 1?</h2>
+  <p class="lead">Selecciona un paso del algoritmo o de la explicación para ver su correspondencia con la versión de Python con condiciones.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Algoritmo AFD_TERMINA_EN_UNO <span style="font-weight:400;color:var(--muted);font-size:.85rem">(estilo Cairó)</span></h3>
+      <ol class="alg" id="alg">
+        <li data-s="1" tabindex="0"><span class="no">1.</span>Inicio</li>
+        <li data-s="2" tabindex="0"><span class="no">2.</span>Leer CADENA</li>
+        <li data-s="3" tabindex="0"><span class="no">3.</span>ESTADO &lt;- "q0"</li>
+        <li data-s="4" tabindex="0"><span class="no">4.</span>VALIDA &lt;- verdadero</li>
+        <li data-s="5" tabindex="0"><span class="no">5.</span>Para cada SIMBOLO en CADENA repetir</li>
+        <li data-s="6" tabindex="0"><span class="no">6.</span>    Si SIMBOLO es diferente de "0" y diferente
+       de "1" entonces</li>
+        <li data-s="7" tabindex="0"><span class="no">7.</span>        VALIDA &lt;- falso</li>
+        <li data-s="8" tabindex="0"><span class="no">8.</span>        Salir del ciclo del paso 5</li>
+        <li data-s="9" tabindex="0"><span class="no">9.</span>    Fin del paso 6</li>
+        <li data-s="10" tabindex="0"><span class="no">10.</span>    Si SIMBOLO = "0" entonces</li>
+        <li data-s="11" tabindex="0"><span class="no">11.</span>        ESTADO &lt;- "q0"</li>
+        <li data-s="12" tabindex="0"><span class="no">12.</span>    Si no</li>
+        <li data-s="13" tabindex="0"><span class="no">13.</span>        ESTADO &lt;- "q1"</li>
+        <li data-s="14" tabindex="0"><span class="no">14.</span>    Fin del paso 10</li>
+        <li data-s="15" tabindex="0"><span class="no">15.</span>Fin del paso 5</li>
+        <li data-s="16" tabindex="0"><span class="no">16.</span>Si VALIDA = falso entonces</li>
+        <li data-s="17" tabindex="0"><span class="no">17.</span>    Escribir "Cadena inválida"</li>
+        <li data-s="18" tabindex="0"><span class="no">18.</span>Si no</li>
+        <li data-s="19" tabindex="0"><span class="no">19.</span>    Si ESTADO = "q1" entonces</li>
+        <li data-s="20" tabindex="0"><span class="no">20.</span>        Escribir "Cadena aceptada"</li>
+        <li data-s="21" tabindex="0"><span class="no">21.</span>    Si no</li>
+        <li data-s="22" tabindex="0"><span class="no">22.</span>        Escribir "Cadena rechazada"</li>
+        <li data-s="23" tabindex="0"><span class="no">23.</span>    Fin del paso 19</li>
+        <li data-s="24" tabindex="0"><span class="no">24.</span>Fin del paso 16</li>
+        <li data-s="25" tabindex="0"><span class="no">25.</span>Fin</li>
+      </ol>
+      <p class="minilabel">Descripción de variables</p>
+      <dl class="terms" style="font-size:.9rem">
+        <dt>CADENA</dt><dd>Cadena de caracteres. Entrada a evaluar.</dd>
+        <dt>ESTADO</dt><dd>Cadena de caracteres. Estado actual ("q0" o "q1").</dd>
+        <dt>VALIDA</dt><dd>Lógica. Verdadero si todos los símbolos pertenecen a {0, 1}.</dd>
+        <dt>SIMBOLO</dt><dd>Carácter. Símbolo que se lee en cada repetición.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>Código Python correspondiente</h3>
+      <ul class="exp" id="exp">
+        <li data-s="1" tabindex="0"><b>Paso 1</b> · Comienza el programa.</li>
+        <li data-s="2" tabindex="0"><b>Paso 2</b> · <code>cadena = input("Ingresa una cadena binaria: ").strip()</code>; <code>strip()</code> quita espacios accidentales.</li>
+        <li data-s="3" tabindex="0"><b>Paso 3</b> · <code>estado = "q0"</code></li>
+        <li data-s="4" tabindex="0"><b>Paso 4</b> · <code>valida = True</code></li>
+        <li data-s="5" tabindex="0"><b>Paso 5</b> · <code>for simbolo in cadena:</code></li>
+        <li data-s="6" tabindex="0"><b>Paso 6</b> · <code>if simbolo not in ("0", "1"):</code> compara símbolo por símbolo con una tupla.</li>
+        <li data-s="7" tabindex="0"><b>Paso 7</b> · <code>valida = False</code></li>
+        <li data-s="8" tabindex="0"><b>Paso 8</b> · <code>break</code> termina el ciclo en cuanto aparece un símbolo inválido.</li>
+        <li data-s="9" tabindex="0"><b>Paso 9</b> · El <code>if</code> termina con su indentación.</li>
+        <li data-s="10" tabindex="0"><b>Paso 10</b> · <code>if simbolo == "0":</code> (en el código, dentro de <code>if estado == "q0":</code> y <code>elif estado == "q1":</code>, una por fila de la tabla).</li>
+        <li data-s="11" tabindex="0"><b>Paso 11</b> · <code>estado = "q0"</code></li>
+        <li data-s="12" tabindex="0"><b>Paso 12</b> · <code>else:</code></li>
+        <li data-s="13" tabindex="0"><b>Paso 13</b> · <code>estado = "q1"</code></li>
+        <li data-s="14" tabindex="0"><b>Paso 14</b> · En este AFD el estado siguiente depende solo del símbolo; en la mayoría depende del estado <strong>y</strong> del símbolo.</li>
+        <li data-s="15" tabindex="0"><b>Paso 15</b> · El ciclo termina con su indentación.</li>
+        <li data-s="16" tabindex="0"><b>Paso 16</b> · <code>if not valida:</code> La decisión se toma hasta terminar de leer.</li>
+        <li data-s="17" tabindex="0"><b>Paso 17</b> · <code>print("Cadena inválida")</code></li>
+        <li data-s="18" tabindex="0"><b>Paso 18</b> · El <code>else</code> y el <code>if</code> anidado se escriben juntos como <code>elif</code>.</li>
+        <li data-s="19" tabindex="0"><b>Paso 19</b> · <code>elif estado == "q1":</code></li>
+        <li data-s="20" tabindex="0"><b>Paso 20</b> · <code>print("Cadena aceptada")</code></li>
+        <li data-s="21" tabindex="0"><b>Paso 21</b> · <code>else:</code></li>
+        <li data-s="22" tabindex="0"><b>Paso 22</b> · <code>print("Cadena rechazada")</code></li>
+        <li data-s="23" tabindex="0"><b>Paso 23</b> · Termina la decisión del paso 19.</li>
+        <li data-s="24" tabindex="0"><b>Paso 24</b> · Termina la decisión del paso 16.</li>
+        <li data-s="25" tabindex="0"><b>Paso 25</b> · Fin. Una cadena vacía no entra al ciclo, queda en q0 y se rechaza.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5" aria-label="Diapositiva 5" hidden>
+  <p class="eyebrow">Idea clave 4</p>
+  <h2>La 5-tupla en Python: tabla de transición con diccionario</h2>
+  <p class="lead">Versión recomendada: representa directamente la 5-tupla. Para cambiar de autómata solo se modifican los datos, no el código.</p>
+  <div class="grid2">
+    <div class="panel">
+      <pre class="code" data-hl># Definición del AFD: M = (Q, Σ, δ, q0, F)
+Q = {"q0", "q1"}
+SIGMA = {"0", "1"}
+DELTA = {
+    ("q0", "0"): "q0",
+    ("q0", "1"): "q1",
+    ("q1", "0"): "q0",
+    ("q1", "1"): "q1",
+}
+INICIAL = "q0"
+FINALES = {"q1"}
+
+cadena = input("Ingresa una cadena binaria: ").strip()
+
+estado = INICIAL
+valida = True
+
+for simbolo in cadena:
+    if simbolo not in SIGMA:
+        valida = False
+        break
+    estado = DELTA[(estado, simbolo)]
+
+if not valida:
+    print("Cadena inválida")
+elif estado in FINALES:
+    print("Cadena aceptada")
+else:
+    print("Cadena rechazada")</pre>
+    </div>
+    <div class="panel">
+      <h3>DELTA[(estado, simbolo)] es δ(estado, símbolo)</h3>
+      <p style="font-size:.95rem">La clave del diccionario es la pareja (estado, símbolo) y el valor es el estado siguiente. Comparada con la versión con condiciones, aquí no hay un <code>if</code> por cada fila de la tabla.</p>
+      <h3>Versión como función con traza</h3>
+      <pre class="code" data-hl>def simular_afd(cadena, delta, inicial, finales, sigma):
+    estado = inicial
+    print("Estado inicial:", estado)
+    for simbolo in cadena:
+        if simbolo not in sigma:
+            return "inválida"
+        nuevo = delta[(estado, simbolo)]
+        print(f"δ({estado}, {simbolo}) = {nuevo}")
+        estado = nuevo
+    if estado in finales:
+        return "aceptada"
+    return "rechazada"
+
+print(simular_afd("1011", DELTA, INICIAL, FINALES, SIGMA))</pre>
+      <div class="console">Estado inicial: q0
+δ(q0, 1) = q1
+δ(q1, 0) = q0
+δ(q0, 1) = q1
+δ(q1, 1) = q1
+aceptada</div>
+    </div>
+  </div>
+  <div class="activity" id="matchAct">
+    <span class="tag">Actividad 2 · Relacionar conceptos</span>
+    <p>Relaciona cada elemento de la 5-tupla con su representación en Python.</p>
+    <div class="match" id="match"></div>
+    <div class="row"><button class="btn primary" id="matchCheck">Revisar</button><button class="btn" id="matchReset">Reintentar</button></div>
+    <div class="fb" id="matchFb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6" aria-label="Diapositiva 6" hidden>
+  <p class="eyebrow">Idea clave 5</p>
+  <h2>Simular el AFD en Python: ejecución paso a paso</h2>
+  <p class="lead">Elige la cadena que escribe el usuario en <code>input()</code> y avanza línea por línea. El diagrama muestra el estado actual del autómata.</p>
+  <div class="panel">
+    <div class="modes" role="group" aria-label="Cadena de entrada" id="stIn"></div>
+  </div>
+  <div class="stepper">
+    <div class="panel">
+      <div class="codebox" id="sCode" aria-label="Código del programa"></div>
+      <div class="row">
+        <button class="btn" id="sPrev">← Anterior</button>
+        <button class="btn primary" id="sNext">Siguiente →</button>
+        <button class="btn" id="sReset">Reiniciar</button>
+        <span class="stepcount" id="sCount"></span>
+      </div>
+      <div class="note" id="sNote" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <p class="minilabel">Tabla de memoria</p>
+      <div class="tablewrap">
+        <table class="mem"><thead><tr><th>Variable</th><th>Valor actual</th><th>Valor anterior</th></tr></thead><tbody id="sMem"></tbody></table>
+      </div>
+      <p class="minilabel">Estado del autómata</p>
+      <div id="sFile"></div>
+      <p class="minilabel">Salida en consola</p>
+      <div class="console" id="sOut"></div>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="a">
+    <span class="tag">Pregunta de predicción</span>
+    <p class="q">Con la cadena <code>1011</code>, ¿qué valor tendrá <code>estado</code> después de que la línea 14 se ejecute por <strong>tercera</strong> vez? Responde antes de avanzar hasta ese punto.</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Correcto: los tres primeros símbolos son 1, 0 y 1; el recorrido es q0 → q1 → q0 → q1."><span class="k">A</span><code>"q1"</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: q0 es el valor después de la segunda vez, al leer el 0."><span class="k">B</span><code>"q0"</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: &quot;1&quot; es el símbolo leído; estado guarda el nombre de un estado, no un símbolo."><span class="k">C</span><code>"1"</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: la decisión de aceptar se toma al final, en las líneas 15 a 20; estado nunca guarda ese texto."><span class="k">D</span><code>"aceptada"</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-n="7" aria-label="Diapositiva 7" hidden>
+  <p class="eyebrow">Idea clave 6</p>
+  <h2>Otros AFD: cuando el estado actual sí importa</h2>
+  <p class="lead">Puedes probar los tres en el simulador de la diapositiva 3.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>a) Número par de ceros</h3>
+      <p style="font-size:.9rem"><code>Q = {p, i}</code> · <code>Σ = {0, 1}</code> · <code>q0 = p</code> · <code>F = {p}</code></p>
+      <div class="tablewrap"><table class="mem ttab"><thead><tr><th>Estado</th><th>0</th><th>1</th></tr></thead><tbody><tr><td>→ * p (par)</td><td>i</td><td>p</td></tr><tr><td>i (impar)</td><td>p</td><td>i</td></tr></tbody></table></div>
+      <p style="font-size:.9rem">Un 0 cambia de p a i o de i a p; un 1 no cambia el estado. Como el estado inicial también es final, ε se acepta (cero ceros es par).</p>
+      <pre class="code" data-hl>DELTA = {("p", "0"): "i", ("p", "1"): "p",
+         ("i", "0"): "p", ("i", "1"): "i"}
+INICIAL = "p"
+FINALES = {"p"}</pre>
+    </div>
+    <div class="panel">
+      <h3>b) Terminan en 01</h3>
+      <p style="font-size:.9rem"><code>Q = {A, B, C}</code> · <code>q0 = A</code> · <code>F = {C}</code>. A: no hay avance; B: el último símbolo es 0; C: los dos últimos son 01.</p>
+      <div class="tablewrap"><table class="mem ttab"><thead><tr><th>Estado</th><th>0</th><th>1</th></tr></thead><tbody><tr><td>→ A</td><td>B</td><td>A</td></tr><tr><td>B</td><td>B</td><td>C</td></tr><tr><td>* C</td><td>B</td><td>A</td></tr></tbody></table></div>
+      <h3>c) Estado de error: inician con 1</h3>
+      <div class="tablewrap"><table class="mem ttab"><thead><tr><th>Estado</th><th>0</th><th>1</th></tr></thead><tbody><tr><td>→ q0</td><td>qe</td><td>q1</td></tr><tr><td>* q1</td><td>q1</td><td>q1</td></tr><tr><td>qe (error)</td><td>qe</td><td>qe</td></tr></tbody></table></div>
+      <p style="font-size:.9rem">Cuando la cadena ya no puede aceptarse, pasa a un estado del que no se sale. Así la tabla queda completa.</p>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="c">
+    <span class="tag">Actividad 3 · Opción múltiple</span>
+    <p class="q">En el AFD de número par de ceros, ¿cuál es el resultado de la cadena <code>0110</code>?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: el último símbolo no decide; el resultado depende del estado en el que termina el autómata."><span class="k">A</span>Rechazada: termina en 0</button>
+      <button class="opt" data-k="b" data-why="Incorrecto: los unos no cambian el estado; solo cuentan los ceros."><span class="k">B</span>Rechazada: tiene dos unos</button>
+      <button class="opt" data-k="c" data-why="Correcto: tiene dos ceros; el recorrido es p → i → i → i → p y p ∈ F."><span class="k">C</span>Aceptada: termina en p</button>
+      <button class="opt" data-k="d" data-why="Incorrecto: 0 y 1 pertenecen al alfabeto Σ = {0, 1}."><span class="k">D</span>Inválida: fuera de Σ</button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-n="8" aria-label="Diapositiva 8" hidden>
+  <p class="eyebrow">Idea clave 7</p>
+  <h2>AFD y otros modelos; errores comunes</h2>
+  <div class="grid2">
+    <div class="panel">
+      <dl class="terms" style="font-size:.93rem">
+        <dt>AFD</dt><dd>Una única transición por estado y símbolo. Fácil de simular.</dd>
+        <dt>AFN</dt><dd>No determinista: varias transiciones (o ninguna) para un mismo estado y símbolo, y transiciones ε. Todo AFN puede convertirse en un AFD equivalente.</dd>
+        <dt>Expresiones regulares</dt><dd>Describen los mismos lenguajes (lenguajes regulares). "Terminan en 1" corresponde a <code>(0|1)*1</code>.</dd>
+      </dl>
+      <pre class="code" data-hl>import re
+re.fullmatch(r"[01]*1", "1011")   # coincide: aceptada</pre>
+      <p style="font-size:.93rem"><strong>Limitación:</strong> un AFD no tiene memoria adicional; no puede "contar sin límite", como en 0ⁿ1ⁿ (mismo número de ceros que de unos). Para ello se usan autómatas de pila.</p>
+    </div>
+    <div class="panel">
+      <h3>Recomendaciones</h3>
+      <ul class="plain" style="font-size:.9rem">
+        <li>Describe con palabras qué "recuerda" cada estado; si no puedes, sobra o falta uno.</li>
+        <li>Define la 5-tupla completa antes de programar.</li>
+        <li>Verifica que la tabla esté completa; si falta una transición, agrega un estado de error.</li>
+        <li>Con la cadena vacía, se acepta solo si q0 ∈ F.</li>
+        <li>Prueba aceptadas, rechazadas y casos límite: ε, un símbolo, cadenas largas y símbolos inválidos.</li>
+        <li>Haz la prueba de escritorio antes de ejecutar.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="errs">
+    <div><b>Σ = 1</b>El alfabeto es un conjunto: <code>Σ = {0, 1}</code>.</div>
+    <div><b>Aceptar a medias</b>Pasar por un estado final no basta: se decide al terminar la cadena.</div>
+    <div><b>KeyError</b>Una transición sin definir en <code>DELTA</code>.</div>
+    <div><b>Dos transiciones</b>Mismo estado y símbolo con dos destinos: ya no es determinista.</div>
+    <div><b>Sin marcas</b>Olvidar marcar el estado inicial o los finales.</div>
+    <div><b>"1" == 1</b>Es False: <code>input()</code> devuelve cadenas.</div>
+    <div><b>Espacios</b>Usa <code>.strip()</code> en la entrada.</div>
+    <div><b>q0 ≠ final</b>No confundas el estado inicial con el final.</div>
+  </div>
+  <div class="activity">
+    <span class="tag">Actividad 4 · Revelar respuesta</span>
+    <p>Un estudiante programa el AFD "inician con 1", pero olvida el estado de error. ¿Qué ocurre con la cadena <code>01</code> y cómo se corrige?</p>
+    <pre class="code" data-hl>DELTA = {("q0", "1"): "q1",
+         ("q1", "0"): "q1", ("q1", "1"): "q1"}</pre>
+    <div class="row"><button class="btn primary" id="revealBtn" aria-expanded="false" aria-controls="revealBox">Revelar respuesta</button></div>
+    <div id="revealBox" class="note" hidden>
+      <p><strong>Qué ocurre:</strong> al leer el primer símbolo se busca <code>DELTA[("q0", "0")]</code>, que no existe: el programa se detiene con <code>KeyError: ('q0', '0')</code>.</p>
+      <p style="margin-top:6px"><strong>Corrección:</strong> completar la tabla con el estado de error qe, del que no se sale.</p>
+      <pre class="code" data-hl style="margin-top:6px">DELTA = {("q0", "0"): "qe", ("q0", "1"): "q1",
+         ("q1", "0"): "q1", ("q1", "1"): "q1",
+         ("qe", "0"): "qe", ("qe", "1"): "qe"}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-n="9" aria-label="Diapositiva 9" hidden>
+  <p class="eyebrow">Autoevaluación</p>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p class="lead">Cinco reactivos. Cada respuesta queda fija al elegirla; al final verás tus aciertos. Salvo que se indique otro, se usa el AFD "terminan en 1".</p>
+  <div class="quiz" id="quiz">
+    <div class="activity mc quiz-item" data-correct="d" data-quiz>
+      <span class="tag">Reactivo 1</span>
+      <p class="q">¿Cuál es el resultado de la cadena vacía ε?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: una cadena sin símbolos no tiene nada fuera de Σ; es una cadena válida."><span class="k">A</span>Inválida: no tiene símbolos</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: el autómata no avanza a q1 sin leer un 1."><span class="k">B</span>Aceptada: queda en q1</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: no hay error; el ciclo simplemente no se ejecuta."><span class="k">C</span>El programa genera un error</button>
+        <button class="opt" data-k="d" data-why="Correcto: no se lee nada, el estado permanece en q0 y q0 ∉ F."><span class="k">D</span>Rechazada: queda en q0</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="b" data-quiz>
+      <span class="tag">Reactivo 2</span>
+      <p class="q">¿Qué indica la notación δ*(q0, 1011) = q1?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: la transición de un solo símbolo se escribe δ(q0, 1); el asterisco indica la cadena completa."><span class="k">A</span>Que δ(q0, 1) es q1</button>
+        <button class="opt" data-k="b" data-why="Correcto: la función de transición extendida aplica δ a toda la cadena desde q0; termina en q1."><span class="k">B</span>Que leer 1011 desde q0 termina en q1</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: el * de δ* no significa repetir la cadena; ese uso del * aparece en {0,1}*."><span class="k">C</span>Que 1011 se repite varias veces</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: q1 es el estado al terminar, no el número de transiciones."><span class="k">D</span>Que hay una sola transición</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 3</span>
+      <p class="q">¿Qué muestra la versión con diccionario para la cadena <code>10a1</code>?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: no se llegan a leer todos los símbolos; el ciclo termina al encontrar &quot;a&quot;."><span class="k">A</span>Cadena aceptada</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: el estado q0 tras leer 10 no decide; la cadena se marca inválida antes."><span class="k">B</span>Cadena rechazada</button>
+        <button class="opt" data-k="c" data-why="Correcto: &quot;a&quot; no pertenece a SIGMA, valida cambia a False y break termina el ciclo."><span class="k">C</span>Cadena inválida</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: se revisa si el símbolo está en SIGMA antes de usar DELTA, así que no se busca la clave."><span class="k">D</span>KeyError: ('q0', 'a')</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 4</span>
+      <p class="q">¿Qué expresión regular describe el mismo lenguaje que el AFD "terminan en 1"?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: cualquier cantidad de 0 y 1, incluida ninguna, seguida de un 1 final."><span class="k">A</span><code>(0|1)*1</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: describe cadenas que inician con 1, no que terminan con 1."><span class="k">B</span><code>1(0|1)*</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: exige al menos un símbolo antes del 1 final; la cadena &quot;1&quot; no coincidiría."><span class="k">C</span><code>(0|1)+1</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: solo acepta unos; 1011 no coincidiría."><span class="k">D</span><code>1*</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="b" data-quiz>
+      <span class="tag">Reactivo 5</span>
+      <p class="q">¿Cuál de estos lenguajes <strong>no</strong> puede reconocer un AFD?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: basta con dos estados que alternen entre par e impar."><span class="k">A</span>Cadenas con número par de ceros</button>
+        <button class="opt" data-k="b" data-why="Correcto: exige contar sin límite y un AFD no tiene memoria adicional; se usa un autómata de pila."><span class="k">B</span>Cadenas de la forma 0ⁿ1ⁿ</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: se reconoce con tres estados (A, B, C), como en los ejemplos."><span class="k">C</span>Cadenas que terminan en 01</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: se reconoce con un estado de error para las que inician con 0."><span class="k">D</span>Cadenas que inician con 1</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel row" style="justify-content:space-between">
+    <span class="score" id="score" aria-live="polite">Aciertos: 0 / 5</span>
+    <button class="btn" id="quizReset">Reiniciar autoevaluación</button>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-n="10" aria-label="Diapositiva 10" hidden>
+  <p class="eyebrow">Resumen</p>
+  <h2>Lo esencial de los AFD</h2>
+  <div class="summary">
+    <div><h3>Definir</h3><p>La 5-tupla M = (Q, Σ, δ, q0, F) y qué "recuerda" cada estado.</p></div>
+    <div><h3>Determinismo</h3><p>Exactamente una transición por estado y símbolo; un estado de error completa la tabla.</p></div>
+    <div><h3>Decidir al final</h3><p>Acepta solo si, tras leer toda la cadena, el estado actual pertenece a F.</p></div>
+    <div><h3>Programar</h3><p><code>DELTA[(estado, simbolo)]</code> es δ(estado, símbolo); para otro AFD solo cambian los datos.</p></div>
+  </div>
+  <div class="panel">
+    <h3>Para practicar</h3>
+    <p style="font-size:.93rem">En cada ejercicio: define la 5-tupla, dibuja el diagrama, haz la tabla de transición, realiza una prueba de escritorio con tres cadenas y prográmalo en Python con diccionario.</p>
+    <ol class="plain">
+      <li>Cadenas binarias que terminan en 0.</li>
+      <li>Cadenas binarias que inician con 1 (usar estado de error).</li>
+      <li>Cadenas binarias con un número impar de unos.</li>
+      <li>Cadenas binarias que contienen la subcadena 11.</li>
+      <li>Cadenas sobre Σ = {a, b} que terminan en "ab".</li>
+      <li>Cadenas binarias cuya longitud es múltiplo de 3.</li>
+      <li>Modificar el programa con traza para leer varias cadenas de un archivo de texto (una por línea).</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h3>Fuentes</h3>
+    <ul class="refs">
+      <li>Cairó, O. (2005). <i>Metodología de la programación: Algoritmos, diagramas de flujo y programas</i> (3.ª ed.). Alfaomega.</li>
+      <li><i>Guía express: Autómatas finitos deterministas (AFD)</i> [Material didáctico no publicado]. (2026). Unidad de aprendizaje Teoría de autómatas, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</li>
+    </ul>
+  </div>
+</section>
+
+    </div></div>
+  </main>
+
+  <footer class="bottom band">
+    <div class="inner">
+      <button class="btn" id="prev">← Anterior</button>
+      <span class="hint">Usa ← → para navegar · Esc cierra la ficha</span>
+      <button class="btn primary" id="next">Siguiente →</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle" hidden>
+  <div class="sheet">
+    <header>
+      <div><p class="eyebrow">Ficha del recurso</p><h2 id="fichaTitle" style="font-size:1.4rem">Estados que deciden: autómatas finitos deterministas en Python</h2></div>
+      <button class="btn" id="fichaClose" aria-label="Cerrar ficha">Cerrar ✕</button>
+    </header>
+    <dl>
+      <div><dt>Objetivo de aprendizaje</dt><dd>Diseñar y simular en Python autómatas finitos deterministas a partir de su 5-tupla (Q, Σ, δ, q0, F), su tabla de transición y su diagrama de estados, determinando mediante pruebas de escritorio si una cadena es aceptada, rechazada o inválida.</dd></div>
+      <div><dt>Autores</dt><dd>Dra. Perla Marlene Viera González, Dr. Guillermo Ezequiel Sanchez Guerrero, Dr. Yazmany Jahaziel Guerrero Ceja, Mtro. Osvaldo Habib González González</dd></div>
+      <div><dt>Unidad de aprendizaje</dt><dd>Teoría de autómatas · Tema: Autómatas finitos deterministas</dd></div>
+      <div><dt>Palabras clave</dt><dd class="chips"><span>autómata finito determinista</span><span>función de transición</span><span>diagrama de estados</span><span>lenguaje regular</span><span>prueba de escritorio</span></dd></div>
+      <div><dt>Descripción</dt><dd>El estudiante aprende a definir un AFD con su 5-tupla, representarlo con tabla de transición y diagrama de estados, y simularlo en Python con un diccionario para decidir si una cadena es aceptada, rechazada o inválida. Interactúa con un simulador de AFD con diagrama animado, un algoritmo vinculado a su código, una ejecución paso a paso y actividades con retroalimentación inmediata. Tiempo estimado: 45 minutos.</dd></div>
+      <div><dt>Audiencia</dt><dd>Estudiantes universitarios de unidades de aprendizaje relacionadas con las ciencias exactas.</dd></div>
+      <div><dt>Competencias que desarrolla el estudiante</dt><dd><ol>
+        <li>Determinar mediante pruebas de escritorio si una cadena es aceptada, rechazada o inválida por un AFD, y evaluar si una tabla de transición está completa y es determinista.<span class="align">Alineada con: Emplear pensamiento lógico, crítico, creativo y propositivo…</span></li>
+        <li>Representar un autómata finito determinista con su 5-tupla, su tabla de transición, su diagrama de estados y un algoritmo estilo Cairó, traduciendo entre estas notaciones formales.<span class="align">Alineada con: Utilizar los lenguajes lógico, formal, matemático, icónico, verbal y no verbal…</span></li>
+        <li>Programar en Python la simulación de un AFD con un diccionario de transiciones que separe la definición del autómata del código que lo ejecuta, validando las entradas fuera del alfabeto.<span class="align">Alineada con: Desarrollar tecnologías computacionales utilizando herramientas de software…</span></li>
+      </ol></dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  /* ---------- resaltado de sintaxis propio ---------- */
+  var KW = {"with":1,"as":1,"for":1,"in":1,"try":1,"except":1,"import":1,"from":1,"if":1,"elif":1,"else":1,"not":1,"and":1,"is":1,"def":1,"return":1,"break":1,"None":1,"True":1,"False":1};
+  var BI = {"print":1,"str":1,"len":1,"int":1,"input":1};
+  function hl(src){
+    var re = /(#[^\n]*)|([rRbf]?"(?:[^"\\\n]|\\.)*"|[rRbf]?'(?:[^'\\\n]|\\.)*')|([A-Za-z_]\w*)|(\d+)/g;
+    var out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += '<span class="t-com">' + esc(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="t-str">' + esc(m[2]) + '</span>';
+      else if (m[3]) {
+        var w = m[3];
+        if (KW[w]) out += '<span class="t-kw">' + w + '</span>';
+        else if (BI[w] && src.charAt(re.lastIndex) === "(") out += '<span class="t-bi">' + w + '</span>';
+        else if (src.charAt(m.index - 1) === "." && src.charAt(re.lastIndex) === "(") out += '<span class="t-fn">' + w + '</span>';
+        else out += w;
+      } else out += '<span class="t-num">' + m[4] + '</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  $$("pre[data-hl]").forEach(function(p){ p.innerHTML = hl(p.textContent); });
+
+  /* ---------- navegación ---------- */
+  var slides = $$(".slide"), total = slides.length, cur = 0;
+  var stage = $("#stage"), prevB = $("#prev"), nextB = $("#next");
+  function go(i){
+    if (i < 0 || i >= total) return;
+    slides[cur].hidden = true; cur = i; slides[cur].hidden = false;
+    $("#counter").textContent = (cur + 1) + " / " + total;
+    $("#bar").style.width = ((cur + 1) / total * 100) + "%";
+    prevB.disabled = cur === 0; nextB.disabled = cur === total - 1;
+    stage.scrollTop = 0;
+  }
+  prevB.addEventListener("click", function(){ go(cur - 1); });
+  nextB.addEventListener("click", function(){ go(cur + 1); });
+  $$("[data-go]").forEach(function(b){ b.addEventListener("click", function(){ go(+b.getAttribute("data-go") - 1); }); });
+
+  /* ---------- ficha ---------- */
+  var ficha = $("#ficha"), fichaBtn = $("#fichaBtn");
+  function openFicha(){ ficha.hidden = false; $("#fichaClose").focus(); }
+  function closeFicha(){ ficha.hidden = true; fichaBtn.focus(); }
+  fichaBtn.addEventListener("click", function(){ ficha.hidden ? openFicha() : closeFicha(); });
+  $("#fichaClose").addEventListener("click", closeFicha);
+  ficha.addEventListener("click", function(e){ if (e.target === ficha) closeFicha(); });
+
+  document.addEventListener("keydown", function(e){
+    if (!ficha.hidden) { if (e.key === "Escape") { e.preventDefault(); closeFicha(); } return; }
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  /* ---------- opción múltiple ---------- */
+  function mcSetup(box){
+    var correct = box.getAttribute("data-correct"), quiz = box.hasAttribute("data-quiz");
+    var opts = $$(".opt", box), fb = $(".fb", box);
+    box._answered = false; box._right = false;
+    function reset(){
+      opts.forEach(function(o){ o.disabled = false; o.classList.remove("ok","bad"); });
+      fb.innerHTML = ""; box._answered = false; box._right = false;
+    }
+    box._reset = reset;
+    opts.forEach(function(o){
+      o.addEventListener("click", function(){
+        if (box._answered) return;
+        var k = o.getAttribute("data-k"), right = k === correct;
+        box._answered = true; box._right = right;
+        opts.forEach(function(x){ x.disabled = true; });
+        o.classList.add(right ? "ok" : "bad");
+        $$(".opt[data-k='" + correct + "']", box)[0].classList.add("ok");
+        var html = '<p class="verdict ' + (right ? "ok" : "bad") + '">' + (right ? "¡Correcto!" : "Respuesta incorrecta.") + '</p><ul class="why">';
+        opts.forEach(function(x){
+          var kk = x.getAttribute("data-k");
+          html += '<li class="' + (kk === correct ? "c" : "") + '"><strong>' + kk.toUpperCase() + ':</strong> ' + esc(x.getAttribute("data-why")) + '</li>';
+        });
+        html += '</ul>';
+        if (!quiz) html += '<div><button class="btn retry">Intentar de nuevo</button></div>';
+        fb.innerHTML = html;
+        var r = $(".retry", fb); if (r) r.addEventListener("click", function(){ reset(); opts[0].focus(); });
+        if (quiz) updateScore();
+      });
+    });
+  }
+  $$(".mc").forEach(mcSetup);
+
+  var qItems = $$(".quiz-item");
+  function updateScore(){
+    var done = 0, ok = 0;
+    qItems.forEach(function(q){ if (q._answered) { done++; if (q._right) ok++; } });
+    var s = "Aciertos: " + ok + " / " + qItems.length;
+    if (done === qItems.length) s += ok === qItems.length ? " · ¡Excelente!" : ok >= 3 ? " · Buen trabajo; repasa los reactivos fallados." : " · Repasa las diapositivas 3, 5 y 8.";
+    $("#score").textContent = s;
+  }
+  $("#quizReset").addEventListener("click", function(){ qItems.forEach(function(q){ q._reset(); }); updateScore(); });
+
+  /* ---------- definición de los AFD de la guía ---------- */
+  var AFDS = {
+    t1: { name: "Terminan en 1", Q: ["q0", "q1"], start: "q0", F: ["q1"], S: ["0", "1"],
+      d: { "q0,0": "q0", "q0,1": "q1", "q1,0": "q0", "q1,1": "q1" },
+      lang: "L(M) = { w ∈ {0,1}* | w termina en 1 }. q0: el último símbolo no es 1 (o no se ha leído ninguno); q1: el último símbolo es 1.",
+      ex: ["1011", "1000", "1", "0", "", "10a1"] },
+    par: { name: "Número par de ceros", Q: ["p", "i"], start: "p", F: ["p"], S: ["0", "1"],
+      d: { "p,0": "i", "p,1": "p", "i,0": "p", "i,1": "i" },
+      lang: "p: se han leído un número par de ceros; i: impar. El estado inicial también es final.",
+      ex: ["", "1", "0", "1001", "000"] },
+    t01: { name: "Terminan en 01", Q: ["A", "B", "C"], start: "A", F: ["C"], S: ["0", "1"],
+      d: { "A,0": "B", "A,1": "A", "B,0": "B", "B,1": "C", "C,0": "B", "C,1": "A" },
+      lang: "A: no hay avance; B: el último símbolo es 0; C: los dos últimos símbolos son 01.",
+      ex: ["01", "101", "1001", "0110", "11", "0"] },
+    ini1: { name: "Inician con 1 (estado de error)", Q: ["q0", "q1", "qe"], start: "q0", F: ["q1"], S: ["0", "1"],
+      d: { "q0,0": "qe", "q0,1": "q1", "q1,0": "q1", "q1,1": "q1", "qe,0": "qe", "qe,1": "qe" },
+      lang: "q1: la cadena inició con 1; qe: inició con 0 y ya no puede aceptarse (estado de error, del que no se sale).",
+      ex: ["1", "10", "0", "011", ""] }
+  };
+  function run(a, s){
+    var st = a.start, steps = [{ st: st }], ch = Array.from(s);
+    for (var i = 0; i < ch.length; i++) {
+      if (a.S.indexOf(ch[i]) < 0) { steps.push({ st: st, sym: ch[i], bad: 1 }); return { steps: steps, res: "inválida" }; }
+      var nx = a.d[st + "," + ch[i]];
+      steps.push({ st: nx, sym: ch[i], prev: st });
+      st = nx;
+    }
+    return { steps: steps, res: a.F.indexOf(st) >= 0 ? "aceptada" : "rechazada" };
+  }
+  window.__runAFD = function(k, s){ return run(AFDS[k], s).res; };
+
+  /* ---------- diagrama SVG ---------- */
+  function diagram(a, cur, edge, pf){
+    pf = pf || "d";
+    var n = a.Q.length, W = 600, H = 250, cy = 128, r = 30, pos = {};
+    var gap = n === 2 ? 240 : 170, x0 = (W - gap * (n - 1)) / 2;
+    a.Q.forEach(function(q, i){ pos[q] = { x: x0 + gap * i, y: cy, i: i }; });
+    var edges = {};
+    a.Q.forEach(function(q){ a.S.forEach(function(s){ var t = a.d[q + "," + s]; if (!t) return; var k = q + ">" + t; (edges[k] = edges[k] || { from: q, to: t, syms: [] }).syms.push(s); }); });
+    var svg = '<defs><marker id="' + pf + 'ah" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path class="arrowhead" d="M0 0 L10 5 L0 10 z"/></marker>' +
+      '<marker id="' + pf + 'ahOn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path class="arrowhead on" d="M0 0 L10 5 L0 10 z"/></marker></defs>';
+    Object.keys(edges).forEach(function(k){
+      var e = edges[k], A = pos[e.from], B = pos[e.to], on = edge && edge.from === e.from && edge.to === e.to;
+      var cls = 'class="ed' + (on ? " on" : "") + '" marker-end="url(#' + pf + (on ? "ahOn" : "ah") + ')"', lab, path;
+      if (e.from === e.to) {
+        path = "M" + (A.x - 13) + " " + (A.y - r + 2) + " C" + (A.x - 42) + " " + (A.y - r - 62) + " " + (A.x + 42) + " " + (A.y - r - 62) + " " + (A.x + 13) + " " + (A.y - r + 2);
+        lab = [A.x, A.y - r - 50];
+      } else {
+        var dx = B.i - A.i, up = dx > 0 && Math.abs(dx) === 1, depth = Math.abs(dx) === 1 ? 46 : 92;
+        var mx = (A.x + B.x) / 2, my = cy + (up ? -depth : depth);
+        var ux = mx - A.x, uy = my - A.y, ul = Math.sqrt(ux * ux + uy * uy), vx = mx - B.x, vy = my - B.y, vl = Math.sqrt(vx * vx + vy * vy);
+        var sx = A.x + r * ux / ul, sy = A.y + r * uy / ul, ex = B.x + (r + 2) * vx / vl, ey = B.y + (r + 2) * vy / vl;
+        path = "M" + sx.toFixed(1) + " " + sy.toFixed(1) + " Q" + mx + " " + my + " " + ex.toFixed(1) + " " + ey.toFixed(1);
+        lab = [mx, cy + (up ? -depth / 2 - 6 : depth / 2 + 14)];
+      }
+      svg += '<path d="' + path + '" ' + cls + "/>";
+      svg += '<text class="lb' + (on ? " on" : "") + '" x="' + lab[0] + '" y="' + lab[1] + '" text-anchor="middle">' + e.syms.join(", ") + "</text>";
+    });
+    var sp = pos[a.start];
+    svg += '<line x1="' + (sp.x - r - 46) + '" y1="' + cy + '" x2="' + (sp.x - r - 2) + '" y2="' + cy + '" class="ed" marker-end="url(#' + pf + 'ah)"/>';
+    svg += '<text class="ini" x="' + (sp.x - r - 48) + '" y="' + (cy - 8) + '">inicio</text>';
+    a.Q.forEach(function(q){
+      var p = pos[q], on = q === cur;
+      svg += '<circle class="st' + (on ? " on" : "") + '" cx="' + p.x + '" cy="' + p.y + '" r="' + r + '"/>';
+      if (a.F.indexOf(q) >= 0) svg += '<circle class="ring' + (on ? " on" : "") + '" cx="' + p.x + '" cy="' + p.y + '" r="' + (r - 5) + '"/>';
+      svg += '<text class="nm" x="' + p.x + '" y="' + (p.y + 5) + '" text-anchor="middle">' + q + "</text>";
+    });
+    return '<svg class="dfa" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Diagrama de estados del AFD ' + esc(a.name) + (cur ? "; estado actual " + cur : "") + '">' + svg + "</svg>";
+  }
+  function ttable(a, cur){
+    var h = "<thead><tr><th>Estado</th>" + a.S.map(function(s){ return "<th>" + s + "</th>"; }).join("") + "</tr></thead><tbody>";
+    a.Q.forEach(function(q){
+      h += '<tr class="' + (q === cur ? "chg" : "") + '"><td>' + (q === a.start ? "→ " : "") + (a.F.indexOf(q) >= 0 ? "* " : "") + q + "</td>" + a.S.map(function(s){ return "<td>" + a.d[q + "," + s] + "</td>"; }).join("") + "</tr>";
+    });
+    return h + "</tbody>";
+  }
+
+  /* ---------- simulador ---------- */
+  var simK = "t1", simI = 0, simR = null;
+  $("#afdBtns").innerHTML = Object.keys(AFDS).map(function(k){ return '<button type="button" class="fn" data-afd="' + k + '" aria-pressed="false">' + esc(AFDS[k].name) + "</button>"; }).join("");
+  function simLoad(){
+    var a = AFDS[simK];
+    $$("#afdBtns button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-afd") === simK ? "true" : "false"); });
+    $("#afdDesc").innerHTML = "<code>Q = {" + a.Q.join(", ") + "}</code> · <code>Σ = {0, 1}</code> · <code>q0 = " + a.start + "</code> · <code>F = {" + a.F.join(", ") + "}</code><br>" + esc(a.lang);
+    $("#simEx").innerHTML = a.ex.map(function(s){ return '<button type="button" class="fn" data-ex="' + esc(s) + '" aria-pressed="false">' + (s === "" ? "ε (vacía)" : esc(s)) + "</button>"; }).join("");
+    $$("#simEx button").forEach(function(b){ b.addEventListener("click", function(){ $("#simIn").value = b.getAttribute("data-ex"); simRun(); }); });
+    simRun();
+  }
+  function simRun(){ simR = run(AFDS[simK], $("#simIn").value.trim()); simI = 0; simRender(); }
+  function simRender(){
+    var a = AFDS[simK], s = $("#simIn").value.trim(), ch = Array.from(s), st = simR.steps[simI], last = simI === simR.steps.length - 1;
+    $$("#simEx button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-ex") === s ? "true" : "false"); });
+    $("#simDiagram").innerHTML = diagram(a, st.st, st.prev ? { from: st.prev, to: st.st } : null, "sim");
+    $("#simTable").innerHTML = ttable(a, st.st);
+    $("#simTape").innerHTML = ch.length ? ch.map(function(c, i){ var cls = i < simI - 1 ? "done" : i === simI - 1 ? (st.bad ? "bad" : "now") : ""; return '<span class="' + cls + '">' + esc(c) + "</span>"; }).join("") : '<span class="empty">ε (cadena vacía: no hay símbolos que leer)</span>';
+    var note;
+    if (simI === 0) note = "Inicio: el autómata está en el estado inicial " + a.start + ".";
+    else if (st.bad) note = "\"" + st.sym + "\" no pertenece a Σ: la cadena es inválida y no se leen más símbolos.";
+    else note = "Se lee " + st.sym + ": δ(" + st.prev + ", " + st.sym + ") = " + st.st + ".";
+    if (last) {
+      var cls = simR.res === "aceptada" ? "acc" : simR.res === "rechazada" ? "rej" : "inv";
+      var why = simR.res === "inválida" ? "" : (simR.res === "aceptada" ? " porque " + st.st + " ∈ F" : " porque " + st.st + " ∉ F");
+      note += '<br><span class="verdict-big ' + cls + '">Cadena ' + simR.res + why + "</span>";
+    }
+    $("#simNote").innerHTML = note.replace(/^([^<]*)/, function(m){ return esc(m); });
+    var rows = "<thead><tr><th>Paso</th><th>Símbolo</th><th>Anterior</th><th>Nuevo</th></tr></thead><tbody>";
+    for (var i = 0; i <= simI; i++) {
+      var x = simR.steps[i];
+      rows += '<tr class="' + (i === simI ? "chg" : "") + '"><td>' + i + "</td><td>" + (i === 0 ? "(inicio)" : esc(x.sym)) + "</td><td>" + (i === 0 ? "-" : x.bad ? x.st : x.prev) + "</td><td>" + (x.bad ? "∉ Σ" : x.st) + "</td></tr>";
+    }
+    $("#simDesk").innerHTML = rows + "</tbody>";
+    var comp = a.start;
+    for (var j = 1; j <= simI; j++) { var y = simR.steps[j]; comp += y.bad ? " -" + y.sym + "-> ✗" : " -" + y.sym + "-> " + y.st; }
+    if (last && simR.res !== "inválida") comp += "    ⇒  δ*(" + a.start + ", " + (s || "ε") + ") = " + st.st;
+    $("#simCompact").textContent = comp;
+    $("#simPrev").disabled = simI === 0; $("#simNext").disabled = last; $("#simEnd").disabled = last;
+  }
+  $$("#afdBtns button").forEach(function(b){ b.addEventListener("click", function(){ simK = b.getAttribute("data-afd"); $("#simIn").value = AFDS[simK].ex[0]; simLoad(); }); });
+  $("#simIn").addEventListener("input", simRun);
+  $("#simPrev").addEventListener("click", function(){ if (simI > 0) { simI--; simRender(); } });
+  $("#simNext").addEventListener("click", function(){ if (simI < simR.steps.length - 1) { simI++; simRender(); } });
+  $("#simReset").addEventListener("click", function(){ simI = 0; simRender(); });
+  $("#simEnd").addEventListener("click", function(){ simI = simR.steps.length - 1; simRender(); });
+  simLoad();
+
+  /* ---------- revelar ---------- */
+  $("#revealBtn").addEventListener("click", function(){
+    var box = $("#revealBox"), open = box.hidden;
+    box.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false");
+    this.textContent = open ? "Ocultar respuesta" : "Revelar respuesta";
+  });
+
+  /* ---------- resaltado vinculado ---------- */
+  function setLinked(s){
+    $$("#alg li, #exp li").forEach(function(li){ li.classList.toggle("on", li.getAttribute("data-s") === s); });
+  }
+  $$("#alg li, #exp li").forEach(function(li){
+    li.addEventListener("click", function(){ setLinked(li.getAttribute("data-s")); });
+    li.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLinked(li.getAttribute("data-s")); } });
+  });
+  setLinked("6");
+
+  /* ---------- ejecución paso a paso (versión con diccionario) ---------- */
+  var SCODE = [
+    'Q = {"q0", "q1"}',
+    'SIGMA = {"0", "1"}',
+    'DELTA = {("q0", "0"): "q0", ("q0", "1"): "q1",',
+    '         ("q1", "0"): "q0", ("q1", "1"): "q1"}',
+    'INICIAL = "q0"',
+    'FINALES = {"q1"}',
+    'cadena = input("Ingresa una cadena binaria: ").strip()',
+    'estado = INICIAL',
+    'valida = True',
+    'for simbolo in cadena:',
+    '    if simbolo not in SIGMA:',
+    '        valida = False',
+    '        break',
+    '    estado = DELTA[(estado, simbolo)]',
+    'if not valida:',
+    '    print("Cadena inválida")',
+    'elif estado in FINALES:',
+    '    print("Cadena aceptada")',
+    'else:',
+    '    print("Cadena rechazada")'
+  ];
+  var A1 = AFDS.t1, D = A1.d;
+  function q(s){ return '"' + s + '"'; }
+  function buildSteps(cad){
+    var T = [];
+    T.push({ line: 0, note: "Estado inicial: el programa aún no se ejecuta." });
+    T.push({ line: 1, note: "Q: conjunto de estados." });
+    T.push({ line: 2, note: "SIGMA: alfabeto Σ = {0, 1}." });
+    T.push({ line: 3, note: "DELTA: la función de transición δ como diccionario; la clave es (estado, símbolo)." });
+    T.push({ line: 4, note: "La definición de DELTA continúa: cuatro transiciones, una por celda de la tabla." });
+    T.push({ line: 5, note: "INICIAL: el estado q0." });
+    T.push({ line: 6, note: "FINALES: el conjunto F = {q1}. La 5-tupla ya está definida." });
+    T.push({ line: 7, v: { cadena: q(cad) }, note: "El usuario escribe " + (cad === "" ? "una cadena vacía (solo presiona Enter)" : cad) + "; strip() quita espacios accidentales." });
+    T.push({ line: 8, v: { estado: q("q0") }, st: "q0", note: "El autómata comienza en el estado inicial." });
+    T.push({ line: 9, v: { valida: "True" }, note: "Se supone válida hasta encontrar un símbolo fuera de Σ." });
+    var st = "q0", ch = Array.from(cad), bad = false;
+    for (var i = 0; i < ch.length; i++) {
+      var c = ch[i];
+      T.push({ line: 10, v: { simbolo: q(c) }, note: "Vuelta " + (i + 1) + ": se lee el símbolo " + c + "." });
+      if (A1.S.indexOf(c) < 0) {
+        T.push({ line: 11, note: q(c) + " no está en SIGMA: la condición es verdadera." });
+        T.push({ line: 12, v: { valida: "False" }, note: "La cadena se marca como inválida." });
+        T.push({ line: 13, note: "break termina el ciclo; no se evalúan más símbolos." });
+        bad = true; break;
+      }
+      T.push({ line: 11, note: q(c) + " está en SIGMA: se continúa." });
+      var nx = D[st + "," + c];
+      T.push({ line: 14, v: { estado: q(nx) }, st: nx, edge: { from: st, to: nx }, note: "DELTA[(" + q(st) + ", " + q(c) + ")] = " + q(nx) + ", es decir, δ(" + st + ", " + c + ") = " + nx + "." });
+      st = nx;
+    }
+    if (!bad) T.push({ line: 10, note: ch.length ? "No quedan símbolos: termina el ciclo. Ahora sí se decide." : "La cadena está vacía: el ciclo no se ejecuta y el estado sigue en q0." });
+    T.push({ line: 15, note: bad ? "valida es False: se entra al bloque." : "valida es True: not valida es falso." });
+    if (bad) T.push({ line: 16, out: "Cadena inválida", note: "Se informa que la cadena contiene símbolos fuera del alfabeto." });
+    else {
+      T.push({ line: 17, note: "¿" + st + " pertenece a FINALES? " + (st === "q1" ? "Sí." : "No.") });
+      if (st === "q1") T.push({ line: 18, out: "Cadena aceptada", note: "La cadena termina en q1 y q1 ∈ F." });
+      else { T.push({ line: 19, note: "Ninguna condición anterior se cumplió." }); T.push({ line: 20, out: "Cadena rechazada", note: "La cadena termina en q0 y q0 ∉ F." }); }
+    }
+    T.push({ line: 0, note: "Fin del programa." });
+    var VARS = ["cadena", "estado", "simbolo", "valida"], blank = {}; VARS.forEach(function(v){ blank[v] = "—"; });
+    var S = [], s0 = { vals: Object.assign({}, blank), ant: Object.assign({}, blank), out: [], st: null };
+    T.forEach(function(d){
+      var n = { vals: Object.assign({}, s0.vals), ant: Object.assign({}, s0.ant), out: s0.out.slice(), chg: {}, line: d.line, note: d.note, st: d.st || s0.st, edge: d.edge || null };
+      if (d.v) Object.keys(d.v).forEach(function(k){ n.ant[k] = n.vals[k]; n.vals[k] = d.v[k]; n.chg[k] = true; });
+      if (d.out) n.out.push(d.out);
+      S.push(n); s0 = n;
+    });
+    return { S: S, VARS: VARS };
+  }
+  var INS = ["1011", "1010", "", "10a1"], stIn = "1011", B = buildSteps(stIn), si = 0, sCode = $("#sCode");
+  $("#stIn").innerHTML = INS.map(function(s){ return '<button type="button" class="fn" data-in="' + s + '" aria-pressed="false">' + (s === "" ? "ε (vacía)" : s) + "</button>"; }).join("");
+  $$("#stIn button").forEach(function(b){ b.addEventListener("click", function(){ stIn = b.getAttribute("data-in"); B = buildSteps(stIn); si = 0; renderStep(); }); });
+  sCode.innerHTML = SCODE.map(function(l, i){ return '<div class="ln" data-l="' + (i + 1) + '"><span class="no">' + (i + 1) + '</span><span>' + hl(l) + '</span></div>'; }).join("");
+  function renderStep(){
+    var s = B.S[si];
+    $$("#stIn button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-in") === stIn ? "true" : "false"); });
+    $$(".ln", sCode).forEach(function(el){ el.classList.toggle("exec", +el.getAttribute("data-l") === s.line); });
+    $("#sMem").innerHTML = B.VARS.map(function(v){
+      return '<tr class="' + (s.chg[v] ? "chg" : "") + '"><td>' + v + '</td><td>' + esc(s.vals[v]) + '</td><td>' + esc(s.ant[v]) + '</td></tr>';
+    }).join("");
+    $("#sFile").innerHTML = diagram(A1, s.st, s.edge, "stp");
+    $("#sOut").innerHTML = s.out.length ? s.out.map(esc).join("\n") : '<span class="pr">(sin salida)</span>';
+    $("#sNote").textContent = (s.line ? "Línea " + s.line + ": " : "") + s.note;
+    $("#sCount").textContent = "Paso " + si + " de " + (B.S.length - 1);
+    $("#sPrev").disabled = si === 0; $("#sNext").disabled = si === B.S.length - 1;
+  }
+  $("#sPrev").addEventListener("click", function(){ if (si > 0) { si--; renderStep(); } });
+  $("#sNext").addEventListener("click", function(){ if (si < B.S.length - 1) { si++; renderStep(); } });
+  $("#sReset").addEventListener("click", function(){ si = 0; renderStep(); });
+  renderStep();
+
+  /* ---------- relacionar ---------- */
+  var PAIRS = [
+    { m: "Q", d: 'Q = {"q0", "q1"}', why: "Q es el conjunto de estados." },
+    { m: "Σ", d: 'SIGMA = {"0", "1"}', why: "Σ es el alfabeto: un conjunto de símbolos." },
+    { m: "δ", d: 'DELTA[(estado, simbolo)]', why: "δ(estado, símbolo) se consulta en el diccionario con la pareja como clave." },
+    { m: "q0", d: 'INICIAL = "q0"', why: "El estado inicial es único: una cadena, no un conjunto." },
+    { m: "F", d: 'FINALES = {"q1"}', why: "F es un conjunto de estados finales; puede tener varios." }
+  ];
+  var DESC = [3, 0, 4, 2, 1].map(function(i){ return PAIRS[i].d; });
+  var mBox = $("#match");
+  mBox.innerHTML = PAIRS.map(function(p, i){
+    return '<div class="mrow"><code>' + esc(p.m) + '</code><select id="m' + i + '" aria-label="Representación de ' + esc(p.m) + '"><option value="">Elige su representación…</option>' +
+      DESC.map(function(d){ return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; }).join("") + '</select><span class="mark" id="mk' + i + '" aria-hidden="true"></span></div>';
+  }).join("");
+  $("#matchCheck").addEventListener("click", function(){
+    var ok = 0, html = '<ul class="why">';
+    PAIRS.forEach(function(p, i){
+      var sel = $("#m" + i).value, right = sel === p.d, mk = $("#mk" + i);
+      if (right) ok++;
+      mk.textContent = right ? "✓" : "✗"; mk.className = "mark " + (right ? "ok" : "bad");
+      html += '<li class="' + (right ? "c" : "") + '"><strong>' + esc(p.m) + ':</strong> ' + esc(p.why) + (right || !sel ? "" : " La representación elegida corresponde a otro elemento.") + '</li>';
+    });
+    html += '</ul>';
+    $("#matchFb").innerHTML = '<p class="verdict ' + (ok === PAIRS.length ? "ok" : "bad") + '">' + ok + ' de ' + PAIRS.length + ' relaciones correctas.</p>' + html;
+  });
+  $("#matchReset").addEventListener("click", function(){
+    PAIRS.forEach(function(p, i){ $("#m" + i).value = ""; var mk = $("#mk" + i); mk.textContent = ""; mk.className = "mark"; });
+    $("#matchFb").innerHTML = "";
+  });
+
+  go(0);
+})();
+</script>
+
+</html>

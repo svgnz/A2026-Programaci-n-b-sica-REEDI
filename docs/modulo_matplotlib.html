@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Datos que se ven</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: presentación a pantalla completa — barra superior (ficha + indicador), diapositiva desplazable, barra de navegación inferior */
+:root{
+  --bg:#EDF0F6; --surface:#FFFFFF; --ink:#16203A; --muted:#56617B; --line:#D2D8E5;
+  --accent:#2F5BD3; --accent-ink:#FFFFFF; --soft:#E1E8FB;
+  --ok:#1C7347; --ok-bg:#DFF2E8; --bad:#AE2A1F; --bad-bg:#FBE5E2;
+  --code-bg:#131B2F; --code-fg:#E4E9F5; --code-line:#26314D;
+  --exec:rgba(255,203,107,.20); --exec-bar:#F2B53C;
+  --t-kw:#C9A0F2; --t-str:#A9D98C; --t-fn:#86AEFF; --t-bi:#FFCF70; --t-num:#F79A78; --t-com:#8691AA;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+    --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+    --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+    --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+  --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+  --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+  --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.band{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.inner{max-width:1080px;margin:0 auto}
+
+/* barra superior */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px}
+.top .inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--accent);font-weight:600}
+.counter{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--muted)}
+.progress{height:3px;background:var(--line)}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+
+/* diapositivas */
+main{overflow-y:auto;overflow-x:hidden}
+main .inner{padding-block:28px 40px}
+.slide{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{font-size:1.12rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}
+.grid2>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.activity{border:2px solid var(--accent);background:var(--surface);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tag{align-self:flex-start;font-family:var(--f-mono);font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;background:var(--soft);color:var(--accent);padding:3px 9px;border-radius:4px}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.terms{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.terms dt{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.terms dd{margin:0}
+
+/* código */
+pre.code,.codebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.6;border-radius:8px;margin:0;overflow-x:auto}
+pre.code{padding:14px 16px;white-space:pre}
+.codebox .ln{display:flex;white-space:pre;padding:0 14px 0 0;border-left:3px solid transparent}
+.codebox .ln .no{display:inline-block;width:2.6em;text-align:right;padding-right:12px;color:var(--t-com);user-select:none;flex:none}
+.codebox .ln.exec{background:var(--exec);border-left-color:var(--exec-bar)}
+.codebox{padding-block:10px}
+.t-kw{color:var(--t-kw)} .t-str{color:var(--t-str)} .t-fn{color:var(--t-fn)} .t-bi{color:var(--t-bi)} .t-num{color:var(--t-num)} .t-com{color:var(--t-com);font-style:italic}
+
+/* botones */
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:7px;font-weight:700;font-size:.95rem}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* opción múltiple */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:baseline}
+.opt .k{font-family:var(--f-mono);font-weight:600;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{display:flex;flex-direction:column;gap:8px}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.why{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:.95rem}
+.why li.c{color:var(--ok)}
+
+/* explorador de modos */
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.modes button{font-family:var(--f-mono);font-weight:600;min-width:58px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:7px;padding:8px 12px}
+.modes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.switch{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+.switch button{border:0;background:var(--bg);color:var(--ink);padding:8px 12px;font-size:.92rem}
+.switch button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:700}
+.result{border-left:4px solid var(--accent);background:var(--soft);padding:12px 14px;border-radius:0 8px 8px 0}
+.result.err{border-left-color:var(--bad);background:var(--bad-bg)}
+.result strong{font-family:var(--f-mono)}
+
+/* resaltado vinculado */
+.alg{list-style:none;margin:0;padding:10px 0;font-family:var(--f-mono);font-size:.9rem;background:var(--code-bg);color:var(--code-fg);border-radius:8px;overflow-x:auto}
+.alg li,.exp li{cursor:pointer}
+.alg li{padding:3px 14px;border-left:3px solid transparent;white-space:pre}
+.alg li .no{color:var(--t-com);display:inline-block;width:2em}
+.alg li.on{background:var(--exec);border-left-color:var(--exec-bar)}
+.exp{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.exp li{border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--bg);font-size:.95rem}
+.exp li.on{border-color:var(--exec-bar);background:var(--surface);box-shadow:0 0 0 2px var(--exec)}
+.exp li b{font-family:var(--f-mono);color:var(--accent)}
+
+/* paso a paso */
+.stepper{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.stepper>*{min-width:0}
+.mem{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+.mem th,.mem td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.mem th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mem td{font-family:var(--f-mono);word-break:break-word}
+.mem tr.chg td{background:var(--exec)}
+.mem tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--exec-bar)}
+.tablewrap{overflow-x:auto}
+.console,.filebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.86rem;border-radius:8px;padding:10px 14px;min-height:3.2em;white-space:pre-wrap;word-break:break-word}
+.console .pr{color:var(--t-com)}
+.nl{color:var(--t-num);font-size:.8em}
+.note{background:var(--soft);border-radius:8px;padding:10px 14px;font-size:.95rem}
+.stepcount{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.minilabel{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:0}
+
+/* relacionar */
+.match{display:flex;flex-direction:column;gap:10px}
+.match .mrow{display:grid;grid-template-columns:minmax(110px,auto) 1fr auto;gap:10px;align-items:center}
+.match select{font:inherit;font-size:.95rem;padding:7px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.match .mark{font-weight:700;width:1.4em;text-align:center}
+.mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+@media (max-width:520px){.match .mrow{grid-template-columns:1fr auto}.match .mrow code{grid-column:1/-1;justify-self:start}}
+
+/* errores */
+.errs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.errs div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface);font-size:.94rem}
+.errs b{font-family:var(--f-mono);color:var(--bad);display:block;font-size:.85rem}
+
+/* autoevaluación */
+.score{font-family:var(--f-display);font-size:1.3rem;font-weight:800}
+.quiz{display:flex;flex-direction:column;gap:16px}
+
+/* resumen */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.summary div{border-top:3px solid var(--accent);background:var(--surface);padding:12px 14px;border-radius:0 0 8px 8px}
+.refs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.refs li{padding-left:2em;text-indent:-2em;font-size:.95rem}
+
+/* portada */
+.cover{display:flex;flex-direction:column;gap:22px;padding-top:2vh}
+.cover .obj{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:760px}
+.prompt-line{font-family:var(--f-mono);font-size:.95rem;color:var(--muted)}
+.prompt-line .cur{display:inline-block;width:.6em;height:1.05em;background:var(--accent);vertical-align:-.15em;margin-left:2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.prompt-line .cur{animation:none}.progress span{transition:none}}
+.authors{font-size:.95rem;color:var(--muted)}
+
+/* barra inferior */
+.bottom{background:var(--surface);border-top:1px solid var(--line);padding-block:10px}
+.bottom .inner{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hint{font-size:.8rem;color:var(--muted)}
+@media (max-width:520px){.hint{display:none}}
+
+/* ficha */
+.overlay{position:fixed;inset:0;background:rgba(8,12,24,.55);display:flex;justify-content:flex-end;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:min(560px,100%);height:100%;overflow-y:auto;padding:22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) 22px;padding-top:calc(22px + env(safe-area-inset-top, 0px));display:flex;flex-direction:column;gap:14px}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet dl{margin:0;display:flex;flex-direction:column;gap:12px}
+.sheet dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.sheet dd{margin:2px 0 0}
+.sheet ol{margin:4px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+.sheet .align{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chips span{font-family:var(--f-mono);font-size:.8rem;background:var(--soft);color:var(--accent);padding:2px 8px;border-radius:4px}
+:root{--steel:#4682B4;--sea:#2E8B57;--c1:#4682B4;--c2:#2E8B57;--c3:#D08C1A;--c4:#9A4FA8;--plot:#FFFFFF;--pietext:#FFFFFF;--axis:#56617B;--gridc:#C9D0DE}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--steel:#79A9D6;--sea:#5DBF8C;--c1:#79A9D6;--c2:#5DBF8C;--c3:#E9AE4A;--c4:#C487CF;--plot:#151D31;--pietext:#0D1322;--axis:#9BA6C0;--gridc:#33405F}}
+:root[data-theme="dark"]{--steel:#79A9D6;--sea:#5DBF8C;--c1:#79A9D6;--c2:#5DBF8C;--c3:#E9AE4A;--c4:#C487CF;--plot:#151D31;--pietext:#0D1322;--axis:#9BA6C0;--gridc:#33405F}
+.chart{width:100%;max-width:560px;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:8px}
+.chart text{fill:var(--ink);font-family:var(--f-body)}
+.chart .tk{fill:var(--axis);font-size:11px;font-family:var(--f-mono)}
+.chart .ttl{font-size:14px;font-weight:700}
+.chart .lab{font-size:12px}
+.chart .val{font-size:11px;font-family:var(--f-mono)}
+.chart .ax{stroke:var(--axis);stroke-width:1.2}
+.chart .gl{stroke:var(--gridc);stroke-width:1;stroke-dasharray:4 4}
+.chart .hl{stroke:var(--exec-bar);stroke-width:3;fill:none}
+.chart .new{animation:pop .35s ease-out}
+@keyframes pop{from{opacity:.25}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.chart .new{animation:none}}
+.parts{display:flex;flex-wrap:wrap;gap:6px}
+.apa{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;font-family:Arial,Calibri,"Segoe UI",sans-serif}
+.apa .fn{font-weight:700}
+.apa .ft{font-style:italic}
+.apa .nota{font-size:.88rem}
+.apa .nota i{font-style:italic}
+.disk{font-family:var(--f-mono);font-size:.86rem;padding:8px 12px;border-radius:8px;border:1.5px dashed var(--line);color:var(--muted)}
+.disk.saved{border-style:solid;border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}
+.modes button.fn{min-width:0;font-size:.85rem;font-family:var(--f-body);text-align:left}
+.ctrl{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.switch button{font-family:var(--f-mono);font-size:.85rem}
+</style>
+
+<div class="app">
+  <header class="top band">
+    <div class="inner">
+      <div class="brand"><b>import matplotlib.pyplot as plt</b> · Programación básica · Visualización de datos</div>
+      <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+      <button class="btn" id="fichaBtn" aria-haspopup="dialog" aria-controls="ficha">Ficha del recurso</button>
+    </div>
+  </header>
+
+  <main id="stage" tabindex="-1">
+    <div class="progress"><span id="bar" style="width:10%"></span></div>
+    <div class="band"><div class="inner">
+
+<!-- 1 -->
+<section class="slide cover" data-n="1" aria-label="Diapositiva 1">
+  <p class="prompt-line">&gt;&gt;&gt; plt.bar(["Ana", "Luis", "Marta"], [95, 88, 92])<span class="cur"></span></p>
+  <h1>Datos que se ven: gráficas con matplotlib</h1>
+  <div class="obj">
+    <p class="eyebrow">Objetivo de aprendizaje</p>
+    <p>Construir gráficas de barras, circulares, de líneas y de dispersión con <code>matplotlib</code>, eligiendo el tipo adecuado para cada pregunta y configurando sus elementos según los estándares de ejes y unidades (ISO 80000-1, SI), presentación de figuras (APA 7) y buenas prácticas de visualización.</p>
+  </div>
+  <p class="authors">Dra. Perla Marlene Viera González · Dr. Guillermo Ezequiel Sanchez Guerrero · Dr. Yazmany Jahaziel Guerrero Ceja · Mtro. Osvaldo Habib González González</p>
+  <div class="row"><button class="btn primary" data-go="2">Comenzar</button><span class="hint">También puedes usar las flechas ← → del teclado.</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-n="2" aria-label="Diapositiva 2" hidden>
+  <p class="eyebrow">Idea clave 1</p>
+  <h2>¿Qué es matplotlib?</h2>
+  <p class="lead">Una biblioteca que representa datos mediante gráficas para facilitar su interpretación y comparación, y las guarda como imágenes (PNG, JPG, SVG o PDF) para reportes y presentaciones.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Instalarla en el entorno virtual</h3>
+      <pre class="code">python -m pip install matplotlib
+python -m pip freeze &gt; requirements.txt
+python -c "import matplotlib; print(matplotlib.__version__)"</pre>
+      <p style="font-size:.93rem">matplotlib instala también dependencias como numpy y pillow, que aparecerán en requirements.txt.</p>
+      <h3>Se usa para</h3>
+      <ul class="plain" style="font-size:.93rem">
+        <li>Comparar cantidades entre categorías: barras verticales u horizontales.</li>
+        <li>Representar proporciones de un total: circular (pie).</li>
+        <li>Mostrar cambios en el tiempo: líneas.</li>
+        <li>Mostrar la relación entre dos variables numéricas: dispersión.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Elementos de una gráfica</h3>
+      <p style="font-size:.9rem;color:var(--muted)">Selecciona un elemento para ubicarlo en la gráfica.</p>
+      <div class="parts modes" role="group" aria-label="Elemento" id="partBtns"></div>
+      <div id="partChart"></div>
+      <div class="note" id="partNote" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3" aria-label="Diapositiva 3" hidden>
+  <p class="eyebrow">Idea clave 2</p>
+  <h2>Funciones principales y estándares de presentación</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>matplotlib.pyplot, con el alias plt</h3>
+      <dl class="terms" style="font-size:.88rem">
+        <dt>plt.bar(x, alturas)</dt><dd>Barras verticales.</dd>
+        <dt>plt.barh(y, longitudes)</dt><dd>Barras horizontales.</dd>
+        <dt>plt.pie(valores)</dt><dd>Circular (pastel o pie).</dd>
+        <dt>plt.plot(x, y)</dt><dd>Líneas.</dd>
+        <dt>plt.scatter(x, y)</dt><dd>Dispersión.</dd>
+        <dt>title · xlabel · ylabel</dt><dd>Título y nombres de los ejes.</dd>
+        <dt>legend() · grid()</dt><dd>Leyenda y cuadrícula.</dd>
+        <dt>ylim(min, max)</dt><dd>Rango del eje Y (xlim para X).</dd>
+        <dt>bar_label(barras)</dt><dd>Valor sobre cada barra.</dd>
+        <dt>figure(figsize=(8, 5))</dt><dd>Figura nueva; tamaño en pulgadas.</dd>
+        <dt>tight_layout()</dt><dd>Ajusta márgenes para no cortar textos.</dd>
+        <dt>show()</dt><dd>Muestra la ventana; el programa espera a que se cierre.</dd>
+        <dt>savefig("archivo.png")</dt><dd>Guarda la gráfica en un archivo.</dd>
+        <dt>close()</dt><dd>Cierra la figura y libera memoria.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>ISO 80000-1 y SI: ejes y unidades</h3>
+      <ul class="plain" style="font-size:.92rem">
+        <li>Cada eje indica <strong>qué</strong> se mide y <strong>en qué</strong>: <code>Tiempo / s</code> (forma ISO) o <code>Tiempo (s)</code>. Usa una sola forma en todo el documento.</li>
+        <li>Símbolos del SI sin punto ni plural, con espacio entre número y unidad: <code>5 kg</code>, <code>25 °C</code>, <code>50 %</code>.</li>
+        <li>Sin unidad, dilo con claridad: "Número de estudiantes", "Calificación (0-100)".</li>
+      </ul>
+      <h3>APA 7: la gráfica es una figura</h3>
+      <div class="apa" aria-label="Ejemplo de figura con formato APA">
+        <span class="fn">Figura 1</span>
+        <span class="ft">Calificaciones Finales por Estudiante</span>
+        <div id="apaChart"></div>
+        <span class="nota"><i>Nota.</i> Datos del grupo 307, semestre agosto-diciembre 2026. Elaboración propia.</span>
+      </div>
+      <p style="font-size:.88rem">Número en negritas y título en cursiva <strong>arriba</strong>; nota y fuente <strong>debajo</strong>. Si el título va en el documento, <code>plt.title()</code> puede omitirse. Fuente sin serifa de 8 a 14 puntos, sin 3D, con colores que se distingan en blanco y negro.</p>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="c">
+    <span class="tag">Actividad 1 · Opción múltiple</span>
+    <p class="q">Una gráfica muestra el tiempo que tarda un programa en ejecutarse. ¿Qué etiqueta del eje sigue la forma recomendada por ISO 80000-1 y el SI?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: los símbolos del SI no llevan punto ni se abrevian a gusto; el símbolo del segundo es s."><span class="k">A</span><code>Tiempo / seg.</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: los símbolos del SI no tienen plural; &quot;ss&quot; no es un símbolo válido."><span class="k">B</span><code>Tiempo / ss</code></button>
+      <button class="opt" data-k="c" data-why="Correcto: magnitud / unidad, con el símbolo oficial del segundo, sin punto ni plural."><span class="k">C</span><code>Tiempo / s</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: falta la magnitud; el eje debe decir qué se mide, no solo la unidad."><span class="k">D</span><code>Segundos / s</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4" aria-label="Diapositiva 4" hidden>
+  <p class="eyebrow">Idea clave 3</p>
+  <h2>¿Qué gráfica usar? y una escala honesta</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Elige según la pregunta</h3>
+      <div class="modes" role="group" aria-label="Pregunta" id="qBtns" style="flex-direction:column;align-items:stretch"></div>
+      <div id="qChart"></div>
+      <div class="result" id="qRes" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <h3>Las barras deben iniciar en cero</h3>
+      <div class="ctrl">
+        <div class="switch" role="group" aria-label="Rango del eje Y"><button type="button" data-yl="0" aria-pressed="true">plt.ylim(0, 100)</button><button type="button" data-yl="80" aria-pressed="false">plt.ylim(80, 100)</button></div>
+      </div>
+      <div id="ylChart"></div>
+      <div class="result" id="ylRes" aria-live="polite"></div>
+      <h3>Buenas prácticas</h3>
+      <ul class="plain" style="font-size:.9rem">
+        <li>Ordena las barras de mayor a menor si el orden no importa.</li>
+        <li>Mismo color para la misma variable; colores distintos solo si informan.</li>
+        <li>Sin 3D, sombras ni decoraciones; no sobrecargues.</li>
+        <li>No dependas solo del par rojo/verde (daltonismo).</li>
+        <li>Indica la fuente y guarda con <code>dpi=300</code> para documentos.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="activity" id="matchAct">
+    <span class="tag">Actividad 2 · Relacionar conceptos</span>
+    <p>Relaciona cada pregunta con la función que la responde mejor.</p>
+    <div class="match" id="match"></div>
+    <div class="row"><button class="btn primary" id="matchCheck">Revisar</button><button class="btn" id="matchReset">Reintentar</button></div>
+    <div class="fb" id="matchFb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5" aria-label="Diapositiva 5" hidden>
+  <p class="eyebrow">Idea clave 4</p>
+  <h2>Gráfica de barras verticales</h2>
+  <p class="lead">Problema: representar las calificaciones de tres estudiantes. Cada posición de <code>estudiantes</code> corresponde a la misma posición de <code>calificaciones</code>; ambas listas deben tener la misma longitud.</p>
+  <div class="panel">
+    <div class="switch" role="group" aria-label="Versión"><button type="button" data-ver="basica" aria-pressed="true">Versión básica</button><button type="button" data-ver="estandar" aria-pressed="false">Versión con estándares</button></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <pre class="code" id="verCode"></pre>
+      <dl class="terms" style="font-size:.88rem" id="verTerms"></dl>
+    </div>
+    <div class="panel">
+      <h3>Resultado</h3>
+      <div id="verChart"></div>
+      <p style="font-size:.9rem" id="verNote"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6" aria-label="Diapositiva 6" hidden>
+  <p class="eyebrow">Idea clave 5</p>
+  <h2>Del algoritmo al código: graficar y guardar</h2>
+  <p class="lead">Problema: construir una gráfica de barras con las calificaciones de tres estudiantes y guardarla como imagen. Selecciona un paso del algoritmo o de la explicación para ver su correspondencia.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Algoritmo GRAFICAR_CALIFICACIONES <span style="font-weight:400;color:var(--muted);font-size:.85rem">(estilo Cairó)</span></h3>
+      <ol class="alg" id="alg">
+        <li data-s="1" tabindex="0"><span class="no">1.</span>Inicio</li>
+        <li data-s="2" tabindex="0"><span class="no">2.</span>ESTUDIANTES &lt;- ["Ana", "Luis", "Marta"]</li>
+        <li data-s="3" tabindex="0"><span class="no">3.</span>CALIFICACIONES &lt;- [95, 88, 92]</li>
+        <li data-s="4" tabindex="0"><span class="no">4.</span>Si longitud de ESTUDIANTES = longitud de
+       CALIFICACIONES entonces</li>
+        <li data-s="5" tabindex="0"><span class="no">5.</span>    Crear gráfica de barras con ESTUDIANTES y
+        CALIFICACIONES</li>
+        <li data-s="6" tabindex="0"><span class="no">6.</span>    Asignar el título "Calificaciones finales
+        por estudiante"</li>
+        <li data-s="7" tabindex="0"><span class="no">7.</span>    Asignar al eje horizontal el nombre "Estudiante"</li>
+        <li data-s="8" tabindex="0"><span class="no">8.</span>    Asignar al eje vertical el nombre
+        "Calificación (0-100)"</li>
+        <li data-s="9" tabindex="0"><span class="no">9.</span>    Fijar la escala del eje vertical de 0 a 100</li>
+        <li data-s="10" tabindex="0"><span class="no">10.</span>    Guardar la gráfica como "calificaciones.png"</li>
+        <li data-s="11" tabindex="0"><span class="no">11.</span>    Mostrar la gráfica</li>
+        <li data-s="12" tabindex="0"><span class="no">12.</span>Si no</li>
+        <li data-s="13" tabindex="0"><span class="no">13.</span>    Escribir "Las listas no tienen la misma
+        cantidad de datos"</li>
+        <li data-s="14" tabindex="0"><span class="no">14.</span>Fin del paso 4</li>
+        <li data-s="15" tabindex="0"><span class="no">15.</span>Fin</li>
+      </ol>
+      <p class="minilabel">Descripción de variables</p>
+      <dl class="terms" style="font-size:.9rem">
+        <dt>ESTUDIANTES</dt><dd>Lista de cadenas. Nombres (categorías del eje horizontal).</dd>
+        <dt>CALIFICACIONES</dt><dd>Lista de enteros. Altura de cada barra, en la misma posición que su nombre.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>¿Qué ocurre en cada paso?</h3>
+      <ul class="exp" id="exp">
+        <li data-s="1" tabindex="0"><b>Paso 1</b> · Comienza. En Python, antes de todo va <code>import matplotlib.pyplot as plt</code>.</li>
+        <li data-s="2" tabindex="0"><b>Paso 2</b> · <code>estudiantes = ["Ana", "Luis", "Marta"]</code></li>
+        <li data-s="3" tabindex="0"><b>Paso 3</b> · <code>calificaciones = [95, 88, 92]</code></li>
+        <li data-s="4" tabindex="0"><b>Paso 4</b> · <code>if len(estudiantes) == len(calificaciones):</code> evita el ValueError por listas de distinta longitud.</li>
+        <li data-s="5" tabindex="0"><b>Paso 5</b> · <code>plt.bar(estudiantes, calificaciones)</code></li>
+        <li data-s="6" tabindex="0"><b>Paso 6</b> · <code>plt.title("Calificaciones finales por estudiante")</code></li>
+        <li data-s="7" tabindex="0"><b>Paso 7</b> · <code>plt.xlabel("Estudiante")</code></li>
+        <li data-s="8" tabindex="0"><b>Paso 8</b> · <code>plt.ylabel("Calificación (0-100)")</code></li>
+        <li data-s="9" tabindex="0"><b>Paso 9</b> · <code>plt.ylim(0, 100)</code></li>
+        <li data-s="10" tabindex="0"><b>Paso 10</b> · <code>plt.savefig("calificaciones.png", dpi=300)</code>, siempre <strong>antes</strong> de mostrar.</li>
+        <li data-s="11" tabindex="0"><b>Paso 11</b> · <code>plt.show()</code></li>
+        <li data-s="12" tabindex="0"><b>Paso 12</b> · <code>else:</code></li>
+        <li data-s="13" tabindex="0"><b>Paso 13</b> · <code>print("Las listas no tienen la misma cantidad de datos")</code></li>
+        <li data-s="14" tabindex="0"><b>Paso 14</b> · En Python el <code>if</code> termina donde termina su indentación.</li>
+        <li data-s="15" tabindex="0"><b>Paso 15</b> · Fin del programa.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-n="7" aria-label="Diapositiva 7" hidden>
+  <p class="eyebrow">Idea clave 6</p>
+  <h2>Construir la gráfica: ejecución paso a paso</h2>
+  <p class="lead">Avanza línea por línea y observa cómo cada instrucción agrega un elemento a la figura, y en qué momento se guarda la imagen.</p>
+  <div class="stepper">
+    <div class="panel">
+      <div class="codebox" id="sCode" aria-label="Código del programa"></div>
+      <div class="row">
+        <button class="btn" id="sPrev">← Anterior</button>
+        <button class="btn primary" id="sNext">Siguiente →</button>
+        <button class="btn" id="sReset">Reiniciar</button>
+        <span class="stepcount" id="sCount"></span>
+      </div>
+      <div class="note" id="sNote" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <p class="minilabel">Tabla de memoria</p>
+      <div class="tablewrap">
+        <table class="mem"><thead><tr><th>Variable</th><th>Valor actual</th><th>Valor anterior</th></tr></thead><tbody id="sMem"></tbody></table>
+      </div>
+      <p class="minilabel">Figura en memoria</p>
+      <div id="sFile"></div>
+      <div class="disk" id="sDisk"></div>
+      <p class="minilabel">Salida</p>
+      <div class="console" id="sOut"></div>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="b">
+    <span class="tag">Pregunta de predicción</span>
+    <p class="q">Si en la línea 3 <code>calificaciones</code> fuera <code>[95, 88]</code>, ¿qué línea se ejecutaría justo después de evaluar la condición de la línea 4?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: la condición compara 3 con 2 y resulta falsa, así que no se entra al bloque del if."><span class="k">A</span>La 5: dibuja las barras</button>
+      <button class="opt" data-k="b" data-why="Correcto: la condición es falsa y se ejecuta el bloque else: la línea 13 muestra el mensaje."><span class="k">B</span>La 13: muestra el mensaje</button>
+      <button class="opt" data-k="c" data-why="Incorrecto: el ValueError de plt.bar() se evita justamente porque la condición se revisa antes de graficar."><span class="k">C</span>La 5: falla con ValueError</button>
+      <button class="opt" data-k="d" data-why="Incorrecto: savefig() está dentro del bloque del if, que no se ejecuta."><span class="k">D</span>La 10: guarda la imagen</button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-n="8" aria-label="Diapositiva 8" hidden>
+  <p class="eyebrow">Idea clave 7</p>
+  <h2>Barras horizontales, gráfica circular y errores comunes</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>plt.barh(): muchas categorías o nombres largos</h3>
+      <pre class="code" data-hl>lenguajes = ["Python", "JavaScript", "Java", "C++", "C#"]
+votos = [18, 9, 6, 4, 3]
+lenguajes.reverse()   # barh dibuja la primera categoría abajo
+votos.reverse()
+barras = plt.barh(lenguajes, votos, color="seagreen")
+plt.bar_label(barras, padding=3)
+plt.xlabel("Número de estudiantes")
+plt.ylabel("Lenguaje")
+plt.xlim(0, 20)</pre>
+      <div id="barhChart"></div>
+      <p style="font-size:.85rem;color:var(--muted)">Datos ilustrativos. Las categorías van en el eje Y; xlabel describe los valores.</p>
+    </div>
+    <div class="panel">
+      <h3>plt.pie(): partes de un total</h3>
+      <pre class="code" data-hl>rangos = ["Excelente (90-100)", "Bueno (80-89)",
+          "Suficiente (70-79)", "No acreditado (&lt;70)"]
+estudiantes = [12, 15, 9, 4]
+plt.pie(estudiantes, labels=rangos, autopct="%1.1f %%",
+        startangle=90, counterclock=False)
+plt.title("Distribución de calificaciones del grupo (n = 40)")
+plt.axis("equal")</pre>
+      <div id="pieChart"></div>
+      <p style="font-size:.85rem;color:var(--muted)">Datos ilustrativos. pie() calcula los porcentajes; <code>startangle=90</code> y <code>counterclock=False</code> inician a las 12 y avanzan en sentido horario. Úsala solo si las partes forman un total y hay de 2 a 6 categorías.</p>
+    </div>
+  </div>
+  <div class="errs">
+    <div><b>ValueError: shape mismatch</b>Listas de diferente longitud en <code>plt.bar()</code>.</div>
+    <div><b>Valores como texto</b><code>["95", "88"]</code> se toman como categorías; convierte con <code>int()</code>.</div>
+    <div><b>Imagen en blanco</b><code>savefig()</code> después de <code>show()</code>: guarda siempre antes.</div>
+    <div><b>Programa detenido</b><code>show()</code> espera a que se cierre la ventana.</div>
+    <div><b>Gráficas encimadas</b>Usa <code>plt.figure()</code> antes de cada una o <code>plt.close()</code> al guardar.</div>
+    <div><b>Textos cortados</b><code>plt.tight_layout()</code> o <code>bbox_inches="tight"</code>.</div>
+    <div><b>Archivo matplotlib.py</b>Python importa tu archivo en lugar de la biblioteca.</div>
+    <div><b>Datos sensibles</b>En gráficas públicas, usa datos agregados o anonimizados.</div>
+  </div>
+  <div class="activity">
+    <span class="tag">Actividad 3 · Revelar respuesta</span>
+    <p>La ventana muestra bien la gráfica, pero al abrir <code>calificaciones.png</code> está en blanco. ¿Por qué y cómo se corrige?</p>
+    <pre class="code" data-hl>plt.bar(estudiantes, calificaciones)
+plt.title("Calificaciones finales por estudiante")
+plt.show()
+plt.savefig("calificaciones.png", dpi=300)</pre>
+    <div class="row"><button class="btn primary" id="revealBtn" aria-expanded="false" aria-controls="revealBox">Revelar respuesta</button></div>
+    <div id="revealBox" class="note" hidden>
+      <p><strong>Por qué:</strong> <code>plt.show()</code> detiene el programa hasta cerrar la ventana; al cerrarla, la figura se borra. Cuando se ejecuta <code>savefig()</code>, ya no hay nada que guardar.</p>
+      <p style="margin-top:6px"><strong>Corrección:</strong> llamar a <code>savefig()</code> antes de <code>show()</code>.</p>
+      <pre class="code" data-hl style="margin-top:6px">plt.savefig("calificaciones.png", dpi=300)
+plt.show()</pre>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="d">
+    <span class="tag">Actividad 4 · Opción múltiple</span>
+    <p class="q">En la gráfica circular anterior, ¿qué porcentaje escribe <code>autopct="%1.1f %%"</code> en el sector "Bueno (80-89)"?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: 15 es la cantidad de estudiantes; pie() la convierte en porcentaje del total de 40."><span class="k">A</span><code>15.0 %</code></button>
+      <button class="opt" data-k="b" data-why="Incorrecto: 30.0 % corresponde a Excelente (12 de 40)."><span class="k">B</span><code>30.0 %</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: con %1.1f se escribe un decimal; además el valor exacto es 37.5, no 38."><span class="k">C</span><code>38 %</code></button>
+      <button class="opt" data-k="d" data-why="Correcto: 15 de 40 es 37.5 %; %1.1f escribe un decimal y %% muestra el símbolo."><span class="k">D</span><code>37.5 %</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-n="9" aria-label="Diapositiva 9" hidden>
+  <p class="eyebrow">Autoevaluación</p>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p class="lead">Cinco reactivos. Cada respuesta queda fija al elegirla; al final verás tus aciertos. Todos suponen <code>import matplotlib.pyplot as plt</code>.</p>
+  <div class="quiz" id="quiz">
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 1</span>
+      <p class="q">Se quiere mostrar cómo cambió el promedio del grupo del Parcial 1 al examen Final. ¿Qué función corresponde?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: pie() muestra partes de un total, no cambios en el tiempo."><span class="k">A</span><code>plt.pie()</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: scatter() muestra la relación entre dos variables numéricas."><span class="k">B</span><code>plt.scatter()</code></button>
+        <button class="opt" data-k="c" data-why="Correcto: plot() traza líneas, adecuadas para mostrar cambios a lo largo del tiempo."><span class="k">C</span><code>plt.plot()</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: barh() compara muchas categorías o de nombres largos, no una evolución."><span class="k">D</span><code>plt.barh()</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 2</span>
+      <p class="q">Las calificaciones se leyeron con <code>input()</code> y quedaron como <code>["95", "88", "92"]</code>. ¿Qué pasa con <code>plt.bar(estudiantes, calificaciones)</code>?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: las cadenas se interpretan como categorías del eje Y, no como alturas; hay que convertir con int()."><span class="k">A</span>Las toma como categorías</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: matplotlib no convierte el texto en números por su cuenta."><span class="k">B</span>Las convierte en números</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: shape mismatch ocurre cuando las listas tienen distinta longitud; aquí ambas tienen 3."><span class="k">C</span>Genera ValueError: shape mismatch</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: sí dibuja una gráfica, pero con una escala incorrecta."><span class="k">D</span>No dibuja ninguna barra</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="d" data-quiz>
+      <span class="tag">Reactivo 3</span>
+      <p class="q">Una gráfica de barras con 95, 88 y 92 usa <code>plt.ylim(80, 100)</code>. ¿Cuál es el problema?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: las barras sí se dibujan; el problema es cómo se perciben."><span class="k">A</span>Las barras dejan de dibujarse</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: ylim() no modifica los datos, solo la escala del eje."><span class="k">B</span>Cambia los valores de los datos</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: ylim() es una función válida y no genera errores con esos valores."><span class="k">C</span>Produce un error al ejecutarse</button>
+        <button class="opt" data-k="d" data-why="Correcto: al no iniciar en cero, una diferencia pequeña parece enorme y la gráfica engaña."><span class="k">D</span>Exagera la diferencia entre barras</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="b" data-quiz>
+      <span class="tag">Reactivo 4</span>
+      <p class="q">Se grafican dos series con <code>plt.bar()</code> y se llama a <code>plt.legend()</code>, pero la leyenda no aparece. ¿Qué faltó?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: el título no tiene relación con la leyenda."><span class="k">A</span>Usar <code>plt.title()</code></button>
+        <button class="opt" data-k="b" data-why="Correcto: label= da nombre a cada serie; sin él, legend() no tiene nada que mostrar."><span class="k">B</span>Indicar <code>label=</code> en cada serie</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: la cuadrícula es independiente de la leyenda."><span class="k">C</span>Usar <code>plt.grid()</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: tight_layout() ajusta márgenes; no crea la leyenda."><span class="k">D</span>Usar <code>plt.tight_layout()</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 5</span>
+      <p class="q">Una gráfica de dispersión de horas de estudio contra calificación muestra una tendencia ascendente. ¿Qué se puede concluir?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: una relación no prueba que una variable cause la otra."><span class="k">A</span>Estudiar causa la calificación</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: la tendencia ascendente indica lo contrario: crecen juntas."><span class="k">B</span>Las variables se oponen</button>
+        <button class="opt" data-k="c" data-why="Correcto: a más horas corresponde mayor calificación; es una relación, no una prueba de causa."><span class="k">C</span>Ambas variables crecen juntas</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: la dispersión sí muestra relaciones entre dos variables numéricas."><span class="k">D</span>No se puede leer relación</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel row" style="justify-content:space-between">
+    <span class="score" id="score" aria-live="polite">Aciertos: 0 / 5</span>
+    <button class="btn" id="quizReset">Reiniciar autoevaluación</button>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-n="10" aria-label="Diapositiva 10" hidden>
+  <p class="eyebrow">Resumen</p>
+  <h2>Lo esencial de matplotlib</h2>
+  <div class="summary">
+    <div><h3>Elegir</h3><p>Barras para comparar, pie para proporciones, líneas para el tiempo y dispersión para relaciones.</p></div>
+    <div><h3>Rotular</h3><p>Título y ejes con magnitud y unidad: <code>Tiempo / s</code>, <code>Calificación (0-100)</code>.</p></div>
+    <div><h3>Ser honesto</h3><p>Barras desde cero, un color por variable, sin 3D y con la fuente de los datos.</p></div>
+    <div><h3>Guardar</h3><p><code>savefig("archivo.png", dpi=300)</code> <strong>antes</strong> de <code>show()</code>.</p></div>
+  </div>
+  <div class="panel">
+    <h3>Para practicar</h3>
+    <ol class="plain">
+      <li>Barras verticales con las ventas de una tienda de lunes a viernes, con título, ejes rotulados y la unidad (pesos).</li>
+      <li>Barras horizontales con 6 materias y las horas de estudio semanales de cada una, de mayor a menor.</li>
+      <li>Gráfica circular de los medios de transporte del grupo, con el total de estudiantes en el título.</li>
+      <li>Gráfica de líneas con la temperatura máxima de 7 días; eje vertical "Temperatura / °C".</li>
+      <li>Leer las calificaciones de calificaciones.xlsx (guía de openpyxl) y graficarlas con barras.</li>
+      <li>Guardar las gráficas como PNG con dpi=300 e insertarlas en un documento APA (Figura N, título y nota con la fuente).</li>
+      <li>Tomar una gráfica con el eje Y iniciando en 80 y explicar por qué puede engañar.</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h3>Fuentes</h3>
+    <ul class="refs">
+      <li>American Psychological Association. (2020). <i>Publication manual of the American Psychological Association</i> (7th ed.). https://doi.org/10.1037/0000165-000</li>
+      <li>Bureau International des Poids et Mesures. (2019). <i>The International System of Units (SI)</i> (9th ed.). https://www.bipm.org</li>
+      <li>Cairó, O. (2005). <i>Metodología de la programación: Algoritmos, diagramas de flujo y programas</i> (3.ª ed.). Alfaomega.</li>
+      <li><i>Guía express: Módulo matplotlib en Python</i> [Material didáctico no publicado]. (2026). Unidad de aprendizaje Programación básica, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</li>
+      <li>International Organization for Standardization. (2022). <i>Quantities and units — Part 1: General</i> (ISO Standard No. 80000-1:2022).</li>
+      <li>Matplotlib Development Team. (s.f.). <i>Matplotlib documentation</i>. https://matplotlib.org</li>
+    </ul>
+  </div>
+</section>
+
+    </div></div>
+  </main>
+
+  <footer class="bottom band">
+    <div class="inner">
+      <button class="btn" id="prev">← Anterior</button>
+      <span class="hint">Usa ← → para navegar · Esc cierra la ficha</span>
+      <button class="btn primary" id="next">Siguiente →</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle" hidden>
+  <div class="sheet">
+    <header>
+      <div><p class="eyebrow">Ficha del recurso</p><h2 id="fichaTitle" style="font-size:1.4rem">Datos que se ven: gráficas con matplotlib</h2></div>
+      <button class="btn" id="fichaClose" aria-label="Cerrar ficha">Cerrar ✕</button>
+    </header>
+    <dl>
+      <div><dt>Objetivo de aprendizaje</dt><dd>Construir gráficas de barras, circulares, de líneas y de dispersión con matplotlib, eligiendo el tipo adecuado para cada pregunta y configurando sus elementos según los estándares de ejes y unidades (ISO 80000-1, SI), presentación de figuras (APA 7) y buenas prácticas de visualización.</dd></div>
+      <div><dt>Autores</dt><dd>Dra. Perla Marlene Viera González, Dr. Guillermo Ezequiel Sanchez Guerrero, Dr. Yazmany Jahaziel Guerrero Ceja, Mtro. Osvaldo Habib González González</dd></div>
+      <div><dt>Unidad de aprendizaje</dt><dd>Programación básica · Tema: Visualización de datos</dd></div>
+      <div><dt>Palabras clave</dt><dd class="chips"><span>matplotlib</span><span>visualización de datos</span><span>gráfica de barras</span><span>ISO 80000-1</span><span>figuras APA</span></dd></div>
+      <div><dt>Descripción</dt><dd>El estudiante aprende a construir gráficas con matplotlib, elegir el tipo adecuado para cada pregunta y presentarlas con ejes y unidades correctos, escala honesta y formato APA. Interactúa con los elementos de una gráfica, un selector de tipo de gráfica, una comparación de escalas, un algoritmo vinculado a su código, una ejecución paso a paso que dibuja la figura y actividades con retroalimentación inmediata. Tiempo estimado: 45 minutos.</dd></div>
+      <div><dt>Audiencia</dt><dd>Estudiantes universitarios de unidades de aprendizaje relacionadas con las ciencias exactas.</dd></div>
+      <div><dt>Competencias que desarrolla el estudiante</dt><dd><ol>
+        <li>Seleccionar el tipo de gráfica adecuado para cada pregunta sobre los datos y evaluar críticamente si una gráfica representa la información de forma honesta, por ejemplo, con una escala que inicia en cero.<span class="align">Alineada con: Emplear pensamiento lógico, crítico, creativo y propositivo…</span></li>
+        <li>Representar datos de forma icónica mediante gráficas rotuladas con magnitud y unidad según ISO 80000-1 y el SI, y presentarlas como figuras con formato APA 7.<span class="align">Alineada con: Utilizar los lenguajes lógico, formal, matemático, icónico, verbal y no verbal…</span></li>
+        <li>Programar en Python gráficas de barras, circulares, de líneas y de dispersión con matplotlib, guardándolas como imagen con savefig() antes de show() y rastreando el efecto de cada instrucción sobre la figura.<span class="align">Alineada con: Desarrollar tecnologías computacionales utilizando herramientas de software…</span></li>
+      </ol></dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  /* ---------- resaltado de sintaxis propio ---------- */
+  var KW = {"with":1,"as":1,"for":1,"in":1,"try":1,"except":1,"import":1,"from":1,"if":1,"else":1,"not":1,"and":1,"is":1,"def":1,"return":1,"None":1,"True":1,"False":1};
+  var BI = {"print":1,"str":1,"len":1,"int":1,"range":1};
+  function hl(src){
+    var re = /(#[^\n]*)|([rRbf]?"(?:[^"\\\n]|\\.)*"|[rRbf]?'(?:[^'\\\n]|\\.)*')|([A-Za-z_]\w*)|(\d+(?:\.\d+)?)/g;
+    var out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += '<span class="t-com">' + esc(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="t-str">' + esc(m[2]) + '</span>';
+      else if (m[3]) {
+        var w = m[3];
+        if (KW[w]) out += '<span class="t-kw">' + w + '</span>';
+        else if (BI[w] && src.charAt(re.lastIndex) === "(") out += '<span class="t-bi">' + w + '</span>';
+        else if (src.charAt(m.index - 1) === "." && src.charAt(re.lastIndex) === "(") out += '<span class="t-fn">' + w + '</span>';
+        else out += w;
+      } else out += '<span class="t-num">' + m[4] + '</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  $$("pre[data-hl]").forEach(function(p){ p.innerHTML = hl(p.textContent); });
+
+  /* ---------- navegación ---------- */
+  var slides = $$(".slide"), total = slides.length, cur = 0;
+  var stage = $("#stage"), prevB = $("#prev"), nextB = $("#next");
+  function go(i){
+    if (i < 0 || i >= total) return;
+    slides[cur].hidden = true; cur = i; slides[cur].hidden = false;
+    $("#counter").textContent = (cur + 1) + " / " + total;
+    $("#bar").style.width = ((cur + 1) / total * 100) + "%";
+    prevB.disabled = cur === 0; nextB.disabled = cur === total - 1;
+    stage.scrollTop = 0;
+  }
+  prevB.addEventListener("click", function(){ go(cur - 1); });
+  nextB.addEventListener("click", function(){ go(cur + 1); });
+  $$("[data-go]").forEach(function(b){ b.addEventListener("click", function(){ go(+b.getAttribute("data-go") - 1); }); });
+
+  /* ---------- ficha ---------- */
+  var ficha = $("#ficha"), fichaBtn = $("#fichaBtn");
+  function openFicha(){ ficha.hidden = false; $("#fichaClose").focus(); }
+  function closeFicha(){ ficha.hidden = true; fichaBtn.focus(); }
+  fichaBtn.addEventListener("click", function(){ ficha.hidden ? openFicha() : closeFicha(); });
+  $("#fichaClose").addEventListener("click", closeFicha);
+  ficha.addEventListener("click", function(e){ if (e.target === ficha) closeFicha(); });
+
+  document.addEventListener("keydown", function(e){
+    if (!ficha.hidden) { if (e.key === "Escape") { e.preventDefault(); closeFicha(); } return; }
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  /* ---------- opción múltiple ---------- */
+  function mcSetup(box){
+    var correct = box.getAttribute("data-correct"), quiz = box.hasAttribute("data-quiz");
+    var opts = $$(".opt", box), fb = $(".fb", box);
+    box._answered = false; box._right = false;
+    function reset(){
+      opts.forEach(function(o){ o.disabled = false; o.classList.remove("ok","bad"); });
+      fb.innerHTML = ""; box._answered = false; box._right = false;
+    }
+    box._reset = reset;
+    opts.forEach(function(o){
+      o.addEventListener("click", function(){
+        if (box._answered) return;
+        var k = o.getAttribute("data-k"), right = k === correct;
+        box._answered = true; box._right = right;
+        opts.forEach(function(x){ x.disabled = true; });
+        o.classList.add(right ? "ok" : "bad");
+        $$(".opt[data-k='" + correct + "']", box)[0].classList.add("ok");
+        var html = '<p class="verdict ' + (right ? "ok" : "bad") + '">' + (right ? "¡Correcto!" : "Respuesta incorrecta.") + '</p><ul class="why">';
+        opts.forEach(function(x){
+          var kk = x.getAttribute("data-k");
+          html += '<li class="' + (kk === correct ? "c" : "") + '"><strong>' + kk.toUpperCase() + ':</strong> ' + esc(x.getAttribute("data-why")) + '</li>';
+        });
+        html += '</ul>';
+        if (!quiz) html += '<div><button class="btn retry">Intentar de nuevo</button></div>';
+        fb.innerHTML = html;
+        var r = $(".retry", fb); if (r) r.addEventListener("click", function(){ reset(); opts[0].focus(); });
+        if (quiz) updateScore();
+      });
+    });
+  }
+  $$(".mc").forEach(mcSetup);
+
+  var qItems = $$(".quiz-item");
+  function updateScore(){
+    var done = 0, ok = 0;
+    qItems.forEach(function(q){ if (q._answered) { done++; if (q._right) ok++; } });
+    var s = "Aciertos: " + ok + " / " + qItems.length;
+    if (done === qItems.length) s += ok === qItems.length ? " · ¡Excelente!" : ok >= 3 ? " · Buen trabajo; repasa los reactivos fallados." : " · Repasa las diapositivas 4, 7 y 8.";
+    $("#score").textContent = s;
+  }
+  $("#quizReset").addEventListener("click", function(){ qItems.forEach(function(q){ q._reset(); }); updateScore(); });
+
+  /* ---------- motor de gráficas SVG propio ---------- */
+  var W = 520;
+  function niceTicks(a, b){
+    var span = b - a, step = span <= 30 ? 2.5 : 20, t = [], v = Math.ceil(a / step) * step;
+    for (; v <= b + 1e-9; v += step) t.push(Math.round(v * 100) / 100);
+    return t;
+  }
+  function frame(o){
+    return { L: o.ylabel !== undefined ? 64 : 46, R: 18, T: o.title !== undefined ? 40 : 16, B: o.xlabel !== undefined ? 54 : 34, H: o.H || 290 };
+  }
+  function txt(x, y, s, cls, anchor, extra){ return '<text x="' + x + '" y="' + y + '" class="' + (cls || "") + '" text-anchor="' + (anchor || "middle") + '"' + (extra || "") + ">" + esc(s) + "</text>"; }
+  function wrap(o, inner, label){ return '<svg class="chart" viewBox="0 0 ' + W + " " + (o.H || 290) + '" role="img" aria-label="' + esc(label) + '">' + inner + "</svg>"; }
+  function fixed(x){ return Math.round(x * 10) / 10; }
+  function barChart(o){
+    var f = frame(o), x0 = f.L, x1 = W - f.R, y0 = f.H - f.B, y1 = f.T;
+    var ymin = o.ylim ? o.ylim[0] : 0, ymax = o.ylim ? o.ylim[1] : o.autoMax, ticks = niceTicks(ymin, ymax);
+    var sy = function(v){ return y0 - (Math.max(v, ymin) - ymin) / (ymax - ymin) * (y0 - y1); };
+    var n = o.cats.length, slot = (x1 - x0) / n, bw = slot * 0.8, s = "";
+    if (o.grid) ticks.forEach(function(t){ s += '<line class="gl" x1="' + x0 + '" x2="' + x1 + '" y1="' + fixed(sy(t)) + '" y2="' + fixed(sy(t)) + '"/>'; });
+    o.vals.forEach(function(v, i){
+      var x = x0 + slot * i + (slot - bw) / 2, y = sy(v);
+      s += '<rect x="' + fixed(x) + '" y="' + fixed(y) + '" width="' + fixed(bw) + '" height="' + fixed(y0 - y) + '" style="fill:var(' + (o.color || "--c1") + ')"/>';
+      if (o.labels) s += txt(fixed(x + bw / 2), fixed(y - 5), String(v), "val");
+      s += txt(fixed(x + bw / 2), y0 + 16, o.cats[i], "tk");
+    });
+    ticks.forEach(function(t){ s += txt(x0 - 6, fixed(sy(t) + 4), String(t), "tk", "end"); });
+    s += '<line class="ax" x1="' + x0 + '" x2="' + x0 + '" y1="' + y1 + '" y2="' + y0 + '"/><line class="ax" x1="' + x0 + '" x2="' + x1 + '" y1="' + y0 + '" y2="' + y0 + '"/>';
+    if (o.title) s += txt(W / 2, 24, o.title, "ttl" + (o.nw === "title" ? " new" : ""));
+    if (o.xlabel) s += txt((x0 + x1) / 2, f.H - 12, o.xlabel, "lab" + (o.nw === "x" ? " new" : ""));
+    if (o.ylabel) s += txt(16, (y0 + y1) / 2, o.ylabel, "lab" + (o.nw === "y" ? " new" : ""), "middle", ' transform="rotate(-90 16 ' + (y0 + y1) / 2 + ')"');
+    if (o.hl) s += hlRect(o.hl, f, x0, x1, y0, y1);
+    return wrap(o, s, o.title || "Gráfica de barras");
+  }
+  function hlRect(k, f, x0, x1, y0, y1){
+    var r = { title: [W / 2 - 150, 8, 300, 24], x: [x0, y0 + 2, x1 - x0, f.B - 4], y: [2, y1, x0 - 4, y0 - y1], scale: [x0 - 34, y1 - 6, 32, y0 - y1 + 12], grid: [x0, y1, x1 - x0, y0 - y1], legend: [x1 - 118, y1 + 2, 114, 40], xlab: [W / 2 - 70, f.H - 26, 140, 20], ylab: [4, y1, 22, y0 - y1] }[k];
+    return r ? '<rect class="hl" rx="5" x="' + r[0] + '" y="' + r[1] + '" width="' + r[2] + '" height="' + r[3] + '"/>' : "";
+  }
+  function barhChart(o){
+    var f = { L: 92, R: 30, T: o.title ? 40 : 14, B: 46, H: o.H || 260 }, x0 = f.L, x1 = W - f.R, y0 = f.H - f.B, y1 = f.T;
+    var xmax = o.xlim[1], sx = function(v){ return x0 + v / xmax * (x1 - x0); }, n = o.cats.length, slot = (y0 - y1) / n, bh = slot * 0.8, s = "";
+    o.cats.forEach(function(c, i){
+      var y = y0 - slot * (i + 1) + (slot - bh) / 2;
+      s += '<rect x="' + x0 + '" y="' + fixed(y) + '" width="' + fixed(sx(o.vals[i]) - x0) + '" height="' + fixed(bh) + '" style="fill:var(--c2)"/>';
+      s += txt(fixed(sx(o.vals[i]) + 4), fixed(y + bh / 2 + 4), String(o.vals[i]), "val", "start");
+      s += txt(x0 - 6, fixed(y + bh / 2 + 4), c, "tk", "end");
+    });
+    [0, 5, 10, 15, 20].forEach(function(t){ s += txt(fixed(sx(t)), y0 + 16, String(t), "tk"); });
+    s += '<line class="ax" x1="' + x0 + '" x2="' + x0 + '" y1="' + y1 + '" y2="' + y0 + '"/><line class="ax" x1="' + x0 + '" x2="' + x1 + '" y1="' + y0 + '" y2="' + y0 + '"/>';
+    s += txt((x0 + x1) / 2, f.H - 8, o.xlabel, "lab");
+    if (o.title) s += txt(W / 2, 24, o.title, "ttl");
+    return wrap({ H: f.H }, s, "Gráfica de barras horizontales");
+  }
+  function pieChart(o){
+    var H = o.H || 300, cx = W / 2, cy = (o.title ? 34 : 0) + (H - (o.title ? 34 : 0)) / 2, r = Math.min(H / 2 - 40, 108), tot = o.vals.reduce(function(a, b){ return a + b; }, 0), a = Math.PI / 2, s = "", cols = ["--c1", "--c2", "--c3", "--c4"];
+    o.vals.forEach(function(v, i){
+      var da = v / tot * 2 * Math.PI, a2 = a - da, mid = a - da / 2;
+      var p1 = [cx + r * Math.cos(a), cy - r * Math.sin(a)], p2 = [cx + r * Math.cos(a2), cy - r * Math.sin(a2)];
+      s += '<path d="M' + cx + " " + cy + " L" + fixed(p1[0]) + " " + fixed(p1[1]) + " A" + r + " " + r + " 0 " + (da > Math.PI ? 1 : 0) + " 1 " + fixed(p2[0]) + " " + fixed(p2[1]) + ' Z" style="fill:var(' + cols[i % 4] + ');stroke:var(--plot);stroke-width:2"/>';
+      var pct = (v / tot * 100).toFixed(1) + " %";
+      s += txt(fixed(cx + r * 0.62 * Math.cos(mid)), fixed(cy - r * 0.62 * Math.sin(mid) + 4), pct, "val", "middle", ' style="fill:var(--pietext);font-weight:700"');
+      var lx = cx + (r + 12) * Math.cos(mid), ly = cy - (r + 12) * Math.sin(mid) + 4;
+      if (o.labels) s += txt(fixed(lx), fixed(ly), o.labels[i], "tk", Math.cos(mid) >= 0 ? "start" : "end");
+      a = a2;
+    });
+    if (o.title) s += txt(W / 2, 22, o.title, "ttl");
+    return wrap({ H: H }, s, "Gráfica circular");
+  }
+  function lineChart(o, scatter){
+    var f = frame(o), x0 = f.L, x1 = W - f.R, y0 = f.H - f.B, y1 = f.T, ymin = o.ylim[0], ymax = o.ylim[1];
+    var n = o.xs.length, sx = function(i){ return x0 + (x1 - x0) * (i + 0.5) / n; }, sy = function(v){ return y0 - (v - ymin) / (ymax - ymin) * (y0 - y1); }, s = "", pts = [];
+    niceTicks(ymin, ymax).forEach(function(t){ s += txt(x0 - 6, fixed(sy(t) + 4), String(t), "tk", "end"); });
+    o.ys.forEach(function(v, i){ pts.push(fixed(sx(i)) + "," + fixed(sy(v))); s += txt(fixed(sx(i)), y0 + 16, String(o.xs[i]), "tk"); });
+    if (!scatter) s += '<polyline points="' + pts.join(" ") + '" style="fill:none;stroke:var(--c1);stroke-width:2.5"/>';
+    pts.forEach(function(p){ var q = p.split(","); s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (scatter ? 5 : 4) + '" style="fill:var(' + (scatter ? "--c4" : "--c1") + ')"/>'; });
+    s += '<line class="ax" x1="' + x0 + '" x2="' + x0 + '" y1="' + y1 + '" y2="' + y0 + '"/><line class="ax" x1="' + x0 + '" x2="' + x1 + '" y1="' + y0 + '" y2="' + y0 + '"/>';
+    if (o.title) s += txt(W / 2, 24, o.title, "ttl");
+    if (o.xlabel) s += txt((x0 + x1) / 2, f.H - 12, o.xlabel, "lab");
+    if (o.ylabel) s += txt(16, (y0 + y1) / 2, o.ylabel, "lab", "middle", ' transform="rotate(-90 16 ' + (y0 + y1) / 2 + ')"');
+    return wrap(o, s, o.title || "Gráfica");
+  }
+
+  var EST = ["Ana", "Luis", "Marta"], CAL = [95, 88, 92];
+
+  /* ---------- elementos de una gráfica ---------- */
+  var PARTS = [
+    { k: "title", n: "Título", d: "Indica qué representa la gráfica." },
+    { k: "x", n: "Eje X", d: "Eje horizontal. En barras verticales contiene las categorías." },
+    { k: "y", n: "Eje Y", d: "Eje vertical. En barras verticales contiene los valores." },
+    { k: "ylab", n: "Etiqueta de eje", d: "Nombre del eje y, si aplica, su unidad." },
+    { k: "scale", n: "Escala", d: "Valores numéricos marcados sobre el eje." },
+    { k: "grid", n: "Cuadrícula", d: "Líneas de referencia para leer los valores." },
+    { k: "legend", n: "Leyenda", d: "Explica qué representa cada color o serie. Aquí hay una sola serie, por eso no hace falta; aparece con dos o más." }
+  ];
+  var partSel = "title";
+  $("#partBtns").innerHTML = PARTS.map(function(p){ return '<button type="button" data-p="' + p.k + '" aria-pressed="false">' + p.n + "</button>"; }).join("");
+  function renderParts(){
+    $$("#partBtns button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-p") === partSel ? "true" : "false"); });
+    var p = PARTS.filter(function(x){ return x.k === partSel; })[0];
+    $("#partChart").innerHTML = barChart({ cats: EST, vals: CAL, ylim: [0, 100], grid: 1, title: "Calificaciones finales por estudiante", xlabel: "Estudiante", ylabel: "Calificación (0-100)", hl: partSel, color: "--steel", H: 270 });
+    $("#partNote").innerHTML = "<strong>" + esc(p.n) + ":</strong> " + esc(p.d) + (partSel === "x" || partSel === "y" ? "" : "") + " La fuente y las notas se escriben fuera o debajo de la figura.";
+  }
+  $$("#partBtns button").forEach(function(b){ b.addEventListener("click", function(){ partSel = b.getAttribute("data-p"); renderParts(); }); });
+  renderParts();
+
+  $("#apaChart").innerHTML = barChart({ cats: EST, vals: CAL, ylim: [0, 100], labels: 1, xlabel: "Estudiante", ylabel: "Calificación (0-100)", color: "--steel", H: 220 });
+
+  /* ---------- ¿qué gráfica usar? ---------- */
+  var QS = [
+    { q: "¿Cuál categoría es mayor o menor?", f: "plt.bar()", g: "Barras verticales", draw: function(){ return barChart({ cats: EST, vals: CAL, ylim: [0, 100], labels: 1, xlabel: "Estudiante", ylabel: "Calificación (0-100)", color: "--steel", H: 240 }); } },
+    { q: "¿Cómo se comparan muchas categorías o con nombres largos?", f: "plt.barh()", g: "Barras horizontales", draw: function(){ return barhChart({ cats: ["C#", "C++", "Java", "JavaScript", "Python"], vals: [3, 4, 6, 9, 18], xlim: [0, 20], xlabel: "Número de estudiantes", H: 240 }); } },
+    { q: "¿Qué parte del total representa cada categoría?", f: "plt.pie()", g: "Circular (pie)", draw: function(){ return pieChart({ vals: [12, 15, 9, 4], labels: ["Excelente", "Bueno", "Suficiente", "No acreditado"], H: 250 }); } },
+    { q: "¿Cómo cambia un valor en el tiempo?", f: "plt.plot()", g: "Líneas", draw: function(){ return lineChart({ xs: ["Parcial 1", "Parcial 2", "Parcial 3", "Final"], ys: [78, 82, 85, 88], ylim: [0, 100], xlabel: "Evaluación", ylabel: "Promedio (0-100)", H: 240 }); } },
+    { q: "¿Hay relación entre dos variables numéricas?", f: "plt.scatter()", g: "Dispersión", draw: function(){ return lineChart({ xs: [1, 2, 3, 4, 5, 6], ys: [60, 65, 72, 78, 85, 90], ylim: [0, 100], xlabel: "Tiempo de estudio / h", ylabel: "Calificación (0-100)", H: 240 }, true); } }
+  ];
+  var qSel = 0;
+  $("#qBtns").innerHTML = QS.map(function(x, i){ return '<button type="button" class="fn" data-q="' + i + '" aria-pressed="false">' + esc(x.q) + "</button>"; }).join("");
+  function renderQ(){
+    $$("#qBtns button").forEach(function(b){ b.setAttribute("aria-pressed", +b.getAttribute("data-q") === qSel ? "true" : "false"); });
+    var x = QS[qSel];
+    $("#qChart").innerHTML = x.draw();
+    $("#qRes").innerHTML = "<strong>" + esc(x.g) + "</strong> · <code>" + esc(x.f) + "</code>" + (qSel > 0 ? ' <span style="color:var(--muted)">(datos ilustrativos de la guía)</span>' : "");
+  }
+  $$("#qBtns button").forEach(function(b){ b.addEventListener("click", function(){ qSel = +b.getAttribute("data-q"); renderQ(); }); });
+  renderQ();
+
+  /* ---------- escala honesta ---------- */
+  var yl = "0";
+  function renderYL(){
+    $$("[data-yl]").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-yl") === yl ? "true" : "false"); });
+    $("#ylChart").innerHTML = barChart({ cats: EST, vals: CAL, ylim: [+yl, 100], labels: 1, grid: 1, ylabel: "Calificación (0-100)", color: "--steel", H: 230 });
+    var r = $("#ylRes");
+    r.className = "result" + (yl === "80" ? " err" : "");
+    r.innerHTML = yl === "0" ? "Escala completa: las barras son casi iguales porque 95, 88 y 92 son parecidas." : "Escala desde 80: la barra de Ana parece casi el doble de la de Luis (15 contra 8 puntos sobre la base), aunque la diferencia real es de 7 puntos. <strong>La gráfica engaña.</strong>";
+  }
+  $$("[data-yl]").forEach(function(b){ b.addEventListener("click", function(){ yl = b.getAttribute("data-yl"); renderYL(); }); });
+  renderYL();
+
+  /* ---------- versión básica y con estándares ---------- */
+  var VER = {
+    basica: {
+      code: 'import matplotlib.pyplot as plt\n\nestudiantes = ["Ana", "Luis", "Marta"]\ncalificaciones = [95, 88, 92]\n\nplt.bar(estudiantes, calificaciones)\nplt.title("Calificaciones de estudiantes")\nplt.xlabel("Estudiante")\nplt.ylabel("Calificación")\nplt.show()',
+      terms: [["plt.bar()", "Construye las barras: categorías en X, alturas en Y."], ["title · xlabel · ylabel", "Título y nombres de los ejes."], ["plt.show()", "Muestra la gráfica en una ventana."]],
+      chart: { cats: EST, vals: CAL, autoMax: 99.75, title: "Calificaciones de estudiantes", xlabel: "Estudiante", ylabel: "Calificación", color: "--c1" },
+      note: "Las barras son casi del mismo tamaño porque las calificaciones son parecidas y el eje inicia en 0. Sin ylim, matplotlib elige la escala (aquí, hasta 99.75), y la marca de 100 no aparece."
+    },
+    estandar: {
+      code: 'import matplotlib.pyplot as plt\n\nestudiantes = ["Ana", "Luis", "Marta"]\ncalificaciones = [95, 88, 92]\n\nplt.figure(figsize=(7, 4))\nbarras = plt.bar(estudiantes, calificaciones, color="steelblue")\nplt.bar_label(barras)                  # valor sobre cada barra\n\nplt.title("Calificaciones finales por estudiante")\nplt.xlabel("Estudiante")\nplt.ylabel("Calificación (0-100)")\nplt.ylim(0, 100)                       # escala completa, desde 0\nplt.grid(axis="y", linestyle="--", alpha=0.5)\n\nplt.tight_layout()\nplt.savefig("calificaciones.png", dpi=300)\nplt.show()',
+      terms: [["color=\"steelblue\"", "Un solo color: es la misma variable."], ["plt.ylim(0, 100)", "Escala completa de calificaciones."], ["alpha=0.5", "Transparencia de la cuadrícula (0 a 1)."], ["dpi=300", "Resolución adecuada para documentos impresos."]],
+      chart: { cats: EST, vals: CAL, ylim: [0, 100], labels: 1, grid: 1, title: "Calificaciones finales por estudiante", xlabel: "Estudiante", ylabel: "Calificación (0-100)", color: "--steel" },
+      note: "Eje con su escala (0-100), valores sobre las barras, cuadrícula de referencia y la imagen guardada con dpi=300 antes de mostrarla."
+    }
+  };
+  var ver = "basica";
+  function renderVer(){
+    $$("[data-ver]").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-ver") === ver ? "true" : "false"); });
+    var v = VER[ver];
+    $("#verCode").innerHTML = hl(v.code);
+    $("#verTerms").innerHTML = v.terms.map(function(t){ return "<dt>" + esc(t[0]) + "</dt><dd>" + esc(t[1]) + "</dd>"; }).join("");
+    $("#verChart").innerHTML = barChart(v.chart);
+    $("#verNote").textContent = v.note;
+  }
+  $$("[data-ver]").forEach(function(b){ b.addEventListener("click", function(){ ver = b.getAttribute("data-ver"); renderVer(); }); });
+  renderVer();
+
+  $("#barhChart").innerHTML = barhChart({ cats: ["C#", "C++", "Java", "JavaScript", "Python"], vals: [3, 4, 6, 9, 18], xlim: [0, 20], xlabel: "Número de estudiantes", H: 240 });
+  $("#pieChart").innerHTML = pieChart({ vals: [12, 15, 9, 4], labels: ["Excelente (90-100)", "Bueno (80-89)", "Suficiente (70-79)", "No acreditado (<70)"], title: "Distribución de calificaciones del grupo (n = 40)", H: 300 });
+
+  /* ---------- revelar ---------- */
+  $("#revealBtn").addEventListener("click", function(){
+    var box = $("#revealBox"), open = box.hidden;
+    box.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false");
+    this.textContent = open ? "Ocultar respuesta" : "Revelar respuesta";
+  });
+
+  /* ---------- resaltado vinculado ---------- */
+  function setLinked(s){
+    $$("#alg li, #exp li").forEach(function(li){ li.classList.toggle("on", li.getAttribute("data-s") === s); });
+  }
+  $$("#alg li, #exp li").forEach(function(li){
+    li.addEventListener("click", function(){ setLinked(li.getAttribute("data-s")); });
+    li.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLinked(li.getAttribute("data-s")); } });
+  });
+  setLinked("10");
+
+  /* ---------- ejecución paso a paso ---------- */
+  var SCODE = [
+    'import matplotlib.pyplot as plt',
+    'estudiantes = ["Ana", "Luis", "Marta"]',
+    'calificaciones = [95, 88, 92]',
+    'if len(estudiantes) == len(calificaciones):',
+    '    plt.bar(estudiantes, calificaciones)',
+    '    plt.title("Calificaciones finales por estudiante")',
+    '    plt.xlabel("Estudiante")',
+    '    plt.ylabel("Calificación (0-100)")',
+    '    plt.ylim(0, 100)',
+    '    plt.savefig("calificaciones.png", dpi=300)',
+    '    plt.show()',
+    'else:',
+    '    print("Las listas no tienen la misma cantidad de datos")'
+  ];
+  var D = [
+    { line: 0, note: "Estado inicial: el programa aún no se ejecuta." },
+    { line: 1, note: "Se importa el módulo de gráficas con el alias plt." },
+    { line: 2, v: { estudiantes: '["Ana", "Luis", "Marta"]' }, note: "estudiantes: categorías que aparecerán en el eje horizontal." },
+    { line: 3, v: { calificaciones: "[95, 88, 92]" }, note: "calificaciones: alturas de las barras, en la misma posición que cada nombre." },
+    { line: 4, note: "len(estudiantes) y len(calificaciones) valen 3: la condición es verdadera y se entra al bloque del if." },
+    { line: 5, v: { figura: "barras" }, fig: { bars: 1 }, note: "plt.bar() crea la figura en memoria con tres barras. Sin ylim, la escala automática llega a 99.75, y la marca de 100 no aparece." },
+    { line: 6, v: { figura: "barras + título" }, fig: { bars: 1, title: 1 }, nw: "title", note: "plt.title() agrega el título arriba de la gráfica." },
+    { line: 7, v: { figura: "barras + título + eje X" }, fig: { bars: 1, title: 1, x: 1 }, nw: "x", note: "plt.xlabel() nombra el eje horizontal." },
+    { line: 8, v: { figura: "barras + título + ejes X y Y" }, fig: { bars: 1, title: 1, x: 1, y: 1 }, nw: "y", note: "plt.ylabel() nombra el eje vertical; como la calificación no tiene unidad, se indica su rango (0-100)." },
+    { line: 9, v: { figura: "… + escala 0-100" }, fig: { bars: 1, title: 1, x: 1, y: 1, ylim: 1 }, note: "plt.ylim(0, 100) fija la escala completa: ahora aparece la marca de 100 y las barras inician en cero." },
+    { line: 10, disk: 1, fig: { bars: 1, title: 1, x: 1, y: 1, ylim: 1 }, note: "savefig() guarda la figura como calificaciones.png con 300 dpi. Se hace antes de show() para que la imagen no salga en blanco." },
+    { line: 11, out: "[Se abre la ventana con la gráfica; el programa espera a que se cierre]", fig: { bars: 1, title: 1, x: 1, y: 1, ylim: 1 }, note: "show() muestra la ventana y detiene el programa hasta cerrarla. Al cerrarla, la figura se borra de memoria." },
+    { line: 0, v: { figura: "(borrada al cerrar la ventana)" }, fig: null, note: "Fin del programa. El bloque else no se ejecutó porque las listas tenían la misma longitud." }
+  ];
+  var VARS = ["estudiantes", "calificaciones", "figura"];
+  var blank = {}; VARS.forEach(function(v){ blank[v] = "—"; });
+  var S = [], st = { vals: Object.assign({}, blank), ant: Object.assign({}, blank), out: [], fig: null, disk: 0 };
+  D.forEach(function(d){
+    var n = { vals: Object.assign({}, st.vals), ant: Object.assign({}, st.ant), out: st.out.slice(), chg: {}, line: d.line, note: d.note,
+      fig: d.hasOwnProperty("fig") ? d.fig : st.fig, disk: d.disk || st.disk, nw: d.nw || "" };
+    if (d.v) Object.keys(d.v).forEach(function(k){ n.ant[k] = n.vals[k]; n.vals[k] = d.v[k]; n.chg[k] = true; });
+    if (d.out) n.out.push(d.out);
+    S.push(n); st = n;
+  });
+  var sCode = $("#sCode");
+  sCode.innerHTML = SCODE.map(function(l, i){ return '<div class="ln" data-l="' + (i + 1) + '"><span class="no">' + (i + 1) + '</span><span>' + hl(l) + '</span></div>'; }).join("");
+  var si = 0;
+  function renderStep(){
+    var s = S[si];
+    $$(".ln", sCode).forEach(function(el){ el.classList.toggle("exec", +el.getAttribute("data-l") === s.line); });
+    $("#sMem").innerHTML = VARS.map(function(v){
+      return '<tr class="' + (s.chg[v] ? "chg" : "") + '"><td>' + v + '</td><td>' + esc(s.vals[v]) + '</td><td>' + esc(s.ant[v]) + '</td></tr>';
+    }).join("");
+    var f = s.fig;
+    $("#sFile").innerHTML = !f ? '<p style="color:var(--muted);font-size:.9rem;margin:0">(no hay figura en memoria)</p>' :
+      barChart({ cats: EST, vals: CAL, ylim: f.ylim ? [0, 100] : null, autoMax: 99.75, title: f.title ? "Calificaciones finales por estudiante" : "", xlabel: f.x ? "Estudiante" : "", ylabel: f.y ? "Calificación (0-100)" : undefined, color: "--c1", nw: s.nw, H: 250 });
+    var dk = $("#sDisk");
+    dk.className = "disk" + (s.disk ? " saved" : "");
+    dk.textContent = s.disk ? "En disco: calificaciones.png guardado (dpi=300)" : "En disco: calificaciones.png todavía no existe";
+    $("#sOut").innerHTML = s.out.length ? s.out.map(esc).join("\n") : '<span class="pr">(sin salida)</span>';
+    $("#sNote").textContent = (s.line ? "Línea " + s.line + ": " : "") + s.note;
+    $("#sCount").textContent = "Paso " + si + " de " + (S.length - 1);
+    $("#sPrev").disabled = si === 0; $("#sNext").disabled = si === S.length - 1;
+  }
+  $("#sPrev").addEventListener("click", function(){ if (si > 0) { si--; renderStep(); } });
+  $("#sNext").addEventListener("click", function(){ if (si < S.length - 1) { si++; renderStep(); } });
+  $("#sReset").addEventListener("click", function(){ si = 0; renderStep(); });
+  renderStep();
+
+  /* ---------- relacionar ---------- */
+  var PAIRS = [
+    { m: "plt.bar()", d: "¿Cuál categoría es mayor o menor?", why: "Las barras verticales comparan cantidades entre pocas categorías." },
+    { m: "plt.barh()", d: "¿Cómo se comparan muchas categorías o con nombres largos?", why: "Las barras horizontales se leen sin girar la cabeza." },
+    { m: "plt.pie()", d: "¿Qué parte del total representa cada categoría?", why: "La circular muestra proporciones de un total, con pocas categorías." },
+    { m: "plt.plot()", d: "¿Cómo cambia un valor en el tiempo?", why: "Las líneas muestran la evolución entre momentos sucesivos." },
+    { m: "plt.scatter()", d: "¿Hay relación entre dos variables numéricas?", why: "La dispersión muestra si dos variables numéricas varían juntas." }
+  ];
+  var DESC = [3, 0, 4, 2, 1].map(function(i){ return PAIRS[i].d; });
+  var mBox = $("#match");
+  mBox.innerHTML = PAIRS.map(function(p, i){
+    return '<div class="mrow"><code>' + esc(p.m) + '</code><select id="m' + i + '" aria-label="Pregunta para ' + esc(p.m) + '"><option value="">Elige la pregunta…</option>' +
+      DESC.map(function(d){ return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; }).join("") + '</select><span class="mark" id="mk' + i + '" aria-hidden="true"></span></div>';
+  }).join("");
+  $("#matchCheck").addEventListener("click", function(){
+    var ok = 0, html = '<ul class="why">';
+    PAIRS.forEach(function(p, i){
+      var sel = $("#m" + i).value, right = sel === p.d, mk = $("#mk" + i);
+      if (right) ok++;
+      mk.textContent = right ? "✓" : "✗"; mk.className = "mark " + (right ? "ok" : "bad");
+      html += '<li class="' + (right ? "c" : "") + '"><strong>' + esc(p.m) + ':</strong> ' + esc(p.why) + (right || !sel ? "" : " La pregunta elegida corresponde a otra gráfica.") + '</li>';
+    });
+    html += '</ul>';
+    $("#matchFb").innerHTML = '<p class="verdict ' + (ok === PAIRS.length ? "ok" : "bad") + '">' + ok + ' de ' + PAIRS.length + ' relaciones correctas.</p>' + html;
+  });
+  $("#matchReset").addEventListener("click", function(){
+    PAIRS.forEach(function(p, i){ $("#m" + i).value = ""; var mk = $("#mk" + i); mk.textContent = ""; mk.className = "mark"; });
+    $("#matchFb").innerHTML = "";
+  });
+
+  go(0);
+})();
+</script>
+
+</html>
