@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Un proyecto, un entorno</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: presentación a pantalla completa — barra superior (ficha + indicador), diapositiva desplazable, barra de navegación inferior */
+:root{
+  --bg:#EDF0F6; --surface:#FFFFFF; --ink:#16203A; --muted:#56617B; --line:#D2D8E5;
+  --accent:#2F5BD3; --accent-ink:#FFFFFF; --soft:#E1E8FB;
+  --ok:#1C7347; --ok-bg:#DFF2E8; --bad:#AE2A1F; --bad-bg:#FBE5E2;
+  --code-bg:#131B2F; --code-fg:#E4E9F5; --code-line:#26314D;
+  --exec:rgba(255,203,107,.20); --exec-bar:#F2B53C;
+  --t-kw:#C9A0F2; --t-str:#A9D98C; --t-fn:#86AEFF; --t-bi:#FFCF70; --t-num:#F79A78; --t-com:#8691AA;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+    --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+    --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+    --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#151D31; --ink:#E5EAF5; --muted:#9BA6C0; --line:#2A3551;
+  --accent:#7F9DFF; --accent-ink:#0D1322; --soft:#1D2947;
+  --ok:#74D4A2; --ok-bg:#112E20; --bad:#FF9387; --bad-bg:#3A1714;
+  --code-bg:#0A0F1C; --code-line:#1F2944; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.band{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.inner{max-width:1080px;margin:0 auto}
+
+/* barra superior */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px}
+.top .inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--accent);font-weight:600}
+.counter{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--muted)}
+.progress{height:3px;background:var(--line)}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+
+/* diapositivas */
+main{overflow-y:auto;overflow-x:hidden}
+main .inner{padding-block:28px 40px}
+.slide{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{font-size:1.12rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}
+.grid2>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.activity{border:2px solid var(--accent);background:var(--surface);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tag{align-self:flex-start;font-family:var(--f-mono);font-size:.74rem;letter-spacing:.05em;text-transform:uppercase;background:var(--soft);color:var(--accent);padding:3px 9px;border-radius:4px}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.terms{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.terms dt{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.terms dd{margin:0}
+
+/* código */
+pre.code,.codebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.6;border-radius:8px;margin:0;overflow-x:auto}
+pre.code{padding:14px 16px;white-space:pre}
+.codebox .ln{display:flex;white-space:pre;padding:0 14px 0 0;border-left:3px solid transparent}
+.codebox .ln .no{display:inline-block;width:2.6em;text-align:right;padding-right:12px;color:var(--t-com);user-select:none;flex:none}
+.codebox .ln.exec{background:var(--exec);border-left-color:var(--exec-bar)}
+.codebox{padding-block:10px}
+.t-kw{color:var(--t-kw)} .t-str{color:var(--t-str)} .t-fn{color:var(--t-fn)} .t-bi{color:var(--t-bi)} .t-num{color:var(--t-num)} .t-com{color:var(--t-com);font-style:italic}
+
+/* botones */
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:7px;font-weight:700;font-size:.95rem}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* opción múltiple */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:baseline}
+.opt .k{font-family:var(--f-mono);font-weight:600;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{display:flex;flex-direction:column;gap:8px}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.why{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:.95rem}
+.why li.c{color:var(--ok)}
+
+/* explorador de modos */
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.modes button{font-family:var(--f-mono);font-weight:600;min-width:58px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:7px;padding:8px 12px}
+.modes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.switch{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+.switch button{border:0;background:var(--bg);color:var(--ink);padding:8px 12px;font-size:.92rem}
+.switch button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:700}
+.result{border-left:4px solid var(--accent);background:var(--soft);padding:12px 14px;border-radius:0 8px 8px 0}
+.result.err{border-left-color:var(--bad);background:var(--bad-bg)}
+.result strong{font-family:var(--f-mono)}
+
+/* resaltado vinculado */
+.alg{list-style:none;margin:0;padding:10px 0;font-family:var(--f-mono);font-size:.9rem;background:var(--code-bg);color:var(--code-fg);border-radius:8px;overflow-x:auto}
+.alg li,.exp li{cursor:pointer}
+.alg li{padding:3px 14px;border-left:3px solid transparent;white-space:pre}
+.alg li .no{color:var(--t-com);display:inline-block;width:2em}
+.alg li.on{background:var(--exec);border-left-color:var(--exec-bar)}
+.exp{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.exp li{border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--bg);font-size:.95rem}
+.exp li.on{border-color:var(--exec-bar);background:var(--surface);box-shadow:0 0 0 2px var(--exec)}
+.exp li b{font-family:var(--f-mono);color:var(--accent)}
+
+/* paso a paso */
+.stepper{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.stepper>*{min-width:0}
+.mem{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+.mem th,.mem td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.mem th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mem td{font-family:var(--f-mono);word-break:break-word}
+.mem tr.chg td{background:var(--exec)}
+.mem tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--exec-bar)}
+.tablewrap{overflow-x:auto}
+.console,.filebox{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.86rem;border-radius:8px;padding:10px 14px;min-height:3.2em;white-space:pre-wrap;word-break:break-word}
+.console .pr{color:var(--t-com)}
+.nl{color:var(--t-num);font-size:.8em}
+.note{background:var(--soft);border-radius:8px;padding:10px 14px;font-size:.95rem}
+.stepcount{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.minilabel{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:0}
+
+/* relacionar */
+.match{display:flex;flex-direction:column;gap:10px}
+.match .mrow{display:grid;grid-template-columns:minmax(110px,auto) 1fr auto;gap:10px;align-items:center}
+.match select{font:inherit;font-size:.95rem;padding:7px;border-radius:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.match .mark{font-weight:700;width:1.4em;text-align:center}
+.mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+@media (max-width:520px){.match .mrow{grid-template-columns:1fr auto}.match .mrow code{grid-column:1/-1;justify-self:start}}
+
+/* errores */
+.errs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.errs div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface);font-size:.94rem}
+.errs b{font-family:var(--f-mono);color:var(--bad);display:block;font-size:.85rem}
+
+/* autoevaluación */
+.score{font-family:var(--f-display);font-size:1.3rem;font-weight:800}
+.quiz{display:flex;flex-direction:column;gap:16px}
+
+/* resumen */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.summary div{border-top:3px solid var(--accent);background:var(--surface);padding:12px 14px;border-radius:0 0 8px 8px}
+.refs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.refs li{padding-left:2em;text-indent:-2em;font-size:.95rem}
+
+/* portada */
+.cover{display:flex;flex-direction:column;gap:22px;padding-top:2vh}
+.cover .obj{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:760px}
+.prompt-line{font-family:var(--f-mono);font-size:.95rem;color:var(--muted)}
+.prompt-line .cur{display:inline-block;width:.6em;height:1.05em;background:var(--accent);vertical-align:-.15em;margin-left:2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.prompt-line .cur{animation:none}.progress span{transition:none}}
+.authors{font-size:.95rem;color:var(--muted)}
+
+/* barra inferior */
+.bottom{background:var(--surface);border-top:1px solid var(--line);padding-block:10px}
+.bottom .inner{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hint{font-size:.8rem;color:var(--muted)}
+@media (max-width:520px){.hint{display:none}}
+
+/* ficha */
+.overlay{position:fixed;inset:0;background:rgba(8,12,24,.55);display:flex;justify-content:flex-end;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:min(560px,100%);height:100%;overflow-y:auto;padding:22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) 22px;padding-top:calc(22px + env(safe-area-inset-top, 0px));display:flex;flex-direction:column;gap:14px}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet dl{margin:0;display:flex;flex-direction:column;gap:12px}
+.sheet dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.sheet dd{margin:2px 0 0}
+.sheet ol{margin:4px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+.sheet .align{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chips span{font-family:var(--f-mono);font-size:.8rem;background:var(--soft);color:var(--accent);padding:2px 8px;border-radius:4px}
+.tree{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:.88rem;line-height:1.7;border-radius:8px;padding:10px 14px;white-space:pre;overflow-x:auto;margin:0}
+.tree .dir{color:var(--t-fn);font-weight:600}
+.tree .g{color:var(--t-com)}
+.tree .new{background:var(--exec);box-shadow:inset 3px 0 0 var(--exec-bar);border-radius:3px;padding:0 4px}
+/* sistema operativo */
+:root[data-os="win"] .nix, :root:not([data-os="win"]) .win{display:none!important}
+.os-switch{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+.os-switch button{border:0;background:var(--bg);color:var(--ink);padding:6px 10px;font-size:.85rem}
+.os-switch button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:700}
+.term .ln .pr{color:var(--t-com)}
+.term .ln .cmd{color:var(--code-fg)}
+.term .ln .cm{color:var(--t-com);font-style:italic}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.92rem}
+.flow span{background:var(--soft);border-radius:6px;padding:6px 10px}
+.flow b{color:var(--muted)}
+.vers{display:flex;flex-wrap:wrap;gap:8px}
+.vers span{font-family:var(--f-mono);font-size:.88rem;border:1.5px solid var(--line);border-radius:6px;padding:5px 9px;background:var(--bg);color:var(--muted);text-decoration:line-through}
+.vers span.in{text-decoration:none;color:var(--ok);border-color:var(--ok);background:var(--ok-bg)}
+.vers span.pick{box-shadow:0 0 0 3px var(--exec);font-weight:700}
+.modes button.fn{min-width:0;font-size:.85rem}
+.cmp td:first-child{font-family:var(--f-body)}
+.alert{display:flex;gap:12px;align-items:center;background:var(--exec);border:2px solid var(--exec-bar);border-radius:10px;padding:12px 16px;font-family:var(--f-display);font-weight:800;font-size:1.15rem}
+.alert .ico{flex:none;font-family:var(--f-mono);font-size:.95rem;background:var(--code-bg);color:var(--code-fg);border-radius:6px;padding:3px 8px}
+</style>
+
+<div class="app">
+  <header class="top band">
+    <div class="inner">
+      <div class="brand"><b>python -m venv .venv</b> · Programación básica · Entorno virtual</div>
+      <div class="os-switch" role="group" aria-label="Sistema operativo">
+        <button type="button" data-os="win" aria-pressed="true">Windows</button>
+        <button type="button" data-os="nix" aria-pressed="false">macOS / Linux</button>
+      </div>
+      <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+      <button class="btn" id="fichaBtn" aria-haspopup="dialog" aria-controls="ficha">Ficha del recurso</button>
+    </div>
+  </header>
+
+  <main id="stage" tabindex="-1">
+    <div class="progress"><span id="bar" style="width:10%"></span></div>
+    <div class="band"><div class="inner">
+
+<!-- 1 -->
+<section class="slide cover" data-n="1" aria-label="Diapositiva 1">
+  <p class="prompt-line">(.venv) reporte_calificaciones&gt; python -m pip install -r requirements.txt<span class="cur"></span></p>
+  <h1>Un proyecto, un entorno: venv, pip y requirements.txt</h1>
+  <div class="obj">
+    <p class="eyebrow">Objetivo de aprendizaje</p>
+    <p>Aplicar los comandos de <code>venv</code> y <code>pip</code> para crear, activar y usar un entorno virtual en un proyecto de Python, registrar sus dependencias en <code>requirements.txt</code> y reproducir el proyecto en otra computadora, diagnosticando los errores más comunes del proceso.</p>
+  </div>
+  <p class="authors">Dra. Perla Marlene Viera González · Dr. Guillermo Ezequiel Sanchez Guerrero · Dr. Yazmany Jahaziel Guerrero Ceja · Mtro. Osvaldo Habib González González</p>
+  <div class="row"><button class="btn primary" data-go="2">Comenzar</button><span class="hint">Elige tu sistema operativo arriba; los comandos se adaptan en todo el recurso.</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-n="2" aria-label="Diapositiva 2" hidden>
+  <p class="eyebrow">Idea clave 1</p>
+  <h2>¿Qué es un entorno virtual?</h2>
+  <p class="lead">Una carpeta independiente con su propio intérprete de Python (copia o enlace del instalado) y su propio espacio para las bibliotecas de un proyecto, sin mezclarlas con las de otros proyectos ni con las del sistema.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Ejemplo</h3>
+      <p style="font-size:.95rem">Un proyecto puede usar la versión 0.9 de una biblioteca mientras otro necesita la 0.10, sin que se afecten entre sí.</p>
+      <h3>Ventajas</h3>
+      <ul class="plain" style="font-size:.95rem">
+        <li>Evita conflictos entre versiones de bibliotecas.</li>
+        <li>Mantiene separadas las dependencias de cada proyecto.</li>
+        <li>Facilita reproducir el proyecto en otra computadora con <code>requirements.txt</code>.</li>
+        <li>No "ensucia" la instalación principal de Python.</li>
+        <li>Si algo falla, el entorno se borra y se vuelve a crear.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Conceptos clave</h3>
+      <dl class="terms" style="font-size:.93rem">
+        <dt>venv</dt><dd>Módulo incluido en Python que <strong>crea</strong> entornos virtuales. En Debian/Ubuntu puede requerir <code>sudo apt install python3-venv</code>.</dd>
+        <dt>pip</dt><dd>Herramienta que <strong>instala</strong> paquetes desde PyPI (pypi.org).</dd>
+        <dt>Paquete</dt><dd>Código reutilizable creado por terceros (biblioteca).</dd>
+        <dt>Dependencia</dt><dd>Paquete que un proyecto necesita para funcionar.</dd>
+        <dt>requirements.txt</dt><dd>Archivo de texto con las dependencias del proyecto y sus versiones.</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="d">
+    <span class="tag">Actividad 1 · Opción múltiple</span>
+    <p class="q">Dos proyectos de la misma computadora necesitan versiones distintas de la biblioteca tabulate. ¿Qué permite que convivan sin afectarse?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: instalar de forma global deja una sola versión para toda la computadora; es justo el conflicto que se quiere evitar."><span class="k">A</span>Instalar ambas versiones de forma global</button>
+      <button class="opt" data-k="b" data-why="Incorrecto: requirements.txt registra qué versiones se necesitan, pero no aísla dónde se instalan."><span class="k">B</span>Escribir ambas en un requirements.txt</button>
+      <button class="opt" data-k="c" data-why="Incorrecto: pip instala paquetes, pero instala en el Python que lo ejecuta; por sí mismo no separa proyectos."><span class="k">C</span>Usar pip en lugar de venv</button>
+      <button class="opt" data-k="d" data-why="Correcto: cada entorno tiene su propio espacio de bibliotecas, así que cada proyecto conserva su versión."><span class="k">D</span>Crear un entorno virtual por proyecto</button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3" aria-label="Diapositiva 3" hidden>
+  <p class="eyebrow">Idea clave 2</p>
+  <h2>Verificar Python, crear la carpeta y el entorno</h2>
+  <p class="lead"><span class="win">En Windows, los comandos se escriben en el Símbolo del sistema (CMD): tecla Windows, escribir "cmd" y Enter.</span><span class="nix">En macOS y Linux, los comandos se escriben en la aplicación Terminal.</span></p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>1. Verificar Python</h3>
+      <pre class="code win">python --version      o bien   py --version</pre>
+      <pre class="code nix">python3 --version</pre>
+      <p style="font-size:.93rem">Debe mostrar algo como <code>Python 3.13.x</code>. <span class="win">Si "python" abre la Microsoft Store o no se reconoce, usa <code>py</code> o reinstala marcando "Add python.exe to PATH".</span><span class="nix">El comando suele ser <code>python3</code>; con el entorno activado, <code>python</code> ya funciona.</span></p>
+      <h3>2. Crear la carpeta del proyecto</h3>
+      <pre class="code">mkdir reporte_calificaciones
+cd reporte_calificaciones</pre>
+      <p style="font-size:.93rem"><code>mkdir</code> crea la carpeta y <code>cd</code> la establece como ubicación de trabajo. Usa nombres sin espacios ni acentos.</p>
+    </div>
+    <div class="panel">
+      <h3>3. Crear el entorno virtual</h3>
+      <pre class="code win">python -m venv .venv      (o  py -m venv .venv)</pre>
+      <pre class="code nix">python3 -m venv .venv</pre>
+      <dl class="terms" style="font-size:.93rem">
+        <dt class="win">python</dt><dt class="nix">python3</dt><dd>Ejecuta el intérprete de Python.</dd>
+        <dt>-m venv</dt><dd>Ejecuta el módulo venv como programa.</dd>
+        <dt>.venv</dt><dd>Carpeta donde se crea el entorno. El punto es una convención de elemento auxiliar<span class="nix">; además la oculta al listar</span>. VS Code la detecta con ese nombre.</dd>
+      </dl>
+      <p style="font-size:.93rem">Se crea una sola vez por proyecto y no muestra mensajes si todo sale bien. No guardes archivos del proyecto dentro de <code>.venv</code>.</p>
+      <pre class="tree win"><span class="dir">.venv/</span>
+<span class="g">├──</span> <span class="dir">Scripts/</span>    <span class="g">intérprete, pip y activación</span>
+<span class="g">├──</span> <span class="dir">Lib/</span>        <span class="g">bibliotecas (site-packages)</span>
+<span class="g">└──</span> pyvenv.cfg  <span class="g">configuración del entorno</span></pre>
+      <pre class="tree nix"><span class="dir">.venv/</span>
+<span class="g">├──</span> <span class="dir">bin/</span>        <span class="g">intérprete, pip y activación</span>
+<span class="g">├──</span> <span class="dir">lib/</span>        <span class="g">bibliotecas (site-packages)</span>
+<span class="g">└──</span> pyvenv.cfg  <span class="g">configuración del entorno</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4" aria-label="Diapositiva 4" hidden>
+  <p class="eyebrow">Idea clave 3</p>
+  <h2>Activar el entorno e instalar con pip</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Activar, verificar y desactivar</h3>
+      <pre class="code win">.venv\Scripts\activate.bat     # activar (CMD)
+where python                   # verificar
+deactivate                     # desactivar</pre>
+      <pre class="code nix">source .venv/bin/activate      # activar
+which python                   # verificar
+deactivate                     # desactivar</pre>
+      <p style="font-size:.93rem">Al activarlo aparece <code>(.venv)</code> al inicio de la línea, y la primera ruta de <span class="win"><code>where</code></span><span class="nix"><code>which</code></span> debe estar dentro de <code>.venv</code>.</p>
+      <ul class="plain" style="font-size:.93rem">
+        <li>Activa el entorno <strong>antes</strong> de instalar o ejecutar.</li>
+        <li>La activación dura mientras esa terminal esté abierta; en una terminal nueva hay que activarlo otra vez.</li>
+        <li>Sin activar, se puede usar su intérprete directo: <code class="win">.venv\Scripts\python.exe main.py</code><code class="nix">.venv/bin/python main.py</code></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Instalar bibliotecas (entorno activado)</h3>
+      <pre class="code">python -m pip install tabulate colorama</pre>
+      <p style="font-size:.93rem"><strong>tabulate</strong> muestra listas como tabla; <strong>colorama</strong> muestra texto de colores. pip las descarga de PyPI (requiere Internet) y las instala dentro de <code>.venv</code>.</p>
+      <p style="font-size:.93rem"><strong>¿Por qué <code>python -m pip</code>?</strong> Si hay varias instalaciones de Python, el comando <code>pip</code> podría pertenecer a otra. <code>python -m pip</code> usa el pip del mismo intérprete que ejecutará el programa.</p>
+      <p style="font-size:.88rem;color:var(--muted)">El aviso "A new release of pip is available" es solo informativo.</p>
+    </div>
+  </div>
+  <div class="activity" id="matchAct">
+    <span class="tag">Actividad 2 · Relacionar conceptos</span>
+    <p>Relaciona cada comando de pip con lo que hace.</p>
+    <div class="match" id="match"></div>
+    <div class="row"><button class="btn primary" id="matchCheck">Revisar</button><button class="btn" id="matchReset">Reintentar</button></div>
+    <div class="fb" id="matchFb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5" aria-label="Diapositiva 5" hidden>
+  <p class="eyebrow">Idea clave 4</p>
+  <h2>El programa del proyecto: main.py</h2>
+  <div class="grid2">
+    <div class="panel">
+      <p style="font-size:.93rem">Se crea dentro de <code>reporte_calificaciones</code>, <strong>no</strong> dentro de <code>.venv</code>.</p>
+      <pre class="code" data-hl>from colorama import init, Fore, Style
+from tabulate import tabulate
+
+init()
+
+calificaciones = [
+    ["Ana", 95],
+    ["Luis", 82],
+    ["Sofía", 68],
+]
+
+print(Fore.GREEN + "Reporte de calificaciones" + Style.RESET_ALL)
+print(tabulate(calificaciones,
+               headers=["Nombre", "Calificación"],
+               tablefmt="grid"))</pre>
+      <dl class="terms" style="font-size:.9rem">
+        <dt>init()</dt><dd>Prepara la terminal para colores (necesario en algunas versiones de Windows).</dd>
+        <dt>Fore.GREEN</dt><dd>Cambia el texto a verde; <code>Style.RESET_ALL</code> regresa al color normal.</dd>
+        <dt>tabulate()</dt><dd>Convierte la lista en una tabla con encabezados.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>Ejecutar (entorno activado, en la carpeta del proyecto)</h3>
+      <pre class="code">python main.py</pre>
+      <div class="console"><span style="color:var(--ok)">Reporte de calificaciones</span>
++----------+----------------+
+| Nombre   |   Calificación |
++==========+================+
+| Ana      |             95 |
++----------+----------------+
+| Luis     |             82 |
++----------+----------------+
+| Sofía    |             68 |
++----------+----------------+</div>
+      <h3>Si usas VS Code</h3>
+      <ol class="plain" style="font-size:.92rem">
+        <li>Archivo &gt; Abrir carpeta: <code>reporte_calificaciones</code>.</li>
+        <li>Ctrl+Shift+P (Cmd+Shift+P) &gt; "Python: Select Interpreter".</li>
+        <li>Elegir el intérprete dentro de <code>.venv</code>.</li>
+        <li class="win">En la terminal de VS Code, en la flecha junto a "+", elegir "Command Prompt".</li>
+        <li>Las terminales nuevas activarán el entorno automáticamente.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="activity">
+    <span class="tag">Actividad 3 · Revelar respuesta</span>
+    <p>Ayer Ana instaló tabulate y colorama en el entorno y el programa funcionó. Hoy abrió una terminal nueva, entró a la carpeta del proyecto y escribió <code>python main.py</code>. Obtuvo este error. ¿Qué ocurrió y cómo se corrige?</p>
+    <pre class="code">ModuleNotFoundError: No module named 'colorama'</pre>
+    <div class="row"><button class="btn primary" id="revealBtn" aria-expanded="false" aria-controls="revealBox">Revelar respuesta</button></div>
+    <div id="revealBox" class="note" hidden>
+      <p><strong>Qué ocurrió:</strong> la activación solo dura mientras la terminal está abierta. En la terminal nueva se ejecutó el Python del sistema, que no tiene las bibliotecas; estas siguen instaladas dentro de <code>.venv</code>.</p>
+      <p style="margin-top:6px"><strong>Corrección:</strong> activar de nuevo el entorno y luego ejecutar. No hace falta reinstalar.</p>
+      <pre class="code win" style="margin-top:6px">.venv\Scripts\activate.bat
+python main.py</pre>
+      <pre class="code nix" style="margin-top:6px">source .venv/bin/activate
+python main.py</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6" aria-label="Diapositiva 6" hidden>
+  <p class="eyebrow">Idea clave 5</p>
+  <h2>Preparar el proyecto: ejecución paso a paso</h2>
+  <div class="alert" role="note"><span class="ico" aria-hidden="true">&gt;_</span><span>¡En la terminal o línea de comandos! <span class="win">(Símbolo del sistema, CMD)</span><span class="nix">(Terminal)</span></span></div>
+  <p class="lead">Sigue el algoritmo PREPARAR_PROYECTO comando por comando. Observa cómo cambian la línea de comandos, el estado del entorno y la carpeta.</p>
+  <div class="stepper">
+    <div class="panel">
+      <div class="codebox term" id="sCode" aria-label="Comandos de terminal"></div>
+      <div class="row">
+        <button class="btn" id="sPrev">← Anterior</button>
+        <button class="btn primary" id="sNext">Siguiente →</button>
+        <button class="btn" id="sReset">Reiniciar</button>
+        <span class="stepcount" id="sCount"></span>
+      </div>
+      <div class="note" id="sNote" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <p class="minilabel">Estado</p>
+      <div class="tablewrap">
+        <table class="mem"><thead><tr><th>Elemento</th><th>Valor actual</th><th>Valor anterior</th></tr></thead><tbody id="sMem"></tbody></table>
+      </div>
+      <p class="minilabel">Carpeta del proyecto</p>
+      <div class="tree" id="sFile"></div>
+      <p class="minilabel">Terminal</p>
+      <div class="console" id="sOut"></div>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="c">
+    <span class="tag">Pregunta de predicción</span>
+    <p class="q">¿Qué contenido tendrá <code>requirements.txt</code> después del paso 10 (<code>pip freeze</code>)? Responde antes de avanzar hasta ese punto.</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: freeze no copia el comando de instalación; registra cada paquete con su versión exacta."><span class="k">A</span><code>tabulate colorama</code> en una línea</button>
+      <button class="opt" data-k="b" data-why="Incorrecto: eso ocurriría si freeze se ejecutara sin el entorno activado: incluiría todo lo instalado en la computadora."><span class="k">B</span>Decenas de paquetes del sistema</button>
+      <button class="opt" data-k="c" data-why="Correcto: con el entorno activado, freeze lista cada paquete instalado en .venv con su versión exacta, uno por línea."><span class="k">C</span><code>colorama==0.4.6</code> y <code>tabulate==0.10.0</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: quedaría vacío solo si se generara antes de instalar las bibliotecas; aquí ya se instalaron en el paso 7."><span class="k">D</span>Un archivo vacío</button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-n="7" aria-label="Diapositiva 7" hidden>
+  <p class="eyebrow">Idea clave 6</p>
+  <h2>requirements.txt: la lista de ingredientes</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Generarlo con pip freeze</h3>
+      <pre class="code">python -m pip freeze &gt; requirements.txt</pre>
+      <p style="font-size:.93rem"><code>freeze</code> lista los paquetes del entorno con su versión exacta y <code>&gt;</code> la redirige a un archivo. Incluye también las dependencias que se instalaron automáticamente. Vuelve a ejecutarlo cada vez que instales o desinstales una biblioteca.</p>
+      <h3>Escribirlo a mano</h3>
+      <pre class="code" data-hl># Bibliotecas del proyecto reporte_calificaciones
+tabulate==0.10.0
+colorama&gt;=0.4.6</pre>
+      <p style="font-size:.93rem">Una biblioteca por línea; <code>#</code> inicia comentarios; las líneas en blanco se ignoran; no importan mayúsculas o minúsculas. Para esta clase se recomienda <code>==</code>.</p>
+    </div>
+    <div class="panel">
+      <h3>Probador de especificadores</h3>
+      <p style="font-size:.9rem;color:var(--muted)">Versiones de ejemplo de una biblioteca. Elige un especificador para ver cuáles acepta y cuál instalaría pip (la más reciente permitida).</p>
+      <div class="modes" role="group" aria-label="Especificador" id="specBtns"></div>
+      <div class="vers" id="vers" aria-live="polite"></div>
+      <div class="result" id="specRes"></div>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="b">
+    <span class="tag">Actividad 4 · Opción múltiple</span>
+    <p class="q">Las versiones disponibles de una biblioteca son 0.9.5, 0.10.0, 0.10.2 y 0.11.0. Si requirements.txt indica <code>tabulate~=0.10.0</code>, ¿qué versión instala pip?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Incorrecto: exactamente 0.10.0 es lo que pediría ==; ~= permite versiones posteriores compatibles."><span class="k">A</span><code>0.10.0</code></button>
+      <button class="opt" data-k="b" data-why="Correcto: ~=0.10.0 acepta 0.10.x, pero no 0.11; la más reciente permitida es 0.10.2."><span class="k">B</span><code>0.10.2</code></button>
+      <button class="opt" data-k="c" data-why="Incorrecto: ~=0.10.0 no acepta 0.11; eso sería con >=0.10.0."><span class="k">C</span><code>0.11.0</code></button>
+      <button class="opt" data-k="d" data-why="Incorrecto: 0.9.5 es menor que 0.10.0, el mínimo que exige el especificador."><span class="k">D</span><code>0.9.5</code></button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-n="8" aria-label="Diapositiva 8" hidden>
+  <p class="eyebrow">Idea clave 7</p>
+  <h2>Reproducir el proyecto en otra computadora</h2>
+  <p class="lead">Se comparte la carpeta <strong>sin</strong> <code>.venv</code>: basta con <code>main.py</code> y <code>requirements.txt</code>. Selecciona un paso del algoritmo o un comando para ver su correspondencia.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Algoritmo REPRODUCIR_PROYECTO <span style="font-weight:400;color:var(--muted);font-size:.85rem">(estilo Cairó)</span></h3>
+      <ol class="alg" id="alg">
+        <li data-s="1" tabindex="0"><span class="no">1.</span>Inicio</li>
+        <li data-s="2" tabindex="0"><span class="no">2.</span>Entrar a la carpeta reporte_calificaciones</li>
+        <li data-s="3" tabindex="0"><span class="no">3.</span>Si no existe requirements.txt entonces</li>
+        <li data-s="4" tabindex="0"><span class="no">4.</span>    Escribir "Falta el archivo requirements.txt"</li>
+        <li data-s="5" tabindex="0"><span class="no">5.</span>Si no</li>
+        <li data-s="6" tabindex="0"><span class="no">6.</span>    Crear el entorno virtual .venv</li>
+        <li data-s="7" tabindex="0"><span class="no">7.</span>    Activar el entorno virtual .venv</li>
+        <li data-s="8" tabindex="0"><span class="no">8.</span>    Instalar las bibliotecas listadas en
+       requirements.txt</li>
+        <li data-s="9" tabindex="0"><span class="no">9.</span>    Ejecutar main.py</li>
+        <li data-s="10" tabindex="0"><span class="no">10.</span>    Desactivar el entorno virtual</li>
+        <li data-s="11" tabindex="0"><span class="no">11.</span>Fin del paso 3</li>
+        <li data-s="12" tabindex="0"><span class="no">12.</span>Fin</li>
+      </ol>
+      <p class="minilabel">Descripción de elementos</p>
+      <dl class="terms" style="font-size:.9rem">
+        <dt>reporte_calificaciones</dt><dd>Carpeta del proyecto.</dd>
+        <dt>.venv</dt><dd>Carpeta del entorno virtual.</dd>
+        <dt>main.py</dt><dd>Archivo con el código del programa.</dd>
+        <dt>requirements.txt</dt><dd>Lista de bibliotecas y sus versiones.</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>Comando de cada paso</h3>
+      <ul class="exp" id="exp">
+        <li data-s="1" tabindex="0"><b>Paso 1</b> · Se recibe la carpeta del proyecto, sin <code>.venv</code>.</li>
+        <li data-s="2" tabindex="0"><b>Paso 2</b> · <code>cd reporte_calificaciones</code></li>
+        <li data-s="3" tabindex="0"><b>Paso 3</b> · Revisar que el archivo esté en la carpeta (por ejemplo, listando su contenido).</li>
+        <li data-s="4" tabindex="0"><b>Paso 4</b> · Sin el archivo, pip mostraría <code>ERROR: Could not open requirements file</code>.</li>
+        <li data-s="5" tabindex="0"><b>Paso 5</b> · El archivo existe: se continúa con la preparación.</li>
+        <li data-s="6" tabindex="0"><b>Paso 6</b> · <code class="win">python -m venv .venv</code><code class="nix">python3 -m venv .venv</code></li>
+        <li data-s="7" tabindex="0"><b>Paso 7</b> · <code class="win">.venv\Scripts\activate.bat</code><code class="nix">source .venv/bin/activate</code></li>
+        <li data-s="8" tabindex="0"><b>Paso 8</b> · <code>python -m pip install -r requirements.txt</code>: <code>-r</code> indica que lea la lista desde el archivo. Se comprueba con <code>python -m pip list</code>.</li>
+        <li data-s="9" tabindex="0"><b>Paso 9</b> · <code>python main.py</code></li>
+        <li data-s="10" tabindex="0"><b>Paso 10</b> · <code>deactivate</code></li>
+        <li data-s="11" tabindex="0"><b>Paso 11</b> · Termina la decisión del paso 3.</li>
+        <li data-s="12" tabindex="0"><b>Paso 12</b> · Fin: el proyecto funciona en la nueva computadora.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Estructura final</h3>
+      <pre class="tree"><span class="dir">reporte_calificaciones/</span>
+<span class="g">├──</span> <span class="dir">.venv/</span>            <span class="g">no se comparte</span>
+<span class="g">├──</span> main.py           <span class="g">código fuente</span>
+<span class="g">├──</span> requirements.txt  <span class="g">dependencias y versiones</span>
+<span class="g">└──</span> .gitignore        <span class="g">opcional, con Git</span></pre>
+      <p style="font-size:.93rem">Contenido mínimo de <code>.gitignore</code>: <code>.venv/</code> y <code>__pycache__/</code>.</p>
+    </div>
+    <div class="panel">
+      <h3>Ciclo de trabajo</h3>
+      <div class="flow"><span>Crear entorno</span><b>→</b><span>Activar</span><b>→</b><span>Instalar</span><b>→</b><span>Programar</span><b>→</b><span>pip freeze</span><b>→</b><span>Compartir sin .venv</span></div>
+      <div class="flow"><span>Recibir</span><b>→</b><span>Crear entorno</span><b>→</b><span>Activar</span><b>→</b><span>pip install -r</span><b>→</b><span>Ejecutar</span></div>
+      <p style="font-size:.93rem">Si mueves o renombras la carpeta y el entorno deja de funcionar: borra <code>.venv</code>, créalo de nuevo e instala desde <code>requirements.txt</code>.</p>
+    </div>
+  </div>
+  <div class="activity mc" data-correct="a">
+    <span class="tag">Actividad 5 · Opción múltiple</span>
+    <p class="q">Un estudiante abre una terminal, entra a la carpeta del proyecto y, sin activar el entorno, ejecuta <code>python -m pip freeze &gt; requirements.txt</code>. ¿Qué problema tendrá el archivo?</p>
+    <div class="opts">
+      <button class="opt" data-k="a" data-why="Correcto: sin el entorno activado, freeze lista lo instalado en el Python del sistema, aunque el proyecto no lo use."><span class="k">A</span>Incluirá paquetes que el proyecto no usa</button>
+      <button class="opt" data-k="b" data-why="Incorrecto: freeze siempre escribe versiones exactas con ==; el problema está en qué paquetes lista."><span class="k">B</span>Tendrá los paquetes, pero sin versiones</button>
+      <button class="opt" data-k="c" data-why="Incorrecto: el archivo se crea con el nombre indicado; el problema del nombre sin extensión ocurre al omitir .txt."><span class="k">C</span>Se guardará sin la extensión .txt</button>
+      <button class="opt" data-k="d" data-why="Incorrecto: freeze no lee el código del proyecto; lista lo que tiene instalado el Python que lo ejecuta."><span class="k">D</span>Listará solo lo que importa main.py</button>
+    </div>
+    <div class="fb" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-n="9" aria-label="Diapositiva 9" hidden>
+  <p class="eyebrow">Autoevaluación</p>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p class="lead">Cinco reactivos. Cada respuesta queda fija al elegirla; al final verás tus aciertos.</p>
+  <div class="quiz" id="quiz">
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 1</span>
+      <p class="q">Un compañero te pide tu proyecto para ejecutarlo en su computadora. ¿Qué debes compartir?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: .venv es pesada y no funciona en otras computadoras; además, sin requirements.txt no sabrá qué instalar."><span class="k">A</span>main.py y la carpeta .venv</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: sin requirements.txt tendría que adivinar qué bibliotecas y versiones instalar."><span class="k">B</span>Solo el archivo main.py</button>
+        <button class="opt" data-k="c" data-why="Correcto: con main.py y requirements.txt, él crea su propio entorno e instala todo con un solo comando."><span class="k">C</span>main.py y requirements.txt</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: el instalador de Python no incluye las bibliotecas del proyecto; eso lo resuelve requirements.txt."><span class="k">D</span>main.py y el instalador de Python</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="a" data-quiz>
+      <span class="tag">Reactivo 2</span>
+      <p class="q">En la computadora hay dos instalaciones de Python. ¿Qué comando asegura que la biblioteca se instale en el intérprete que ejecutará el programa?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Correcto: python -m pip usa el pip del mismo intérprete que se invoca con python."><span class="k">A</span><code>python -m pip install tabulate</code></button>
+        <button class="opt" data-k="b" data-why="Incorrecto: el comando pip podría pertenecer a otra instalación de Python."><span class="k">B</span><code>pip install tabulate</code></button>
+        <button class="opt" data-k="c" data-why="Incorrecto: venv crea entornos; no instala bibliotecas."><span class="k">C</span><code>python -m venv tabulate</code></button>
+        <button class="opt" data-k="d" data-why="Incorrecto: pip es un comando de terminal; dentro del intérprete (>>>) produce un error de sintaxis."><span class="k">D</span><code>&gt;&gt;&gt; pip install tabulate</code></button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="d" data-quiz>
+      <span class="tag">Reactivo 3</span>
+      <p class="q">Al ejecutar <code>python -m pip install -r requirements.txt</code> aparece <code>ERROR: Could not open requirements file: No such file or directory</code>. ¿Cuál es la causa más probable?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: con un nombre o versión inexistente el error es &quot;No matching distribution found&quot;, porque el archivo sí se abrió."><span class="k">A</span>Una versión del archivo no existe</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: sin el entorno activado pip instalaría en otro Python, pero el archivo sí se podría abrir."><span class="k">B</span>El entorno no está activado</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: un archivo vacío sí se abre; simplemente no instala nada."><span class="k">C</span>El archivo no tiene contenido</button>
+        <button class="opt" data-k="d" data-why="Correcto: pip no encuentra el archivo; hay que verificar con cd la carpeta actual y el nombre exacto del archivo."><span class="k">D</span>No estás en la carpeta del proyecto</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="b" data-quiz>
+      <span class="tag">Reactivo 4</span>
+      <p class="q">El entorno está activado. ¿Qué debe mostrar <span class="win"><code>where python</code></span><span class="nix"><code>which python</code></span> como primera ruta?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: si la primera ruta es la del Python del sistema, el entorno no está activado."><span class="k">A</span>La ruta del Python del sistema</button>
+        <button class="opt" data-k="b" data-why="Correcto: al activar el entorno, su intérprete dentro de .venv tiene prioridad."><span class="k">B</span>Una ruta dentro de la carpeta .venv</button>
+        <button class="opt" data-k="c" data-why="Incorrecto: el comando muestra la ubicación del intérprete, no la del programa del proyecto."><span class="k">C</span>La ruta del archivo main.py</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: muestra rutas del intérprete; la versión se consulta con python --version."><span class="k">D</span>La versión de Python instalada</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+    <div class="activity mc quiz-item" data-correct="c" data-quiz>
+      <span class="tag">Reactivo 5</span>
+      <p class="q">Se instaló la biblioteca requests en el proyecto, pero en otra computadora el programa falla con <code>ModuleNotFoundError: No module named 'requests'</code> después de instalar desde requirements.txt. ¿Qué faltó?</p>
+      <div class="opts">
+        <button class="opt" data-k="a" data-why="Incorrecto: copiar .venv no funciona en otra computadora; el entorno se crea de nuevo en cada equipo."><span class="k">A</span>Copiar la carpeta .venv completa</button>
+        <button class="opt" data-k="b" data-why="Incorrecto: desactivar el entorno no modifica requirements.txt ni lo que se instala en otro equipo."><span class="k">B</span>Ejecutar deactivate al terminar</button>
+        <button class="opt" data-k="c" data-why="Correcto: requirements.txt no se actualizó con pip freeze después de instalar la biblioteca nueva."><span class="k">C</span>Volver a ejecutar pip freeze</button>
+        <button class="opt" data-k="d" data-why="Incorrecto: pip check revisa compatibilidad entre lo instalado; no agrega bibliotecas faltantes al archivo."><span class="k">D</span>Ejecutar python -m pip check</button>
+      </div>
+      <div class="fb" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel row" style="justify-content:space-between">
+    <span class="score" id="score" aria-live="polite">Aciertos: 0 / 5</span>
+    <button class="btn" id="quizReset">Reiniciar autoevaluación</button>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-n="10" aria-label="Diapositiva 10" hidden>
+  <p class="eyebrow">Resumen</p>
+  <h2>Lo esencial del entorno virtual</h2>
+  <div class="summary">
+    <div><h3>venv crea</h3><p>Un entorno aislado por proyecto, una sola vez, en la carpeta <code>.venv</code>.</p></div>
+    <div><h3>Activar primero</h3><p>En cada terminal nueva, antes de instalar o ejecutar. Verifica con <span class="win"><code>where python</code></span><span class="nix"><code>which python</code></span>.</p></div>
+    <div><h3>pip instala</h3><p>Con <code>python -m pip install</code>, dentro del entorno activado.</p></div>
+    <div><h3>requirements.txt registra</h3><p><code>pip freeze &gt;</code> lo genera; <code>pip install -r</code> reproduce el proyecto.</p></div>
+  </div>
+  <div class="panel">
+    <h3>Resumen de comandos</h3>
+    <div class="tablewrap">
+      <table class="mem cmp">
+        <thead><tr><th>Acción</th><th>Comando</th></tr></thead>
+        <tbody>
+          <tr><td>Crear carpeta y entrar</td><td>mkdir reporte_calificaciones · cd reporte_calificaciones</td></tr>
+          <tr><td>Crear entorno</td><td><span class="win">python -m venv .venv</span><span class="nix">python3 -m venv .venv</span></td></tr>
+          <tr><td>Activar</td><td><span class="win">.venv\Scripts\activate.bat</span><span class="nix">source .venv/bin/activate</span></td></tr>
+          <tr><td>Desactivar</td><td>deactivate</td></tr>
+          <tr><td>Instalar paquete</td><td>python -m pip install tabulate</td></tr>
+          <tr><td>Ver paquetes</td><td>python -m pip list</td></tr>
+          <tr><td>Generar requirements</td><td>python -m pip freeze &gt; requirements.txt</td></tr>
+          <tr><td>Instalar desde archivo</td><td>python -m pip install -r requirements.txt</td></tr>
+          <tr><td>Verificar dependencias</td><td>python -m pip check</td></tr>
+          <tr><td>Ejecutar programa</td><td>python main.py</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Para practicar</h3>
+    <ol class="plain">
+      <li>Crea el proyecto mi_primer_venv con su entorno y comprueba con where python / which python que usas el intérprete del entorno.</li>
+      <li>Instala tabulate, genera requirements.txt y revisa su contenido.</li>
+      <li>Desactiva el entorno, ejecuta python -m pip freeze y compara con el resultado con el entorno activado. Explica la diferencia.</li>
+      <li>Borra .venv, créalo de nuevo, instala desde requirements.txt y ejecuta main.py.</li>
+      <li>Escribe a mano un requirements.txt con colorama==0.4.6 y tabulate&gt;=0.9, instálalo en un entorno nuevo y revisa con pip list las versiones.</li>
+      <li>Intercambia con un compañero solo main.py y requirements.txt, y reproduce su proyecto.</li>
+      <li>Agrega una biblioteca nueva, actualiza requirements.txt y verifica el cambio.</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h3>Fuentes</h3>
+    <ul class="refs">
+      <li>Cairó, O. (2005). <i>Metodología de la programación: Algoritmos, diagramas de flujo y programas</i> (3.ª ed.). Alfaomega.</li>
+      <li><i>Guía express: Proyectos con entornos virtuales en Python</i> [Material didáctico no publicado]. (2026). Unidad de aprendizaje Programación básica, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</li>
+    </ul>
+  </div>
+</section>
+
+    </div></div>
+  </main>
+
+  <footer class="bottom band">
+    <div class="inner">
+      <button class="btn" id="prev">← Anterior</button>
+      <span class="hint">Usa ← → para navegar · Esc cierra la ficha</span>
+      <button class="btn primary" id="next">Siguiente →</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle" hidden>
+  <div class="sheet">
+    <header>
+      <div><p class="eyebrow">Ficha del recurso</p><h2 id="fichaTitle" style="font-size:1.4rem">Un proyecto, un entorno: venv, pip y requirements.txt</h2></div>
+      <button class="btn" id="fichaClose" aria-label="Cerrar ficha">Cerrar ✕</button>
+    </header>
+    <dl>
+      <div><dt>Objetivo de aprendizaje</dt><dd>Aplicar los comandos de venv y pip para crear, activar y usar un entorno virtual en un proyecto de Python, registrar sus dependencias en requirements.txt y reproducir el proyecto en otra computadora, diagnosticando los errores más comunes del proceso.</dd></div>
+      <div><dt>Autores</dt><dd>Dra. Perla Marlene Viera González, Dr. Guillermo Ezequiel Sanchez Guerrero, Dr. Yazmany Jahaziel Guerrero Ceja, Mtro. Osvaldo Habib González González</dd></div>
+      <div><dt>Unidad de aprendizaje</dt><dd>Programación básica · Tema: Entorno virtual</dd></div>
+      <div><dt>Palabras clave</dt><dd class="chips"><span>entorno virtual</span><span>venv</span><span>pip</span><span>requirements.txt</span><span>dependencias</span></dd></div>
+      <div><dt>Descripción</dt><dd>El estudiante aprende a crear y activar un entorno virtual con venv, instalar bibliotecas con pip, registrar dependencias en requirements.txt y reproducir un proyecto en otra computadora. Interactúa con comandos adaptados a su sistema operativo, una simulación paso a paso de la terminal, un probador de especificadores de versión, un algoritmo vinculado a sus comandos y actividades con retroalimentación inmediata. Tiempo estimado: 40 minutos.</dd></div>
+      <div><dt>Audiencia</dt><dd>Estudiantes universitarios de unidades de aprendizaje relacionadas con las ciencias exactas.</dd></div>
+      <div><dt>Competencias que desarrolla el estudiante</dt><dd><ol>
+        <li>Diagnosticar los errores más comunes al trabajar con entornos virtuales, como ModuleNotFoundError, un requirements.txt incompleto o la instalación en otro intérprete, y seleccionar el comando que los corrige.<span class="align">Alineada con: Emplear pensamiento lógico, crítico, creativo y propositivo…</span></li>
+        <li>Representar la preparación y la reproducción de un proyecto mediante algoritmos estilo Cairó y relacionar cada paso con el comando de terminal correspondiente.<span class="align">Alineada con: Utilizar los lenguajes lógico, formal, matemático, icónico, verbal y no verbal…</span></li>
+        <li>Configurar un proyecto de Python con venv, pip y requirements.txt, usando especificadores de versión, para que pueda ejecutarse y reproducirse en distintas computadoras.<span class="align">Alineada con: Desarrollar tecnologías computacionales utilizando herramientas de software…</span></li>
+      </ol></dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  /* ---------- resaltado de sintaxis propio ---------- */
+  var KW = {"with":1,"as":1,"for":1,"in":1,"try":1,"except":1,"import":1,"from":1,"if":1,"else":1,"not":1,"and":1,"is":1,"def":1,"return":1,"None":1,"True":1,"False":1};
+  var BI = {"print":1,"str":1,"len":1,"int":1,"init":1,"tabulate":1};
+  function hl(src){
+    var re = /(#[^\n]*)|([rRbf]?"(?:[^"\\\n]|\\.)*"|[rRbf]?'(?:[^'\\\n]|\\.)*')|([A-Za-z_]\w*)|(\d+)/g;
+    var out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += '<span class="t-com">' + esc(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="t-str">' + esc(m[2]) + '</span>';
+      else if (m[3]) {
+        var w = m[3];
+        if (KW[w]) out += '<span class="t-kw">' + w + '</span>';
+        else if (BI[w] && src.charAt(re.lastIndex) === "(") out += '<span class="t-bi">' + w + '</span>';
+        else if (src.charAt(m.index - 1) === "." && src.charAt(re.lastIndex) === "(") out += '<span class="t-fn">' + w + '</span>';
+        else out += w;
+      } else out += '<span class="t-num">' + m[4] + '</span>';
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  $$("pre[data-hl]").forEach(function(p){ p.innerHTML = hl(p.textContent); });
+
+  /* ---------- sistema operativo ---------- */
+  var OS = "win";
+  try { var saved = localStorage.getItem("reedi-venv-os"); if (saved === "win" || saved === "nix") OS = saved; } catch (e) {}
+  var osHooks = [];
+  function setOS(v){
+    OS = v;
+    document.documentElement.setAttribute("data-os", v);
+    $$(".os-switch button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-os") === v ? "true" : "false"); });
+    try { localStorage.setItem("reedi-venv-os", v); } catch (e) {}
+    osHooks.forEach(function(f){ f(); });
+  }
+  $$(".os-switch button").forEach(function(b){ b.addEventListener("click", function(){ setOS(b.getAttribute("data-os")); }); });
+
+  /* ---------- navegación ---------- */
+  var slides = $$(".slide"), total = slides.length, cur = 0;
+  var stage = $("#stage"), prevB = $("#prev"), nextB = $("#next");
+  function go(i){
+    if (i < 0 || i >= total) return;
+    slides[cur].hidden = true; cur = i; slides[cur].hidden = false;
+    $("#counter").textContent = (cur + 1) + " / " + total;
+    $("#bar").style.width = ((cur + 1) / total * 100) + "%";
+    prevB.disabled = cur === 0; nextB.disabled = cur === total - 1;
+    stage.scrollTop = 0;
+  }
+  prevB.addEventListener("click", function(){ go(cur - 1); });
+  nextB.addEventListener("click", function(){ go(cur + 1); });
+  $$("[data-go]").forEach(function(b){ b.addEventListener("click", function(){ go(+b.getAttribute("data-go") - 1); }); });
+
+  /* ---------- ficha ---------- */
+  var ficha = $("#ficha"), fichaBtn = $("#fichaBtn");
+  function openFicha(){ ficha.hidden = false; $("#fichaClose").focus(); }
+  function closeFicha(){ ficha.hidden = true; fichaBtn.focus(); }
+  fichaBtn.addEventListener("click", function(){ ficha.hidden ? openFicha() : closeFicha(); });
+  $("#fichaClose").addEventListener("click", closeFicha);
+  ficha.addEventListener("click", function(e){ if (e.target === ficha) closeFicha(); });
+
+  document.addEventListener("keydown", function(e){
+    if (!ficha.hidden) { if (e.key === "Escape") { e.preventDefault(); closeFicha(); } return; }
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+  });
+
+  /* ---------- opción múltiple ---------- */
+  function mcSetup(box){
+    var correct = box.getAttribute("data-correct"), quiz = box.hasAttribute("data-quiz");
+    var opts = $$(".opt", box), fb = $(".fb", box);
+    box._answered = false; box._right = false;
+    function reset(){
+      opts.forEach(function(o){ o.disabled = false; o.classList.remove("ok","bad"); });
+      fb.innerHTML = ""; box._answered = false; box._right = false;
+    }
+    box._reset = reset;
+    opts.forEach(function(o){
+      o.addEventListener("click", function(){
+        if (box._answered) return;
+        var k = o.getAttribute("data-k"), right = k === correct;
+        box._answered = true; box._right = right;
+        opts.forEach(function(x){ x.disabled = true; });
+        o.classList.add(right ? "ok" : "bad");
+        $$(".opt[data-k='" + correct + "']", box)[0].classList.add("ok");
+        var html = '<p class="verdict ' + (right ? "ok" : "bad") + '">' + (right ? "¡Correcto!" : "Respuesta incorrecta.") + '</p><ul class="why">';
+        opts.forEach(function(x){
+          var kk = x.getAttribute("data-k");
+          html += '<li class="' + (kk === correct ? "c" : "") + '"><strong>' + kk.toUpperCase() + ':</strong> ' + esc(x.getAttribute("data-why")) + '</li>';
+        });
+        html += '</ul>';
+        if (!quiz) html += '<div><button class="btn retry">Intentar de nuevo</button></div>';
+        fb.innerHTML = html;
+        var r = $(".retry", fb); if (r) r.addEventListener("click", function(){ reset(); opts[0].focus(); });
+        if (quiz) updateScore();
+      });
+    });
+  }
+  $$(".mc").forEach(mcSetup);
+
+  var qItems = $$(".quiz-item");
+  function updateScore(){
+    var done = 0, ok = 0;
+    qItems.forEach(function(q){ if (q._answered) { done++; if (q._right) ok++; } });
+    var s = "Aciertos: " + ok + " / " + qItems.length;
+    if (done === qItems.length) s += ok === qItems.length ? " · ¡Excelente!" : ok >= 3 ? " · Buen trabajo; repasa los reactivos fallados." : " · Repasa las diapositivas 4, 7 y 8.";
+    $("#score").textContent = s;
+  }
+  $("#quizReset").addEventListener("click", function(){ qItems.forEach(function(q){ q._reset(); }); updateScore(); });
+
+  /* ---------- probador de especificadores (PEP 440, casos de la guía) ---------- */
+  var VERS = ["0.8.10", "0.9.0", "0.9.5", "0.10.0", "0.10.2", "0.11.0", "1.0.0"];
+  var SPECS = [
+    { s: "", label: "tabulate", exp: "Sin versión: instala la más reciente." },
+    { s: "==0.10.0", label: "==0.10.0", exp: "Exactamente esa versión: la más segura para reproducir el proyecto." },
+    { s: ">=0.9", label: ">=0.9", exp: "Esa versión o una más reciente." },
+    { s: "<1.0", label: "<1.0", exp: "Cualquier versión menor a 1.0." },
+    { s: ">=0.9,<1.0", label: ">=0.9,<1.0", exp: "Rango: desde 0.9 y menor que 1.0." },
+    { s: "~=0.10.0", label: "~=0.10.0", exp: "Versión compatible: 0.10.x, pero no 0.11." },
+    { s: "!=0.9.0", label: "!=0.9.0", exp: "Cualquier versión excepto esa." }
+  ];
+  function parseV(v){ return v.split(".").map(Number); }
+  function cmpV(a, b){ a = parseV(a); b = parseV(b); var n = Math.max(a.length, b.length); for (var i = 0; i < n; i++) { var x = a[i] || 0, y = b[i] || 0; if (x !== y) return x < y ? -1 : 1; } return 0; }
+  function okOne(v, sp){
+    var m = /^(~=|==|!=|>=|<=|>|<)(.+)$/.exec(sp); if (!m) return true;
+    var op = m[1], t = m[2], c = cmpV(v, t);
+    if (op === "==") return c === 0; if (op === "!=") return c !== 0;
+    if (op === ">=") return c >= 0; if (op === "<=") return c <= 0;
+    if (op === ">") return c > 0; if (op === "<") return c < 0;
+    var p = parseV(t), up = p.slice(0, -1); up[up.length - 1]++;
+    return c >= 0 && cmpV(v, up.join(".")) < 0;
+  }
+  function allowed(v, spec){ return spec === "" || spec.split(",").every(function(sp){ return okOne(v, sp.trim()); }); }
+  var specSel = "~=0.10.0";
+  $("#specBtns").innerHTML = SPECS.map(function(x){ return '<button type="button" class="fn" data-spec="' + esc(x.s) + '" aria-pressed="false">' + esc(x.label) + '</button>'; }).join("");
+  function renderSpec(){
+    var sp = SPECS.filter(function(x){ return x.s === specSel; })[0];
+    $$("#specBtns button").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-spec") === specSel ? "true" : "false"); });
+    var ok = VERS.filter(function(v){ return allowed(v, specSel); }), pick = ok[ok.length - 1];
+    $("#vers").innerHTML = VERS.map(function(v){ var a = ok.indexOf(v) >= 0; return '<span class="' + (a ? "in" : "") + (v === pick ? " pick" : "") + '">' + v + '</span>'; }).join("");
+    $("#specRes").innerHTML = "<strong>tabulate" + esc(sp.s) + "</strong> · " + esc(sp.exp) + "<br>pip instalaría: <strong>" + esc(pick) + "</strong>";
+  }
+  $$("#specBtns button").forEach(function(b){ b.addEventListener("click", function(){ specSel = b.getAttribute("data-spec"); renderSpec(); }); });
+  renderSpec();
+  window.__allowed = allowed;
+
+  /* ---------- revelar ---------- */
+  $("#revealBtn").addEventListener("click", function(){
+    var box = $("#revealBox"), open = box.hidden;
+    box.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false");
+    this.textContent = open ? "Ocultar respuesta" : "Revelar respuesta";
+  });
+
+  /* ---------- resaltado vinculado ---------- */
+  function setLinked(s){
+    $$("#alg li, #exp li").forEach(function(li){ li.classList.toggle("on", li.getAttribute("data-s") === s); });
+  }
+  $$("#alg li, #exp li").forEach(function(li){
+    li.addEventListener("click", function(){ setLinked(li.getAttribute("data-s")); });
+    li.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLinked(li.getAttribute("data-s")); } });
+  });
+  setLinked("8");
+
+  /* ---------- simulación paso a paso de la terminal ---------- */
+  var HOME = { win: "C:\\Users\\Ana", nix: "/home/ana" };
+  var TABLE = [
+    "Reporte de calificaciones",
+    "+----------+----------------+",
+    "| Nombre   |   Calificación |",
+    "+==========+================+",
+    "| Ana      |             95 |",
+    "+----------+----------------+",
+    "| Luis     |             82 |",
+    "+----------+----------------+",
+    "| Sofía    |             68 |",
+    "+----------+----------------+"
+  ];
+  // Cada paso: comando por sistema, carpeta (0 home, 1 proyecto), entorno activo, archivos, salida y nota.
+  var STEPS = [
+    { cmd: { win: "python --version", nix: "python3 --version" }, out: ["Python 3.13.x"], alg: "Verificación previa", note: "Se comprueba que Python esté instalado antes de comenzar." },
+    { cmd: { win: "mkdir reporte_calificaciones", nix: "mkdir reporte_calificaciones" }, files: ["root"], alg: "Paso 2", note: "mkdir crea la carpeta del proyecto, todavía vacía." },
+    { cmd: { win: "cd reporte_calificaciones", nix: "cd reporte_calificaciones" }, dir: 1, alg: "Paso 3", note: "cd entra a la carpeta y la establece como ubicación de trabajo; cambia la línea de comandos." },
+    { cmd: { win: "python -m venv .venv", nix: "python3 -m venv .venv" }, files: ["root", "venv"], alg: "Paso 4", note: "Se crea la carpeta .venv. Si todo sale bien, el comando no muestra mensajes." },
+    { cmd: { win: ".venv\\Scripts\\activate.bat", nix: "source .venv/bin/activate" }, act: 1, alg: "Paso 5", note: "Se activa el entorno: aparece (.venv) al inicio de la línea de comandos." },
+    { cmd: { win: "where python", nix: "which python" }, out: { win: ["C:\\Users\\Ana\\reporte_calificaciones\\.venv\\Scripts\\python.exe", "C:\\Users\\Ana\\AppData\\Local\\Programs\\Python\\Python313\\python.exe"], nix: ["/home/ana/reporte_calificaciones/.venv/bin/python"] }, alg: "Verificación", note: "La primera ruta está dentro de .venv: se usa el intérprete del entorno." },
+    { cmd: { win: "python -m pip install tabulate colorama", nix: "python -m pip install tabulate colorama" }, pk: "colorama 0.4.6, tabulate 0.10.0", out: ["Successfully installed colorama-0.4.6 tabulate-0.10.0"], alg: "Pasos 6 y 7", note: "pip descarga las bibliotecas de PyPI y las instala dentro de .venv, no en el Python del sistema." },
+    { cmd: { win: "# crear main.py en el editor", nix: "# crear main.py en el editor" }, files: ["root", "venv", "main"], comment: 1, alg: "Paso 8", note: "main.py se guarda en la carpeta del proyecto, fuera de .venv. No es un comando de terminal." },
+    { cmd: { win: "python main.py", nix: "python main.py" }, out: TABLE, alg: "Paso 9", note: "El programa encuentra tabulate y colorama porque el entorno está activado. El título aparece en verde." },
+    { cmd: { win: "python -m pip freeze > requirements.txt", nix: "python -m pip freeze > requirements.txt" }, files: ["root", "venv", "main", "req"], req: 1, alg: "Paso 10", note: "freeze lista los paquetes del entorno con su versión exacta y > los guarda en requirements.txt en lugar de mostrarlos." },
+    { cmd: { win: "deactivate", nix: "deactivate" }, act: 0, alg: "Paso 11", note: "Se desactiva el entorno: desaparece (.venv). Las bibliotecas siguen instaladas dentro de .venv." }
+  ];
+  function prompt(dir, act){
+    var p = OS === "win" ? HOME.win + (dir ? "\\reporte_calificaciones" : "") + ">" : "ana:" + (dir ? "~/reporte_calificaciones" : "~") + "$";
+    return (act ? "(.venv) " : "") + p;
+  }
+  function buildStates(){
+    var S = [], st = { dir: 0, act: 0, files: [], pk: "—", req: 0, log: [] };
+    var mem = function(s){ return { carpeta: s.dir ? "reporte_calificaciones" : (OS === "win" ? "C:\\Users\\Ana" : "/home/ana"), entorno: s.act ? "activado" : (s.files.indexOf("venv") >= 0 ? "creado, sin activar" : "no existe"), paquetes: s.pk, python: s.act ? "el de .venv" : "el del sistema" }; };
+    S.push({ m: mem(st), prev: null, files: [], log: [], line: 0, req: 0, note: "Estado inicial: terminal abierta en la carpeta personal.", alg: "Paso 1 · Inicio" });
+    STEPS.forEach(function(d, i){
+      var n = { dir: st.dir, act: st.act, files: st.files, pk: st.pk, req: st.req, log: st.log.slice() };
+      var pr = prompt(n.dir, n.act);
+      n.log.push({ p: pr, c: d.cmd[OS], cm: !!d.comment });
+      if (d.hasOwnProperty("dir")) n.dir = d.dir;
+      if (d.hasOwnProperty("act")) n.act = d.act;
+      if (d.files) n.files = d.files;
+      if (d.pk) n.pk = d.pk;
+      if (d.req) n.req = 1;
+      var out = d.out ? (Array.isArray(d.out) ? d.out : d.out[OS]) : [];
+      out.forEach(function(o){ n.log.push({ o: o }); });
+      S.push({ m: mem(n), prev: S[S.length - 1].m, files: n.files, log: n.log, line: i + 1, req: n.req, note: d.note, alg: d.alg, newf: d.files ? d.files[d.files.length - 1] : "" });
+      st = n;
+    });
+    S.push({ m: S[S.length - 1].m, prev: S[S.length - 1].m, files: st.files, log: st.log.concat([{ p: prompt(st.dir, st.act), c: "" }]), line: 0, req: st.req, note: "Fin del algoritmo PREPARAR_PROYECTO.", alg: "Paso 12 · Fin" });
+    return S;
+  }
+  var LABELS = { carpeta: "Carpeta actual", entorno: "Entorno virtual", paquetes: "Paquetes en .venv", python: "Python que se usa" };
+  function treeHTML(files, newf, req){
+    if (!files.length) return '<span class="pr">(la carpeta del proyecto aún no existe)</span>';
+    function w(k, h){ return k === newf ? '<span class="new">' + h + '</span>' : h; }
+    var items = [];
+    if (files.indexOf("venv") >= 0) items.push(w("venv", '<span class="dir">.venv/</span>'));
+    if (files.indexOf("main") >= 0) items.push(w("main", "main.py"));
+    if (files.indexOf("req") >= 0) items.push(w("req", "requirements.txt") + (req ? '  <span class="g">colorama==0.4.6 · tabulate==0.10.0</span>' : ""));
+    var html = w("root", '<span class="dir">reporte_calificaciones/</span>') + (items.length ? "" : '  <span class="g">(vacía)</span>');
+    items.forEach(function(it, i){ html += "\n" + '<span class="g">' + (i === items.length - 1 ? "└──" : "├──") + "</span> " + it; });
+    return html;
+  }
+  var S = buildStates(), si = 0, sCode = $("#sCode");
+  function renderCode(){
+    sCode.innerHTML = STEPS.map(function(d, i){
+      var c = d.cmd[OS];
+      return '<div class="ln" data-l="' + (i + 1) + '"><span class="no">' + (i + 1) + '</span><span class="' + (d.comment ? "cm" : "cmd") + '">' + esc(c) + '</span></div>';
+    }).join("");
+  }
+  function renderStep(){
+    var s = S[si];
+    $$(".ln", sCode).forEach(function(el){ el.classList.toggle("exec", +el.getAttribute("data-l") === s.line); });
+    $("#sMem").innerHTML = Object.keys(LABELS).map(function(k){
+      var chg = s.prev && s.prev[k] !== s.m[k];
+      return '<tr class="' + (chg ? "chg" : "") + '"><td>' + LABELS[k] + '</td><td>' + esc(s.m[k]) + '</td><td>' + (s.prev ? esc(s.prev[k]) : "—") + '</td></tr>';
+    }).join("");
+    $("#sFile").innerHTML = treeHTML(s.files, s.newf, s.req);
+    var log = s.log.length ? s.log : [{ p: prompt(0, 0), c: "" }];
+    $("#sOut").innerHTML = log.map(function(l){
+      if (l.o !== undefined) return esc(l.o);
+      return '<span class="pr">' + esc(l.p) + '</span> ' + (l.cm ? '<span class="pr">' + esc(l.c) + '</span>' : esc(l.c));
+    }).join("\n");
+    $("#sNote").textContent = s.alg + ": " + s.note;
+    $("#sCount").textContent = "Paso " + si + " de " + (S.length - 1);
+    $("#sPrev").disabled = si === 0; $("#sNext").disabled = si === S.length - 1;
+  }
+  $("#sPrev").addEventListener("click", function(){ if (si > 0) { si--; renderStep(); } });
+  $("#sNext").addEventListener("click", function(){ if (si < S.length - 1) { si++; renderStep(); } });
+  $("#sReset").addEventListener("click", function(){ si = 0; renderStep(); });
+  osHooks.push(function(){ S = buildStates(); renderCode(); renderStep(); });
+
+  /* ---------- relacionar ---------- */
+  var PAIRS = [
+    { m: "pip list", d: "Muestra los paquetes instalados en el entorno", why: "list enumera lo instalado en el entorno activo." },
+    { m: "pip show tabulate", d: "Muestra versión, ubicación y dependencias de un paquete", why: "show da la información detallada de un paquete." },
+    { m: "pip install tabulate==0.9.0", d: "Instala una versión específica", why: "== fija la versión exacta que se instala." },
+    { m: "pip install --upgrade tabulate", d: "Actualiza a la versión más reciente", why: "--upgrade reemplaza la versión instalada por la más reciente." },
+    { m: "pip uninstall tabulate", d: "Desinstala el paquete", why: "uninstall elimina el paquete del entorno." }
+  ];
+  var DESC = [3, 0, 4, 1, 2].map(function(i){ return PAIRS[i].d; });
+  var mBox = $("#match");
+  mBox.innerHTML = PAIRS.map(function(p, i){
+    return '<div class="mrow"><code>' + esc(p.m) + '</code><select id="m' + i + '" aria-label="Acción de ' + esc(p.m) + '"><option value="">Elige qué hace…</option>' +
+      DESC.map(function(d){ return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; }).join("") + '</select><span class="mark" id="mk' + i + '" aria-hidden="true"></span></div>';
+  }).join("");
+  $("#matchCheck").addEventListener("click", function(){
+    var ok = 0, html = '<ul class="why">';
+    PAIRS.forEach(function(p, i){
+      var sel = $("#m" + i).value, right = sel === p.d, mk = $("#mk" + i);
+      if (right) ok++;
+      mk.textContent = right ? "✓" : "✗"; mk.className = "mark " + (right ? "ok" : "bad");
+      html += '<li class="' + (right ? "c" : "") + '"><strong>' + esc(p.m) + ':</strong> ' + esc(p.why) + (right || !sel ? "" : " La acción elegida corresponde a otro comando.") + '</li>';
+    });
+    html += '</ul>';
+    $("#matchFb").innerHTML = '<p class="verdict ' + (ok === PAIRS.length ? "ok" : "bad") + '">' + ok + ' de ' + PAIRS.length + ' relaciones correctas.</p>' + html;
+  });
+  $("#matchReset").addEventListener("click", function(){
+    PAIRS.forEach(function(p, i){ $("#m" + i).value = ""; var mk = $("#mk" + i); mk.textContent = ""; mk.className = "mark"; });
+    $("#matchFb").innerHTML = "";
+  });
+
+  setOS(OS);
+  go(0);
+})();
+</script>
+
+</html>
