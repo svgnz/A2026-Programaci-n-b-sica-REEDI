@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu PIA paso a paso</title>
+<meta name="description" content="REEDI A2026PIA01 · Programación básica · Análisis de datos de un API con Python, con el ejemplo de SWAPI.">
+<style>
+:root{
+  --bg:#f4f5f8; --panel:#ffffff; --ink:#1b2333; --muted:#566074; --line:#d9dde6;
+  --brand:#0f1b2d; --brand-ink:#ffffff; --accent:#c98a00; --accent-soft:#fff3d1;
+  --ok:#1f7a45; --ok-soft:#e3f4ea; --bad:#b3261e; --bad-soft:#fbe7e5;
+  --hl:#fff1b8; --code-bg:#f2f4f9; --code-ink:#1b2333;
+  --kw:#7a2bb5; --str:#1f7a45; --num:#b35900; --com:#6b7385;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+button{font:inherit;cursor:pointer}
+:not(pre)>code{overflow-wrap:anywhere}
+code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+/* barra superior */
+.topbar{position:sticky;top:0;z-index:20;background:var(--brand);color:var(--brand-ink);display:flex;align-items:center;gap:10px;padding:8px 16px;flex-wrap:wrap}
+.topbar .brand{font-weight:700;font-size:15px;flex:1 1 160px;min-width:0}
+.topbar .brand small{display:block;font-weight:400;opacity:.75;font-size:12px}
+.pill{background:rgba(255,255,255,.12);border-radius:999px;padding:3px 10px;font-size:13px;white-space:nowrap}
+.btn-ficha{background:var(--accent);color:#1b1300;border:0;border-radius:8px;padding:6px 12px;font-size:14px;font-weight:600}
+/* escenario */
+main{flex:1;width:100%;max-width:960px;margin:0 auto;padding:16px}
+.screen{display:none;animation:fade .25s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+h1{font-size:1.6rem;line-height:1.25;margin:.2em 0 .4em}
+h2{font-size:1.35rem;line-height:1.3;margin:.2em 0 .5em}
+h3{font-size:1.08rem;margin:1.1em 0 .4em}
+.etapa{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
+.idea{border-left:5px solid var(--accent);background:var(--accent-soft);border-radius:8px;padding:10px 14px;margin:12px 0}
+.tuturno{border:2px dashed var(--accent);border-radius:10px;padding:10px 14px;margin:12px 0;background:#fffdf6}
+.tuturno strong:first-child{color:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid2>*,.linked>*,.tracer>*{min-width:0}
+@media (max-width:720px){.grid2{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#eef1f6}
+.tablewrap{overflow-x:auto;max-width:100%}
+pre.code{background:var(--code-bg);color:var(--code-ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13.5px;line-height:1.5;overflow-x:auto;margin:8px 0;white-space:pre}
+.k{color:var(--kw);font-weight:600}.s{color:var(--str)}.n{color:var(--num)}.c{color:var(--com);font-style:italic}
+.muted{color:var(--muted)}
+ul,ol{padding-left:1.3em}
+li{margin:.2em 0}
+.chip{display:inline-block;background:#eef1f6;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:.92em}
+/* navegación inferior */
+.navbar{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;z-index:15}
+.navbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 16px;font-weight:600;color:var(--ink)}
+.navbtn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.navbtn:disabled{opacity:.4;cursor:not-allowed}
+.navhint{font-size:13px;color:var(--muted);text-align:center;flex:1}
+/* identificación */
+.ident{max-width:520px;margin:20px auto}
+.ident input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin:6px 0}
+.ident .err{color:var(--bad);min-height:1.4em;font-size:15px}
+.warn{background:var(--bad-soft);border:1px solid #f0c3bf;border-radius:8px;padding:8px 12px;font-size:15px}
+/* actividades */
+.act{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:12px;padding:14px 16px;margin:16px 0}
+.act.done{border-left-color:var(--ok)}
+.act-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.act-h .estado{color:var(--muted)}
+.act.done .act-h .estado{color:var(--ok)}
+.act .prompt{margin:6px 0 10px}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--ink);width:100%}
+.opt .let{font-weight:700;color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--brand)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt:disabled{cursor:default}
+.fb{margin-top:10px;font-size:15.5px}
+.fb .msg{padding:8px 12px;border-radius:8px}
+.fb .msg.bad{background:var(--bad-soft)}
+.fb .msg.good{background:var(--ok-soft)}
+.fb ul{margin:.4em 0}
+.match-row{display:grid;grid-template-columns:1fr minmax(170px,240px);gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+@media (max-width:560px){.match-row{grid-template-columns:1fr}}
+.match-row select{font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);width:100%;background:#fff;color:var(--ink)}
+.match-row.ok select{border-color:var(--ok);background:var(--ok-soft)}
+.match-row.ko select{border-color:var(--bad);background:var(--bad-soft)}
+.match-row .rowfb{grid-column:1/-1;font-size:14.5px;color:var(--muted)}
+.btn{border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:8px;padding:7px 14px;font-weight:600}
+.btn.ghost{background:#fff;color:var(--brand)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+/* resaltado vinculado */
+.linked{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:720px){.linked{grid-template-columns:1fr}}
+.codelines{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:6px 0;font-size:13.5px;overflow-x:auto}
+.cl{display:block;width:100%;text-align:left;border:0;background:transparent;padding:2px 12px;white-space:pre;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--code-ink);border-left:4px solid transparent;min-height:1.5em}
+.cl.on{background:var(--hl);border-left-color:var(--accent)}
+.cl .ln{color:var(--muted);display:inline-block;width:2em;user-select:none}
+.explist{display:grid;gap:6px}
+.exp{text-align:left;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;color:var(--ink);font-size:15px}
+.exp .ps{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-weight:600;display:block}
+.exp.on{background:var(--hl);border-color:var(--accent)}
+/* paso a paso */
+.tracer{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px}
+@media (max-width:760px){.tracer{grid-template-columns:1fr}}
+.tracer .cl{cursor:default}
+.ctrls{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:center}
+.ctrls .pos{font-size:14px;color:var(--muted)}
+.mem{table-layout:fixed}
+.mem td,.mem th{font-size:14px;word-break:break-word}
+.mem td:first-child,.mem th:first-child{width:7em;word-break:normal}
+@media (max-width:440px){.navhint{display:none}}
+.mem td.chg{background:var(--hl);font-weight:600}
+.out{background:#0f1b2d;color:#e8edf7;border-radius:8px;padding:8px 10px;font-size:13.5px;min-height:2.4em;white-space:pre-wrap;word-break:break-word}
+.note{background:var(--accent-soft);border-radius:8px;padding:8px 10px;font-size:15px;margin-top:8px}
+/* tubería */
+.pipe{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.pnode{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13.5px;color:var(--ink)}
+.pnode.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.parrow{color:var(--muted)}
+.pdetail{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.pdetail dt{font-weight:700;font-size:14px;color:var(--muted);margin-top:4px}
+.pdetail dd{margin:0 0 4px}
+/* probador */
+.tester{display:grid;gap:8px}
+.tester select,.tester input{font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;width:100%;background:#fff;color:var(--ink)}
+.tester .res{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--code-bg);border-radius:8px;padding:8px 10px;border:1px solid var(--line)}
+.ejemplos{display:flex;gap:6px;flex-wrap:wrap}
+.ejemplos button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 10px;font-size:14px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--ink)}
+/* ruta */
+.ruta{counter-reset:r;list-style:none;padding:0;display:grid;gap:6px}
+.ruta li{counter-increment:r;display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.ruta li::before{content:counter(r);background:var(--brand);color:#fff;border-radius:50%;width:26px;height:26px;flex:0 0 26px;display:grid;place-items:center;font-weight:700;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.kpi b{display:block;font-size:1.4rem;line-height:1.2}
+.kpi span{font-size:13.5px;color:var(--muted)}
+.check li{list-style:none;margin-left:-1.3em}
+.check label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.check input{margin-top:5px}
+.refs p{padding-left:2em;text-indent:-2em;margin:.35em 0;font-size:15px;word-break:break-word}
+/* final */
+.final{max-width:620px;margin:10px auto;text-align:center}
+.codigo{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:clamp(17px,5vw,28px);font-weight:700;background:#fff;border:2px solid var(--brand);border-radius:12px;padding:14px 10px;word-break:break-all;margin:12px 0;letter-spacing:.02em}
+#qr{display:flex;justify-content:center;margin:14px 0;min-height:20px}
+#qr img,#qr canvas{background:#fff;padding:8px;border-radius:8px}
+.resumen{text-align:left}
+.pend{background:var(--bad-soft);border:1px solid #f0c3bf;border-radius:8px;padding:10px 14px;margin-top:10px}
+.pend a{color:var(--bad);font-weight:600}
+/* modal ficha */
+.modal{position:fixed;inset:0;background:rgba(10,16,28,.6);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:16px;overflow-y:auto}
+.modal.open{display:flex}
+.modal .box{background:var(--panel);border-radius:12px;max-width:760px;width:100%;padding:18px 18px 22px;position:relative;margin:auto 0}
+.modal .close{position:absolute;top:10px;right:10px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 10px;font-weight:700}
+.modal dl dt{font-weight:700;margin-top:10px;color:var(--brand)}
+.modal dl dd{margin:2px 0 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">Tu PIA paso a paso<small>Programación básica · A2026PIA01</small></div>
+  <span class="pill" id="slideInd" aria-live="polite">Inicio</span>
+  <span class="pill" id="actInd">Actividades 0 / 9</span>
+  <button class="btn-ficha" id="btnFicha" type="button" aria-haspopup="dialog">Ficha del recurso</button>
+</header>
+
+<main id="stage">
+
+<!-- 0 · IDENTIFICACIÓN -->
+<section class="screen active" data-i="0" aria-label="Identificación">
+  <div class="ident card">
+    <span class="etapa">Recurso educativo digital</span>
+    <h1>Tu PIA paso a paso: analiza datos de un API con Python</h1>
+    <p>En este recurso vas a recorrer, etapa por etapa, un proyecto completo de ejemplo: <strong>"Personajes y mundos de Star Wars: análisis de datos con SWAPI"</strong>. En cada etapa verás qué hizo el ejemplo y qué te toca hacer en tu propio PIA.</p>
+    <label for="email"><strong>Escribe tu correo institucional</strong></label>
+    <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="nombre.apellido@uanl.edu.mx">
+    <div class="err" id="emailErr" role="alert"></div>
+    <button class="btn" id="btnStart" type="button">Comenzar</button>
+    <p class="warn" style="margin-top:14px"><strong>Importante:</strong> tu avance se guarda solo mientras esta página esté abierta. Si recargas o cierras la página, se borra todo y tendrás que empezar de nuevo.</p>
+    <p class="muted" style="font-size:14px">Tiempo estimado: 45 minutos. Al final obtendrás tu código de actividad.</p>
+  </div>
+</section>
+
+<!-- 1 · TÍTULO Y OBJETIVO -->
+<section class="screen" data-i="1" aria-label="Diapositiva 1">
+  <span class="etapa">Inicio</span>
+  <h1>Tu PIA paso a paso: analiza datos de un API con Python</h1>
+  <div class="idea"><strong>Objetivo de aprendizaje.</strong> Al terminar, podrás <strong>aplicar</strong> las etapas de un proyecto de análisis de datos en Python (consultar un API, limpiar datos con expresiones regulares, elegir estructuras de datos, ordenar con un algoritmo recursivo y presentar resultados) usando como modelo el proyecto de SWAPI, para planear tu propio PIA.</div>
+  <div class="card">
+    <h3 style="margin-top:0">El ejemplo que vas a seguir</h3>
+    <p>Una aplicación en Python que descarga de SWAPI los <strong>82 personajes</strong> y <strong>60 planetas</strong> de Star Wars, los limpia con expresiones regulares, los analiza y descubre que <em>la saga se cuenta desde planetas pequeños, no desde las grandes capitales</em>.</p>
+    <p>Su pregunta fue: <strong>¿de dónde vienen los personajes de Star Wars y qué tan parecidos son entre sí?</strong></p>
+    <p>El programa se ejecuta de forma lineal: solo pide un dato al inicio y después realiza todo el proceso sin menús.</p>
+  </div>
+  <h3>Tu ruta en este recurso</h3>
+  <ol class="ruta">
+    <li><span><strong>Haz una pregunta y elige tu API</strong> (diapositiva 2)</span></li>
+    <li><span><strong>Descarga el JSON página por página</strong> (diapositiva 3)</span></li>
+    <li><span><strong>Limpia los datos con expresiones regulares</strong> (diapositiva 4)</span></li>
+    <li><span><strong>Elige tus estructuras de datos</strong> (diapositiva 5)</span></li>
+    <li><span><strong>Escribe el algoritmo en estilo Cairó y ordena con Merge Sort</strong> (diapositivas 6 y 7)</span></li>
+    <li><span><strong>Organiza tu programa en módulos y cuenta la historia de tus datos</strong> (diapositiva 8)</span></li>
+    <li><span><strong>Autoevaluación, resumen y lista de cotejo de tu documento</strong> (diapositivas 9 y 10)</span></li>
+  </ol>
+  <p class="muted">Hay 9 actividades obligatorias. Una actividad queda completa cuando eliges la respuesta correcta. Puedes intentarlo varias veces, pero cuenta para tu puntaje si aciertas al primer intento.</p>
+</section>
+
+<!-- 2 · API -->
+<section class="screen" data-i="2" aria-label="Diapositiva 2">
+  <span class="etapa">Etapa 1</span>
+  <h2>Haz una pregunta y elige tu API</h2>
+  <div class="idea">Una saga con decenas de personajes y planetas parece imposible de resumir a simple vista. Por eso el proyecto empieza con <strong>una pregunta</strong> y un <strong>API público</strong> que regresa los datos en formato JSON.</div>
+  <p>El ejemplo eligió <strong>SWAPI, The Star Wars API</strong> (<span class="mono">swapi.dev</span>) porque cumple con todo lo que pide el proyecto:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Criterio</th><th>Cómo lo cumple SWAPI</th></tr></thead>
+    <tbody>
+      <tr><td>Público y gratuito</td><td>No requiere registro ni clave de acceso (API key).</td></tr>
+      <tr><td>Formato JSON</td><td>Cada respuesta es un objeto JSON con las llaves <code>count</code>, <code>next</code>, <code>previous</code> y <code>results</code>.</td></tr>
+      <tr><td>Datos que necesitan limpieza</td><td>Los números vienen como texto (<code>"172"</code>), con comas (<code>"1,358"</code>) o como <code>"unknown"</code>; los años vienen como <code>"19BBY"</code>.</td></tr>
+      <tr><td>Datos relacionados</td><td>Cada personaje trae la URL de su planeta natal, lo que permite cruzar dos recursos.</td></tr>
+      <tr><td>Tamaño manejable</td><td>82 personajes y 60 planetas, repartidos en páginas de 10 registros.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Usó dos recursos (endpoints): <code>https://swapi.dev/api/people/</code> (personajes) y <code>https://swapi.dev/api/planets/</code> (planetas).</p>
+  <div class="tuturno"><strong>Tu turno:</strong> escribe en una oración la pregunta de tu PIA y revisa tu API con los 5 criterios de la tabla. Esa revisión es la sección "Justificación del API" de tu documento.</div>
+  <div class="act" data-act="A1"></div>
+</section>
+
+<!-- 3 · JSON Y PAGINACIÓN -->
+<section class="screen" data-i="3" aria-label="Diapositiva 3">
+  <span class="etapa">Etapa 2</span>
+  <h2>Descarga el JSON página por página</h2>
+  <div class="idea">El API no entrega todo de una vez: lo reparte en <strong>páginas</strong>. El programa sigue el campo <code>"next"</code> hasta que vale <code>None</code>.</div>
+  <div class="grid2">
+    <div>
+      <h3 style="margin-top:0">Un registro crudo, tal como llega</h3>
+<pre class="code" data-lang="json">{
+  "name": "Luke Skywalker",
+  "height": "172",
+  "mass": "77",
+  "birth_year": "19BBY",
+  "gender": "male",
+  "homeworld": "https://swapi.dev/api/planets/1/",
+  "url": "https://swapi.dev/api/people/1/"
+}</pre>
+      <p class="muted" style="font-size:15px">Observa: la altura y la masa son <strong>texto</strong>, no números.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0">Recorrer todas las páginas</h3>
+<pre class="code py">def obtener_recurso(recurso):
+    registros = []
+    url = URL_BASE + recurso + "/"
+    while url is not None:
+        respuesta = requests.get(url, timeout=TIEMPO_ESPERA)
+        respuesta.raise_for_status()  # error si no es 200
+        pagina = respuesta.json()     # texto JSON a diccionario
+        registros.extend(pagina["results"])
+        url = pagina["next"]          # None cuando ya no hay más
+    return registros</pre>
+    </div>
+  </div>
+  <p>Si no hay conexión, un bloque <code>try/except</code> atrapa el error (<code>requests.exceptions.RequestException</code>) y el programa continúa con la copia local <code>datos/datos_crudos.json</code>.</p>
+  <div class="tuturno"><strong>Tu turno:</strong> abre en el navegador la primera página de tu API e identifica cuál campo indica la siguiente página y cuál contiene los registros.</div>
+  <div class="act" data-act="A2"></div>
+</section>
+
+<!-- 4 · REGEX -->
+<section class="screen" data-i="4" aria-label="Diapositiva 4">
+  <span class="etapa">Etapa 3</span>
+  <h2>Limpia los datos con expresiones regulares</h2>
+  <div class="idea">Sin expresiones regulares, <code>float("1,358")</code> o <code>float("unknown")</code> detendrían el programa con un error. Las expresiones regulares <strong>validan</strong> el texto antes de convertirlo.</div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Patrón</th><th>Para qué sirve</th><th>Entrada → salida</th></tr></thead>
+    <tbody>
+      <tr><td><code>,</code> con <code>re.sub</code></td><td>Quita las comas de miles antes de validar</td><td><code>"1,358"</code> → <code>"1358"</code></td></tr>
+      <tr><td><code>^\d+(\.\d+)?$</code></td><td>Valida que el texto sea un número entero o decimal completo</td><td><code>"172"</code> → <code>172.0</code> · <code>"unknown"</code> → <code>None</code></td></tr>
+      <tr><td><code>^(\d+(?:\.\d+)?)(BBY|ABY)$</code></td><td>Separa el número y la era del año de nacimiento con dos grupos</td><td><code>"19BBY"</code> → <code>-19.0</code></td></tr>
+      <tr><td><code>/(\d+)/?$</code></td><td>Extrae el id al final de una URL para enlazar personaje y planeta</td><td><code>".../planets/8/"</code> → <code>8</code></td></tr>
+      <tr><td><code>\s*,\s*</code> con <code>split</code></td><td>Separa una lista de climas escrita en un solo texto</td><td><code>"temperate, arid"</code> → <code>{"temperate", "arid"}</code></td></tr>
+      <tr><td><code>\s+</code> con <code>sub</code></td><td>Reduce espacios repetidos en los nombres</td><td><code>"Darth&nbsp;&nbsp;Vader "</code> → <code>"Darth Vader"</code></td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted" style="font-size:15px"><strong>Cómo leer los símbolos:</strong> <code>^</code> y <code>$</code> marcan el inicio y el fin del texto, <code>\d+</code> significa uno o más dígitos, <code>( )</code> forma un grupo que después se recupera con <code>group(1)</code>, <code>?</code> hace opcional lo anterior y <code>|</code> significa "o".</p>
+
+  <div class="card">
+    <h3 style="margin-top:0">Probador: escribe un valor y mira qué regresa cada función</h3>
+    <div class="tester">
+      <label for="tFn" class="sr">Función</label>
+      <select id="tFn">
+        <option value="a_numero">a_numero(texto)</option>
+        <option value="anio_nacimiento">anio_nacimiento(texto)</option>
+        <option value="extraer_id">extraer_id(url)</option>
+        <option value="limpiar_texto">limpiar_texto(texto)</option>
+      </select>
+      <label for="tIn" class="sr">Valor de entrada</label>
+      <input id="tIn" type="text" value="1,358" autocomplete="off" spellcheck="false">
+      <div class="ejemplos" id="tEj"></div>
+      <div class="res" id="tOut" aria-live="polite"></div>
+      <div class="muted" id="tWhy" style="font-size:15px"></div>
+    </div>
+  </div>
+  <p>En la ejecución, la validación descartó como <code>None</code>: <strong>1</strong> altura desconocida (Arvel Crynyd), <strong>23</strong> masas y <strong>39</strong> años de nacimiento. La única masa con coma era la de Jabba Desilijic Tiure (<code>"1,358"</code>): gracias a <code>re.sub</code> entró al análisis en lugar de perderse.</p>
+  <div class="tuturno"><strong>Tu turno:</strong> anota qué campos de tu API llegan como texto, con comas o como valores desconocidos. Cada uno necesita su función de limpieza.</div>
+  <div class="act" data-act="A3"></div>
+</section>
+
+<!-- 5 · ESTRUCTURAS -->
+<section class="screen" data-i="5" aria-label="Diapositiva 5">
+  <span class="etapa">Etapa 4</span>
+  <h2>Elige tus estructuras de datos</h2>
+  <div class="idea">Cada estructura se elige por <strong>lo que necesitas hacer</strong> con los datos.</div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Estructura</th><th>Dónde se usa</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td>Lista</td><td><code>personajes</code>: lista de 82 diccionarios</td><td>Mantiene el orden de llegada y se recorre fácilmente con <code>for</code>.</td></tr>
+      <tr><td>Diccionario</td><td>Cada personaje: <code>{"nombre", "altura", "masa", ...}</code></td><td>Permite acceder a cada dato por su nombre y no por su posición.</td></tr>
+      <tr><td>Diccionario indexado por id</td><td><code>planetas = {8: {...}, 1: {...}}</code></td><td>Encuentra el planeta natal de un personaje en un solo paso, usando el número que trae su URL.</td></tr>
+      <tr><td>Tupla</td><td><code>(172.0, "Luke Skywalker")</code></td><td>Agrupa valores que no deben cambiar; Python compara tuplas elemento por elemento, lo que las hace ideales para ordenar.</td></tr>
+      <tr><td>Conjunto (set)</td><td>Climas de cada planeta y climas totales</td><td>Elimina repetidos automáticamente y une conjuntos con el operador <code>|</code>.</td></tr>
+      <tr><td>Estructuras anidadas</td><td>Lista <code>personajes</code> dentro de cada planeta; diccionario de resultados</td><td>Relaciona cada planeta con sus personajes y entrega todos los resultados en una sola variable.</td></tr>
+    </tbody>
+  </table></div>
+<pre class="code py">planetas[8] = {
+    "nombre": "Naboo",
+    "poblacion": 4500000000.0,
+    "diametro": 12120.0,
+    "climas": {"temperate"},                           # conjunto
+    "personajes": ["R2-D2", "Palpatine", "Padmé Amidala"],  # lista (recortada)
+}</pre>
+  <div class="tuturno"><strong>Tu turno:</strong> para cada estructura que uses en tu PIA, escribe en tu documento dónde la usas y por qué.</div>
+  <div class="act" data-act="A4"></div>
+</section>
+
+<!-- 6 · PSEUDOCÓDIGO CAIRÓ -->
+<section class="screen" data-i="6" aria-label="Diapositiva 6">
+  <span class="etapa">Etapa 5</span>
+  <h2>Escribe el algoritmo en estilo Cairó</h2>
+  <div class="idea">Antes de programar, el algoritmo se escribe <strong>independiente del lenguaje</strong>: pasos numerados de forma continua, una operación por paso, asignaciones con <code>←</code>, cierre de cada estructura con <strong>"Fin del paso N"</strong> y llamadas a procedimientos solo por su nombre. Las estructuras de datos se representan con arreglos y registros.</div>
+  <h3>Explora: toca una línea del código o un paso del algoritmo</h3>
+  <div class="linked" id="linked">
+    <div>
+      <div class="muted" style="font-size:14px;margin-bottom:4px">Python · <code>limpiador_datos.py</code></div>
+      <div class="codelines" id="lkCode"></div>
+    </div>
+    <div>
+      <div class="muted" style="font-size:14px;margin-bottom:4px">Función A_NUMERO (estilo Cairó) y explicación</div>
+      <div class="explist" id="lkExp"></div>
+    </div>
+  </div>
+  <p style="font-size:15px"><strong>Descripción de variables.</strong> TEX: Variable de tipo cadena. Almacena el valor tal como llega del API, por ejemplo "1,358" o "unknown". VAL: Variable de tipo real. Almacena el número validado, o NULO si el texto no era un número.</p>
+  <p style="font-size:15px">El <strong>diagrama de flujo</strong> del algoritmo principal usa la notación ANSI: óvalo para inicio y fin, paralelogramo para entrada y salida, rectángulo para asignaciones, rombo para decisiones y rectángulo con doble línea lateral para procedimientos.</p>
+  <div class="tuturno"><strong>Tu turno:</strong> escribe el algoritmo principal de tu PIA con este estilo y su descripción de variables; después dibuja su diagrama de flujo.</div>
+  <div class="act" data-act="A5"></div>
+</section>
+
+<!-- 7 · MERGE SORT -->
+<section class="screen" data-i="7" aria-label="Diapositiva 7">
+  <span class="etapa">Etapa 5 (continuación)</span>
+  <h2>Ordena con Merge Sort: divide y vencerás</h2>
+  <div class="idea"><code>ordenar_mezcla</code> parte la lista a la mitad, ordena cada mitad <strong>llamándose a sí misma</strong> y une las dos mitades ya ordenadas con <code>mezclar</code>. El proyecto la usa dos veces: para ordenar alturas y para ordenar planetas por número de personajes.</div>
+<pre class="code py">def ordenar_mezcla(lista):
+    if len(lista) &lt;= 1:                      # caso base
+        return lista
+    mitad = len(lista) // 2
+    izquierda = ordenar_mezcla(lista[:mitad])  # llamada recursiva
+    derecha = ordenar_mezcla(lista[mitad:])    # llamada recursiva
+    return mezclar(izquierda, derecha)</pre>
+  <h3>Ejecución paso a paso de <code>mezclar</code></h3>
+  <p style="font-size:15px">Entrada: <code>izquierda = [(66, 'Yoda'), (172, 'Luke Skywalker')]</code> y <code>derecha = [(88, 'Wicket'), (264, 'Yarael Poof')]</code>, dos listas de tuplas (altura, nombre) ya ordenadas.</p>
+  <div class="tracer">
+    <div>
+      <div class="codelines" id="trCode"></div>
+      <div class="ctrls">
+        <button class="btn ghost" id="trPrev" type="button">Anterior</button>
+        <button class="btn" id="trNext" type="button">Siguiente</button>
+        <button class="btn ghost" id="trReset" type="button">Reiniciar</button>
+        <span class="pos" id="trPos"></span>
+      </div>
+    </div>
+    <div>
+      <table class="mem"><thead><tr><th>Variable</th><th>Valor actual</th><th>Valor anterior</th></tr></thead><tbody id="trMem"></tbody></table>
+      <div class="muted" style="font-size:14px;margin:8px 0 4px">Salida acumulada</div>
+      <div class="out mono" id="trOut"></div>
+      <div class="note" id="trNote" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="act" data-act="A6"></div>
+</section>
+
+<!-- 8 · MÓDULOS Y RESULTADOS -->
+<section class="screen" data-i="8" aria-label="Diapositiva 8">
+  <span class="etapa">Etapas 6 y 7</span>
+  <h2>Organiza tu programa en módulos y cuenta la historia de tus datos</h2>
+  <div class="idea">El sistema es una <strong>tubería</strong> de cinco módulos coordinados por <code>main.py</code>: cada módulo recibe el resultado del anterior y entrega el suyo al siguiente. Ningún módulo llama a otro; solo <code>main.py</code> los conecta.</div>
+  <div class="card">
+    <div class="pipe" id="pipe"></div>
+    <div class="ctrls">
+      <button class="btn ghost" id="pPrev" type="button">Anterior</button>
+      <button class="btn" id="pNext" type="button">Siguiente</button>
+      <button class="btn ghost" id="pReset" type="button">Reiniciar</button>
+      <span class="pos" id="pPos"></span>
+    </div>
+    <dl class="pdetail" id="pDetail"></dl>
+  </div>
+  <h3>Lo que descubrieron los datos</h3>
+  <div class="kpis">
+    <div class="kpi"><b>82</b><span>personajes de 49 planetas</span></div>
+    <div class="kpi"><b>21</b><span>personajes vienen de Naboo (11) y Tatooine (10)</span></div>
+    <div class="kpi"><b>50</b><span>personajes por millón de habitantes en Tatooine</span></div>
+    <div class="kpi"><b>3</b><span>personajes de Coruscant, con un billón de habitantes</span></div>
+  </div>
+  <p>Un dato aislado ("Naboo tiene 11 personajes") no cuenta una historia hasta que se compara con otro (su población). En la gráfica de líneas de alturas ordenadas, la media (174.6 cm) cruza la curva cerca de la posición 30, no a la mitad (posición 41): los personajes bajos jalan la media hacia abajo y por eso la mediana (180 cm) describe mejor al personaje típico.</p>
+  <div class="tuturno"><strong>Tu turno:</strong> en tus conclusiones, compara al menos dos datos entre sí y explica qué historia cuentan.</div>
+  <div class="act" data-act="A7"></div>
+</section>
+
+<!-- 9 · AUTOEVALUACIÓN -->
+<section class="screen" data-i="9" aria-label="Diapositiva 9">
+  <span class="etapa">Autoevaluación</span>
+  <h2>Comprueba lo que aprendiste</h2>
+  <p>El primer ejercicio es <strong>distinto para cada estudiante</strong>: sus datos se calculan a partir de tu correo.</p>
+  <div class="act" data-act="A8"></div>
+  <div class="act" data-act="A9"></div>
+</section>
+
+<!-- 10 · RESUMEN Y FUENTES -->
+<section class="screen" data-i="10" aria-label="Diapositiva 10">
+  <span class="etapa">Cierre</span>
+  <h2>Resumen y lista de cotejo de tu PIA</h2>
+  <div class="card">
+    <ol>
+      <li><strong>Pregunta y API:</strong> justifica tu API con criterios (público, JSON, datos por limpiar, datos relacionados, tamaño manejable).</li>
+      <li><strong>Descarga:</strong> recorre las páginas siguiendo <code>"next"</code> y guarda una copia local por si falla la conexión.</li>
+      <li><strong>Limpieza:</strong> valida con expresiones regulares antes de convertir; lo inválido se vuelve <code>None</code>.</li>
+      <li><strong>Estructuras:</strong> elige cada una por lo que necesitas hacer con los datos.</li>
+      <li><strong>Algoritmo:</strong> pseudocódigo estilo Cairó, diagrama de flujo ANSI y un ordenamiento recursivo (Merge Sort).</li>
+      <li><strong>Módulos:</strong> una tubería coordinada por <code>main.py</code>, con funciones de una sola responsabilidad.</li>
+      <li><strong>Historia:</strong> compara datos, revisa media contra mediana y busca valores extremos.</li>
+    </ol>
+  </div>
+  <h3>Lista de cotejo: secciones del documento de tu PIA</h3>
+  <p class="muted" style="font-size:15px">Marca lo que ya tienes. Esta lista es solo para ti y se borra si recargas la página.</p>
+  <ul class="check" id="checklist"></ul>
+  <h3>Fuentes</h3>
+  <div class="refs">
+    <p>Cairó, O. (2005). <em>Metodología de la programación</em> (3.ª ed.). Alfaomega.</p>
+    <p>Matplotlib. (s. f.). <em>Matplotlib documentation</em>. https://matplotlib.org/stable/</p>
+    <p>openpyxl. (s. f.). <em>openpyxl documentation</em>. https://openpyxl.readthedocs.io/</p>
+    <p><em>Personajes y mundos de Star Wars: análisis de datos con SWAPI</em> [Proyecto integrador de ejemplo]. (2026). Programación básica, Facultad de Ciencias Físico Matemáticas, Universidad Autónoma de Nuevo León.</p>
+    <p>Python Software Foundation. (s. f.). <em>re: Regular expression operations</em>. https://docs.python.org/3/library/re.html</p>
+    <p>Python Software Foundation. (s. f.). <em>statistics: Mathematical statistics functions</em>. https://docs.python.org/3/library/statistics.html</p>
+    <p>SWAPI, The Star Wars API. (s. f.). <em>Documentation</em>. https://swapi.dev/documentation</p>
+  </div>
+  <div style="text-align:center;margin:18px 0">
+    <button class="btn" id="btnCodigo" type="button" style="padding:10px 20px">Obtener mi código de actividad</button>
+  </div>
+  <div id="pendientes" aria-live="polite"></div>
+</section>
+
+<!-- 11 · FINAL -->
+<section class="screen" data-i="11" aria-label="Código de finalización">
+  <div class="final">
+    <span class="etapa">Terminaste</span>
+    <h1>Tu código de actividad</h1>
+    <p>Copia este código y pégalo donde se te pida: <strong>Tu código de actividad: ____</strong></p>
+    <div class="codigo" id="codigo">—</div>
+    <button class="btn" id="btnCopiar" type="button">Copiar código</button>
+    <span id="copiado" class="muted" style="margin-left:8px" aria-live="polite"></span>
+    <div id="qr" aria-label="Código QR con tu código de actividad"></div>
+    <div class="card resumen" id="resumen"></div>
+    <p class="warn">No recargues la página hasta haber pegado tu código.</p>
+  </div>
+</section>
+
+</main>
+
+<nav class="navbar" aria-label="Navegación">
+  <button class="navbtn" id="btnPrev" type="button" disabled>&larr; Anterior</button>
+  <span class="navhint" id="navHint">Escribe tu correo para comenzar</span>
+  <button class="navbtn primary" id="btnNext" type="button" disabled>Siguiente &rarr;</button>
+</nav>
+
+<!-- FICHA -->
+<div class="modal" id="ficha" role="dialog" aria-modal="true" aria-labelledby="fichaT">
+  <div class="box">
+    <button class="close" id="fichaClose" type="button" aria-label="Cerrar ficha">Cerrar ✕</button>
+    <h2 id="fichaT">Ficha del recurso</h2>
+    <dl>
+      <dt>Título</dt><dd>Tu PIA paso a paso: analiza datos de un API con Python</dd>
+      <dt>Autor</dt><dd>Mtro. Osvaldo Habib González González</dd>
+      <dt>Unidad de aprendizaje</dt><dd>Programación básica · Facultad de Ciencias Físico Matemáticas, UANL</dd>
+      <dt>Identificador</dt><dd>A2026PIA01</dd>
+      <dt>Objetivo de aprendizaje</dt><dd>Aplicar las etapas de un proyecto de análisis de datos en Python (consulta de un API, limpieza con expresiones regulares, estructuras de datos, ordenamiento recursivo y presentación de resultados) usando como modelo el proyecto de SWAPI, para planear el propio PIA.</dd>
+      <dt>Descripción</dt><dd>Recorrido guiado por un PIA de ejemplo que analiza personajes y planetas de Star Wars con SWAPI. En siete etapas, el estudiante revisa cómo se justifica un API, se descargan páginas JSON, se limpian datos con expresiones regulares, se eligen estructuras, se escribe el algoritmo en estilo Cairó, se ordena con Merge Sort y se interpretan resultados. Incluye un probador de expresiones regulares, una ejecución paso a paso y nueve actividades. Tiempo estimado: 45 minutos.</dd>
+      <dt>Palabras clave</dt><dd>API y JSON; expresiones regulares; estructuras de datos; Merge Sort; análisis de datos</dd>
+      <dt>Audiencia</dt><dd>Estudiantes de primer semestre de Programación básica (FCFM, UANL) que desarrollan su Producto Integrador de Aprendizaje.</dd>
+      <dt>Competencias del recurso</dt>
+      <dd><ol>
+        <li>Analiza un API público y sus datos crudos (JSON, paginación y formatos irregulares), validándolos con expresiones regulares de Python según el ejemplo de SWAPI.</li>
+        <li>Organiza un programa de análisis de datos en estructuras (listas, diccionarios, tuplas y conjuntos) y módulos de una sola responsabilidad, justificando cada elección con el proyecto de SWAPI.</li>
+        <li>Traza algoritmos y cálculos del análisis (A_NUMERO, Merge Sort, IMC, media y mediana) en pseudocódigo estilo Cairó y en Python, prediciendo e interpretando resultados con datos reales del proyecto.</li>
+      </ol></dd>
+      <dt>Competencias del Programa Analítico</dt>
+      <dd><ul>
+        <li><strong>Instrumental:</strong> Emplear pensamiento lógico, crítico, creativo y propositivo para analizar fenómenos naturales y sociales que le permitan tomar decisiones pertinentes en su ámbito de influencia con responsabilidad social.</li>
+        <li><strong>Personal y de interacción social:</strong> Practicar los valores promovidos por la UANL: responsabilidad, justicia, libertad, igualdad, verdad, honestidad, paz, tolerancia, solidaridad y respeto, en su ámbito personal y profesional para contribuir a construir una sociedad sustentable.</li>
+        <li><strong>Integradora:</strong> Construir propuestas innovadoras basadas en la comprensión holística de la realidad para contribuir a superar los retos del ambiente global interdependiente.</li>
+        <li><strong>Específica:</strong> Diseñar soluciones tecnológicas de hardware y software sobre problemas y las áreas de oportunidad de las organizaciones, públicas y privadas mediante el modelado matemático y el análisis de datos, trabajando de forma colaborativa en entornos multidisciplinarios, que permitan incrementar su competitividad.</li>
+      </ul></dd>
+      <dt>Licencia de imágenes</dt><dd>Todos los elementos visuales son propios, hechos con HTML y CSS.</dd>
+    </dl>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+"use strict";
+/* ============ CONFIGURACIÓN ============ */
+var ID_RECURSO = "A2026PIA01";
+var SAL = "L5X7B61GU9HPURHO";
+var DOMINIO_RE = /^[a-z0-9._%+-]+@uanl\.edu\.mx$/;
+var TOTAL_SLIDES = 10, FINAL = 11;
+
+/* ============ ESTADO (solo en memoria) ============ */
+var S = { correo:null, hash:null, inicio:null, fin:null, idx:0, acts:{} };
+
+/* ============ UTILIDADES ============ */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+var PYKW = /^(def|return|if|else|elif|while|for|in|is|not|None|and|or|import|from|try|except|as|with|True|False)$/;
+function hlPy(line){
+  var re = /(#.*$)|(r?"(?:\\.|[^"\\])*"|r?'(?:\\.|[^'\\])*')|\b([A-Za-z_]\w*)\b|\b(\d+(?:\.\d+)?)\b/g;
+  var out = "", last = 0, m;
+  while ((m = re.exec(line)) !== null){
+    out += esc(line.slice(last, m.index));
+    if (m[1]) out += '<span class="c">'+esc(m[1])+'</span>';
+    else if (m[2]) out += '<span class="s">'+esc(m[2])+'</span>';
+    else if (m[3]) out += PYKW.test(m[3]) ? '<span class="k">'+esc(m[3])+'</span>' : esc(m[3]);
+    else if (m[4]) out += '<span class="n">'+esc(m[4])+'</span>';
+    last = re.lastIndex;
+  }
+  return out + esc(line.slice(last));
+}
+function hlBlock(txt){ return txt.split("\n").map(hlPy).join("\n"); }
+function pyFloat(x){ var s = String(x); return /[.eE]/.test(s) ? s : s + ".0"; }
+function pyRepr(v){
+  if (v === null) return "None";
+  if (Array.isArray(v)) return "[" + v.map(pyRepr).join(", ") + "]";
+  if (typeof v === "object" && v.t) return "(" + v.t.map(pyRepr).join(", ") + ")";
+  if (typeof v === "string") return "'" + v + "'";
+  return String(v);
+}
+
+/* ============ SHA-256 ============ */
+function sha256js(ascii){
+  // implementación en JavaScript puro (respaldo)
+  var bytes = new TextEncoder().encode(ascii);
+  var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var l = bytes.length, withOne = l + 1, padded = Math.ceil((withOne + 8) / 64) * 64;
+  var m = new Uint8Array(padded); m.set(bytes); m[l] = 0x80;
+  var bitLen = l * 8, dv = new DataView(m.buffer);
+  dv.setUint32(padded - 4, bitLen >>> 0); dv.setUint32(padded - 8, Math.floor(bitLen / 0x100000000));
+  var W = new Uint32Array(64);
+  function rotr(x,n){ return (x >>> n) | (x << (32 - n)); }
+  for (var off = 0; off < padded; off += 64){
+    for (var t = 0; t < 16; t++) W[t] = dv.getUint32(off + t*4);
+    for (t = 16; t < 64; t++){
+      var s0 = rotr(W[t-15],7) ^ rotr(W[t-15],18) ^ (W[t-15] >>> 3);
+      var s1 = rotr(W[t-2],17) ^ rotr(W[t-2],19) ^ (W[t-2] >>> 10);
+      W[t] = (W[t-16] + s0 + W[t-7] + s1) >>> 0;
+    }
+    var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for (t = 0; t < 64; t++){
+      var S1 = rotr(e,6) ^ rotr(e,11) ^ rotr(e,25), ch = (e & f) ^ (~e & g);
+      var T1 = (h + S1 + ch + K[t] + W[t]) >>> 0;
+      var S0 = rotr(a,2) ^ rotr(a,13) ^ rotr(a,22), mj = (a & b) ^ (a & c) ^ (b & c);
+      var T2 = (S0 + mj) >>> 0;
+      h=g; g=f; f=e; e=(d + T1) >>> 0; d=c; c=b; b=a; a=(T1 + T2) >>> 0;
+    }
+    H[0]=(H[0]+a)>>>0;H[1]=(H[1]+b)>>>0;H[2]=(H[2]+c)>>>0;H[3]=(H[3]+d)>>>0;H[4]=(H[4]+e)>>>0;H[5]=(H[5]+f)>>>0;H[6]=(H[6]+g)>>>0;H[7]=(H[7]+h)>>>0;
+  }
+  return H.map(function(x){ return ("00000000" + x.toString(16)).slice(-8); }).join("");
+}
+function sha256(str){
+  try{
+    if (window.crypto && crypto.subtle && window.isSecureContext !== false){
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(buf){
+        return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ("0"+b.toString(16)).slice(-2); }).join("");
+      }).catch(function(){ return sha256js(str); });
+    }
+  }catch(e){}
+  return Promise.resolve(sha256js(str));
+}
+window.__sha256js = sha256js; // usado solo en pruebas
+
+/* ============ ACTIVIDADES ============ */
+var ACTS = [
+ {id:"A1", slide:2, titulo:"Criterios del API", tipo:"mc",
+  prompt:'Al revisar un API encuentras campos numéricos con valores como <code>"1,358"</code> y <code>"unknown"</code>. Según la tabla de criterios del proyecto, ¿qué criterio muestran estos valores?',
+  opts:[
+   {t:"Formato JSON", fb:"El formato JSON describe cómo llega toda la respuesta (llaves count, next, previous y results), sin importar cómo vienen escritos los números."},
+   {t:"Datos que necesitan limpieza", ok:true, fb:"Correcto: números con comas y valores \"unknown\" son justo los datos que hay que validar y convertir antes de analizarlos."},
+   {t:"Datos relacionados", fb:"Los datos relacionados son los que permiten cruzar recursos, como la URL del planeta natal (homeworld) de cada personaje."},
+   {t:"Tamaño manejable", fb:"El tamaño se refiere a cuántos registros hay y cómo se reparten (82 personajes y 60 planetas en páginas de 10)."}
+  ]},
+ {id:"A2", slide:3, titulo:"Recorrer las páginas", tipo:"mc",
+  prompt:'SWAPI reparte sus <strong>82 personajes</strong> en páginas de <strong>10 registros</strong>. Revisa la función <code>obtener_recurso</code> de esta diapositiva. ¿Cuántas veces se ejecuta <code>requests.get(url, ...)</code> al llamar <code>obtener_recurso("people")</code>?',
+  opts:[
+   {t:"8 veces", fb:"8 sale de la división entera 82 // 10, pero quedan 2 personajes en una página más; esa última página también se pide."},
+   {t:"82 veces", fb:"82 sería una petición por personaje; cada petición trae una página completa de hasta 10 registros."},
+   {t:"9 veces", ok:true, fb:"Correcto: 8 páginas completas de 10 más una última página con 2 personajes. En esa novena página \"next\" vale None y el while termina."},
+   {t:"10 veces", fb:"10 es el tamaño de cada página, que es distinto del número de páginas."}
+  ]},
+ {id:"A3", slide:4, titulo:"Años de nacimiento", tipo:"mc",
+  prompt:'Observa la función del proyecto:<pre class="code py">PATRON_ANIO = re.compile(r"^(\\d+(?:\\.\\d+)?)(BBY|ABY)$")\n\ndef anio_nacimiento(texto):\n    coincidencia = PATRON_ANIO.match(texto.strip())\n    if coincidencia is None:\n        return None\n    valor = float(coincidencia.group(1))\n    if coincidencia.group(2) == "BBY":\n        valor = -valor\n    return valor</pre>¿Qué regresa <code>anio_nacimiento("41.9BBY")</code>?',
+  opts:[
+   {t:"41.9", fb:"Esta respuesta olvida el segundo if: cuando group(2) es \"BBY\" (antes de Yavin) el valor cambia de signo."},
+   {t:"\"41.9\"", fb:"group(1) sí regresa el texto \"41.9\", pero la función lo convierte con float antes de regresarlo."},
+   {t:"None", fb:"El grupo (?:\\.\\d+)? acepta una parte decimal opcional, así que \"41.9BBY\" sí coincide con el patrón."},
+   {t:"-41.9", ok:true, fb:"Correcto: el patrón separa \"41.9\" (grupo 1) y \"BBY\" (grupo 2); float lo convierte a 41.9 y, por ser BBY, se vuelve negativo."}
+  ]},
+ {id:"A4", slide:5, titulo:"Relaciona cada necesidad con su estructura", tipo:"match",
+  prompt:"Para cada necesidad del proyecto, elige la estructura de datos que usó el ejemplo.",
+  choices:["Lista","Diccionario indexado por id","Tupla","Conjunto (set)"],
+  rows:[
+   {t:"Encontrar el planeta natal de un personaje en un solo paso, usando el número de su URL.", ok:"Diccionario indexado por id",
+    fb:{"Lista":"En una lista habría que recorrer los planetas uno por uno hasta encontrarlo.","Tupla":"Una tupla agrupa valores fijos; buscar dentro de ella también obliga a recorrerla.","Conjunto (set)":"Un conjunto sirve para quitar repetidos; sus elementos se consultan sin un id como llave."}},
+   {t:"Guardar (172.0, \"Luke Skywalker\") para ordenar por altura.", ok:"Tupla",
+    fb:{"Lista":"Una lista podría cambiar; la tupla agrupa valores que deben quedar fijos y Python la compara elemento por elemento.","Diccionario indexado por id":"El diccionario sirve para buscar por llave, y aquí se necesita comparar altura y nombre en orden.","Conjunto (set)":"Un conjunto carece de orden y quita repetidos; para ordenar se necesita la tupla."}},
+   {t:"Juntar los climas de los planetas sin repetidos.", ok:"Conjunto (set)",
+    fb:{"Lista":"Una lista guarda los repetidos; habría que quitarlos a mano.","Diccionario indexado por id":"El diccionario guarda pares llave-valor; para climas únicos basta un conjunto y el operador |.","Tupla":"La tupla guarda los valores repetidos tal como llegan."}},
+   {t:"Guardar los 82 personajes en el orden en que llegaron del API.", ok:"Lista",
+    fb:{"Diccionario indexado por id":"Se usó para los planetas, donde se busca por id; los personajes se recorren en orden con for.","Tupla":"Los personajes se agregan uno por uno con append, y una tupla queda fija al crearse.","Conjunto (set)":"Un conjunto pierde el orden de llegada."}}
+  ]},
+ {id:"A5", slide:6, titulo:"Estilo Cairó", tipo:"mc",
+  prompt:"¿Cuál de estos pasos respeta las reglas de pseudocódigo del proyecto?",
+  opts:[
+   {t:"16. DESCARGAR_DATOS", ok:true, fb:"Correcto: el procedimiento se llama solo por su nombre, en un paso numerado con una sola operación."},
+   {t:"7. Hacer CAN ← 8", fb:"Las asignaciones se escriben sin la palabra \"Hacer\": 7. CAN ← 8."},
+   {t:"15. Fin del ciclo Mientras", fb:"El cierre de cada estructura se escribe como \"Fin del paso N\", con el número del paso que la abrió: 15. Fin del paso 3."},
+   {t:"16. Llamar a DESCARGAR_DATOS(NP)", fb:"Los procedimientos se llaman solo por su nombre, sin \"Llamar a\" y sin argumentos. La única excepción del proyecto es el procedimiento recursivo ORDENAR_MEZCLA."}
+  ]},
+ {id:"A6", slide:7, titulo:"Predicción", tipo:"mc",
+  prompt:'Ahora <strong>predice</strong> con otra entrada del proyecto: <code>izquierda = [(79, \'Ratts Tyerel\'), (229, \'Lama Su\')]</code> y <code>derecha = [(66, \'Yoda\'), (234, \'Tarfful\')]</code>. ¿Con qué valores de <code>i</code> y <code>j</code> termina el ciclo <code>while</code> de <code>mezclar</code>?',
+  opts:[
+   {t:"i = 1, j = 2", fb:"Esta respuesta intercambia los lados: primero se agrega Yoda (j pasa a 1), después Ratts Tyerel y Lama Su (i pasa a 2)."},
+   {t:"i = 2, j = 1", ok:true, fb:"Correcto: 79 <= 66 es False (entra Yoda, j = 1); 79 <= 234 es True (i = 1); 229 <= 234 es True (i = 2). Como i < 2 ya es False, el while termina y extend agrega a Tarfful."},
+   {t:"i = 2, j = 2", fb:"El while se detiene en cuanto una de las dos listas se acaba; Tarfful se agrega después con extend, sin mover j."},
+   {t:"i = 1, j = 1", fb:"Esta respuesta cuenta solo una vuelta por lista; en total hubo tres vueltas: una avanzó j y dos avanzaron i."}
+  ]},
+ {id:"A7", slide:8, titulo:"Media y mediana", tipo:"mc",
+  prompt:'Estadísticas de la masa en el proyecto: <strong>media 97.31 kg</strong>, <strong>mediana 79.0 kg</strong>, mínimo 15 kg y máximo <strong>1,358 kg</strong> (Jabba Desilijic Tiure). ¿Qué explica mejor la diferencia de 18 kg entre la media y la mediana?',
+  opts:[
+   {t:"Un valor extremo jala la media hacia arriba", ok:true, fb:"Correcto: la media suma todos los valores, así que los 1,358 kg de Jabba la elevan; la mediana solo toma el valor central y casi no se mueve."},
+   {t:"Las 23 masas desconocidas bajan la mediana", fb:"Las masas desconocidas se descartaron como None antes del cálculo; ninguna de las dos medidas las incluye."},
+   {t:"La mediana promedia el mínimo y el máximo", fb:"La mediana es el valor central de los datos ordenados; el promedio de 15 y 1,358 daría 686.5."},
+   {t:"La desviación estándar se resta de la media", fb:"La desviación estándar (169.46) mide qué tan dispersos están los datos; se reporta aparte y la media se calcula sin ella."}
+  ]},
+ {id:"A8", slide:9, titulo:"Ejercicio con tus datos: IMC", tipo:"variant"},
+ {id:"A9", slide:9, titulo:"Arquitectura del sistema", tipo:"mc",
+  prompt:'En la arquitectura del proyecto, <code>analizador.py</code> entrega el mismo diccionario de resultados a dos módulos. Uno es <code>exportador.py</code>. ¿Cuál es el otro?',
+  opts:[
+   {t:"limpiador_datos.py", fb:"limpiador_datos.py trabaja antes del análisis: entrega personajes y planetas limpios a analizador.py."},
+   {t:"api_cliente.py", fb:"api_cliente.py es el primer módulo de la tubería y el único que se comunica con el API."},
+   {t:"graficas.py", ok:true, fb:"Correcto: graficas.py recibe ranking_planetas y alturas_ordenadas (con la media) para dibujar las dos gráficas."},
+   {t:"__init__.py", fb:"__init__.py solo convierte la carpeta modulos en un paquete; sin funciones de análisis."}
+  ]}
+];
+var ACT_BY_ID = {}; ACTS.forEach(function(a){ ACT_BY_ID[a.id] = a; S.acts[a.id] = {done:false, first:null, intentos:0}; });
+var LETRAS = ["a","b","c","d"];
+
+function renderMC(cont, a){
+  var h = '<div class="act-h"><span>Actividad '+a.id.slice(1)+' de 9 · '+esc(a.titulo)+'</span><span class="estado">Pendiente</span></div>';
+  h += '<div class="prompt">'+a.prompt+'</div><div class="opts" role="group">';
+  a.opts.forEach(function(o,i){ h += '<button type="button" class="opt" data-i="'+i+'"><span class="let">'+LETRAS[i]+')</span><span>'+esc(o.t)+'</span></button>'; });
+  h += '</div><div class="fb" aria-live="polite"></div>';
+  cont.innerHTML = h;
+  cont.querySelectorAll("pre.code.py").forEach(function(p){ p.innerHTML = hlBlock(p.textContent); });
+  cont.querySelectorAll(".opt").forEach(function(btn){
+    btn.addEventListener("click", function(){ answerMC(cont, a, +btn.dataset.i); });
+  });
+}
+function answerMC(cont, a, i){
+  var st = S.acts[a.id]; if (st.done) return;
+  st.intentos++;
+  var o = a.opts[i], fb = cont.querySelector(".fb"), btns = cont.querySelectorAll(".opt");
+  if (st.first === null) st.first = !!o.ok;
+  if (o.ok){
+    st.done = true;
+    btns.forEach(function(b,k){ b.disabled = true; if (a.opts[k].ok) b.classList.add("right"); });
+    var lst = '<ul>' + a.opts.map(function(op,k){ return '<li><strong>'+LETRAS[k]+') '+esc(op.t)+':</strong> '+esc(op.fb)+'</li>'; }).join("") + '</ul>';
+    fb.innerHTML = '<div class="msg good"><strong>¡Bien!</strong> '+esc(o.fb)+'</div><details open><summary>Por qué cada opción</summary>'+lst+'</details>';
+    completar(cont, a);
+  } else {
+    btns[i].classList.add("wrong"); btns[i].disabled = true;
+    fb.innerHTML = '<div class="msg bad"><strong>Revisa:</strong> '+esc(o.fb)+' Intenta con otra opción.</div>';
+  }
+}
+function renderMatch(cont, a){
+  var h = '<div class="act-h"><span>Actividad '+a.id.slice(1)+' de 9 · '+esc(a.titulo)+'</span><span class="estado">Pendiente</span></div>';
+  h += '<div class="prompt">'+a.prompt+'</div>';
+  a.rows.forEach(function(r,i){
+    h += '<div class="match-row" data-i="'+i+'"><label for="m'+i+'">'+esc(r.t)+'</label><select id="m'+i+'"><option value="">Elige…</option>' +
+      a.choices.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join("") + '</select><div class="rowfb"></div></div>';
+  });
+  h += '<div class="ctrls"><button type="button" class="btn" data-check>Revisar</button></div><div class="fb" aria-live="polite"></div>';
+  cont.innerHTML = h;
+  cont.querySelector("[data-check]").addEventListener("click", function(){
+    var st = S.acts[a.id]; if (st.done) return;
+    var sels = cont.querySelectorAll("select"), faltan = false;
+    sels.forEach(function(s){ if (!s.value) faltan = true; });
+    var fb = cont.querySelector(".fb");
+    if (faltan){ fb.innerHTML = '<div class="msg bad">Elige una estructura en cada renglón antes de revisar.</div>'; return; }
+    st.intentos++;
+    var bien = 0;
+    a.rows.forEach(function(r,i){
+      var row = cont.querySelector('.match-row[data-i="'+i+'"]'), v = sels[i].value, rf = row.querySelector(".rowfb");
+      row.classList.remove("ok","ko");
+      if (v === r.ok){ bien++; row.classList.add("ok"); rf.textContent = ""; }
+      else { row.classList.add("ko"); rf.textContent = r.fb[v] || ""; }
+    });
+    if (st.first === null) st.first = (bien === a.rows.length);
+    if (bien === a.rows.length){
+      st.done = true;
+      sels.forEach(function(s){ s.disabled = true; });
+      cont.querySelector("[data-check]").disabled = true;
+      var lst = '<ul>' + a.rows.map(function(r){ return '<li><strong>'+esc(r.ok)+':</strong> '+esc(r.t)+'</li>'; }).join("") + '</ul>';
+      fb.innerHTML = '<div class="msg good"><strong>¡Bien!</strong> Las cuatro relaciones son correctas.</div>' + lst;
+      completar(cont, a);
+    } else {
+      fb.innerHTML = '<div class="msg bad">Tienes '+bien+' de '+a.rows.length+' correctas. Lee la nota de cada renglón marcado en rojo y vuelve a revisar.</div>';
+    }
+  });
+}
+/* Variante por estudiante (A8) */
+function variante(){
+  var n = parseInt(S.hash.slice(0,2),16);
+  var alt = 151 + n % 48; if (alt >= 160) alt++;          // 151..199 sin 160
+  var am = alt / 100;
+  var r1 = function(x){ return x.toFixed(1); };           // equivale a round(x, 1) de Python en este rango
+  var correcta = r1(77 / Math.pow(am,2));
+  var d1 = r1(77 / am), d2 = r1(77 * Math.pow(am,2)), d3 = r1(77 / am * 2);
+  var opts = [
+    {t:correcta, ok:true, fb:"Correcto: altura_m = "+alt+" / 100 = "+am+"; luego 77 / "+am+" ** 2 = "+correcta+" al redondear a un decimal."},
+    {t:d1, fb:"Este valor divide la masa entre la altura en metros sin elevarla al cuadrado (falta ** 2)."},
+    {t:d2, fb:"Este valor multiplica la masa por la altura al cuadrado; la fórmula divide: masa / altura_m ** 2."},
+    {t:d3, fb:"Este valor confunde ** 2 (elevar al cuadrado) con * 2 (multiplicar por dos)."}
+  ];
+  var pos = parseInt(S.hash.slice(2,3),16) % 4;          // la posición de la correcta también varía
+  var c = opts.shift(); opts.splice(pos, 0, c);
+  return {alt:alt, opts:opts};
+}
+function renderVariant(cont, a){
+  var v = variante();
+  a.opts = v.opts;
+  a.prompt = 'La función del proyecto es:<pre class="code py">def calcular_imc(masa, altura_cm):\n    """IMC = masa (kg) / altura (m) al cuadrado."""\n    altura_m = altura_cm / 100\n    return round(masa / altura_m ** 2, 1)</pre>' +
+    'Un personaje mide <strong>'+v.alt+' cm</strong> y su masa es <strong>77 kg</strong>. ¿Qué regresa <code>calcular_imc(77, '+v.alt+')</code>?';
+  renderMC(cont, a);
+}
+function completar(cont, a){
+  cont.classList.add("done");
+  var e = cont.querySelector(".estado"); if (e) e.textContent = "Completada ✓";
+  actualizarIndicadores();
+}
+
+/* ============ NAVEGACIÓN ============ */
+var screens = document.querySelectorAll(".screen");
+function ir(i){
+  if (!S.correo && i > 0) return;
+  if (i < 0) i = 0;
+  if (i > FINAL) i = FINAL;
+  if (i === FINAL && pendientes().length){ i = TOTAL_SLIDES; mostrarPendientes(); }
+  if (i === 0 && S.correo) i = 1;
+  S.idx = i;
+  screens.forEach(function(s){ s.classList.toggle("active", +s.dataset.i === i); });
+  if (i === FINAL) generarCodigo();
+  actualizarIndicadores();
+  window.scrollTo(0,0);
+}
+function actualizarIndicadores(){
+  var i = S.idx;
+  $("slideInd").textContent = i === 0 ? "Inicio" : (i === FINAL ? "Fin" : i + " / " + TOTAL_SLIDES);
+  var n = ACTS.filter(function(a){ return S.acts[a.id].done; }).length;
+  $("actInd").textContent = "Actividades " + n + " / " + ACTS.length;
+  $("btnPrev").disabled = !S.correo || i <= 1 || i === FINAL && false;
+  if (i === FINAL) $("btnPrev").disabled = false;
+  $("btnNext").disabled = !S.correo || i >= FINAL;
+  $("btnNext").innerHTML = i === TOTAL_SLIDES ? "Obtener código &rarr;" : "Siguiente &rarr;";
+  $("navHint").textContent = !S.correo ? "Escribe tu correo para comenzar" : (i === FINAL ? "Terminaste" : "Usa los botones o las flechas ← →");
+}
+function pendientes(){ return ACTS.filter(function(a){ return !S.acts[a.id].done; }); }
+function mostrarPendientes(){
+  var p = pendientes(), box = $("pendientes");
+  if (!p.length){ box.innerHTML = ""; return; }
+  box.innerHTML = '<div class="pend"><strong>Aún no puedes obtener tu código.</strong> Te faltan estas actividades:<ul>' +
+    p.map(function(a){ return '<li><a href="#" data-go="'+a.slide+'">Actividad '+a.id.slice(1)+' · '+esc(a.titulo)+' (diapositiva '+a.slide+')</a></li>'; }).join("") + '</ul></div>';
+  box.querySelectorAll("[data-go]").forEach(function(l){ l.addEventListener("click", function(e){ e.preventDefault(); ir(+l.dataset.go); }); });
+}
+$("btnPrev").addEventListener("click", function(){ ir(S.idx === FINAL ? TOTAL_SLIDES : S.idx - 1); });
+$("btnNext").addEventListener("click", function(){ ir(S.idx + 1); });
+$("btnCodigo").addEventListener("click", function(){ ir(FINAL); });
+document.addEventListener("keydown", function(e){
+  if ($("ficha").classList.contains("open")){ if (e.key === "Escape") cerrarFicha(); return; }
+  var tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "select" || tag === "textarea") return;
+  if (!S.correo) return;
+  if (e.key === "ArrowRight" && S.idx < FINAL) ir(S.idx + 1);
+  if (e.key === "ArrowLeft") ir(S.idx === FINAL ? TOTAL_SLIDES : S.idx - 1);
+});
+
+/* ============ IDENTIFICACIÓN ============ */
+function normalizar(c){ return String(c).trim().toLowerCase().replace(/\s+/g, ""); }
+function iniciar(){
+  var c = normalizar($("email").value), err = $("emailErr");
+  if (!DOMINIO_RE.test(c)){ err.textContent = "Escribe un correo válido que termine en @uanl.edu.mx"; return; }
+  err.textContent = "";
+  $("btnStart").disabled = true;
+  sha256(c + SAL).then(function(h){
+    S.correo = c; S.hash = h.slice(0,6).toUpperCase(); S.inicio = new Date();
+    $("email").disabled = true;
+    renderVariant(document.querySelector('[data-act="A8"]'), ACT_BY_ID.A8);
+    ir(1);
+  });
+}
+$("btnStart").addEventListener("click", iniciar);
+$("email").addEventListener("keydown", function(e){ if (e.key === "Enter") iniciar(); });
+
+/* ============ CÓDIGO DE FINALIZACIÓN ============ */
+function pad(n, w){ n = String(n); while (n.length < w) n = "0" + n; return n; }
+function generarCodigo(){
+  if (pendientes().length) return;
+  if (!S.fin) S.fin = new Date();
+  var act = ACTS.filter(function(a){ return S.acts[a.id].done; }).length;
+  var prim = ACTS.filter(function(a){ return S.acts[a.id].first === true; }).length;
+  var pts = Math.round(prim / ACTS.length * 100);
+  var d = S.fin;
+  var fecha = pad(d.getFullYear() % 100,2) + pad(d.getMonth()+1,2) + pad(d.getDate(),2);
+  var base = ID_RECURSO + "-" + S.hash + "-" + pad(act,2) + "-" + pad(pts,3) + "-" + fecha;
+  sha256(base + SAL).then(function(h){
+    var codigo = base + "-" + h.slice(0,4).toUpperCase();
+    S.codigo = codigo;
+    $("codigo").textContent = codigo;
+    var q = $("qr"); q.innerHTML = "";
+    try { if (window.QRCode) new QRCode(q, {text:codigo, width:170, height:170, correctLevel: QRCode.CorrectLevel.M}); else q.textContent = "(El QR requiere conexión a internet; usa el botón Copiar.)"; }
+    catch(e){ q.textContent = "(No se pudo dibujar el QR; usa el botón Copiar.)"; }
+    var intentos = ACTS.reduce(function(s,a){ return s + S.acts[a.id].intentos; }, 0);
+    var min = Math.max(1, Math.round((S.fin - S.inicio) / 60000));
+    $("resumen").innerHTML = '<strong>Resumen</strong><ul>' +
+      '<li>Correo: '+esc(S.correo)+'</li>' +
+      '<li>Actividades completadas: '+act+' de '+ACTS.length+'</li>' +
+      '<li>Aciertos al primer intento: '+prim+' de '+ACTS.length+' ('+pts+'%)</li>' +
+      '<li>Intentos totales: '+intentos+'</li>' +
+      '<li>Tiempo: '+min+' min (de '+S.inicio.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})+' a '+S.fin.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})+')</li></ul>';
+  });
+}
+$("btnCopiar").addEventListener("click", function(){
+  var t = S.codigo || "", ok = function(){ $("copiado").textContent = "¡Copiado!"; };
+  function respaldo(){
+    var ta = document.createElement("textarea"); ta.value = t; ta.setAttribute("readonly",""); ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); ok(); } catch(e){ $("copiado").textContent = "Selecciona el código y cópialo a mano."; }
+    document.body.removeChild(ta);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, respaldo); else respaldo();
+});
+
+/* ============ FICHA ============ */
+var ultimoFoco = null;
+function abrirFicha(){ ultimoFoco = document.activeElement; $("ficha").classList.add("open"); $("fichaClose").focus(); }
+function cerrarFicha(){ $("ficha").classList.remove("open"); if (ultimoFoco) ultimoFoco.focus(); }
+$("btnFicha").addEventListener("click", abrirFicha);
+$("fichaClose").addEventListener("click", cerrarFicha);
+$("ficha").addEventListener("click", function(e){ if (e.target === $("ficha")) cerrarFicha(); });
+
+/* ============ PROBADOR DE REGEX ============ */
+var FN = {
+  a_numero: { ej:["172","1,358","unknown","41.9"], run:function(t){
+      var s = t.trim().replace(/,/g,"");
+      if (/^\d+(\.\d+)?$/.test(s)) return [pyFloat(parseFloat(s)), 'Sin comas queda "'+s+'" y coincide con ^\\d+(\\.\\d+)?$, así que se convierte con float.'];
+      return ["None", 'Sin comas queda "'+s+'", que no coincide con ^\\d+(\\.\\d+)?$; se regresa None en lugar de detener el programa.']; }},
+  anio_nacimiento: { ej:["19BBY","41.9BBY","4ABY","unknown"], run:function(t){
+      var m = /^(\d+(?:\.\d+)?)(BBY|ABY)$/.exec(t.trim());
+      if (!m) return ["None","No coincide con ^(\\d+(?:\\.\\d+)?)(BBY|ABY)$."];
+      var v = parseFloat(m[1]); if (m[2] === "BBY") v = -v;
+      return [pyFloat(v), 'group(1) = "'+m[1]+'" y group(2) = "'+m[2]+'"' + (m[2]==="BBY" ? "; por ser BBY (antes de Yavin) el valor se vuelve negativo." : "; ABY se queda positivo.")]; }},
+  extraer_id: { ej:["https://swapi.dev/api/planets/8/","https://swapi.dev/api/people/1/","unknown"], run:function(t){
+      var m = /\/(\d+)\/?$/.exec(t);
+      if (!m) return ["None","No se encontró /número/ al final de la URL."];
+      return [String(parseInt(m[1],10)), 'El grupo (\\d+) captura "'+m[1]+'" y int lo convierte a entero.']; }},
+  limpiar_texto: { ej:["  Darth   Vader ","Luke Skywalker"], run:function(t){
+      var r = t.replace(/\s+/g," ").trim();
+      return ["'"+r+"'", "\\s+ cambia cada grupo de espacios por uno solo y strip quita los de los extremos."]; }}
+};
+function probar(){
+  var f = FN[$("tFn").value], r = f.run($("tIn").value);
+  $("tOut").textContent = $("tFn").value + "(" + JSON.stringify($("tIn").value) + ")  →  " + r[0];
+  $("tWhy").textContent = r[1];
+}
+function ejemplos(){
+  var f = FN[$("tFn").value], box = $("tEj"); box.innerHTML = "";
+  f.ej.forEach(function(e){ var b = document.createElement("button"); b.type = "button"; b.textContent = JSON.stringify(e); b.addEventListener("click", function(){ $("tIn").value = e; probar(); }); box.appendChild(b); });
+}
+$("tFn").addEventListener("change", function(){ $("tIn").value = FN[$("tFn").value].ej[0]; ejemplos(); probar(); });
+$("tIn").addEventListener("input", probar);
+
+/* ============ RESALTADO VINCULADO (A_NUMERO) ============ */
+var LK_CODE = [
+  'PATRON_NUMERO = re.compile(r"^\\d+(\\.\\d+)?$")',
+  '',
+  'def a_numero(texto):',
+  '    """\'1,358\' -> 1358.0 ; \'unknown\' -> None"""',
+  '    sin_comas = re.sub(r",", "", texto.strip())',
+  '    if PATRON_NUMERO.match(sin_comas):',
+  '        return float(sin_comas)',
+  '    return None'
+];
+var LK_PASOS = [
+  {ps:"1. Inicio", ex:"Empieza la función. En Python es la línea def, que recibe el texto.", code:[2]},
+  {ps:"2. TEX ← TEX sin comas", ex:"re.sub cambia cada coma por nada: \"1,358\" se vuelve \"1358\".", code:[4]},
+  {ps:"3. Si TEX coincide con el patrón ^\\d+(\\.\\d+)?$ entonces", ex:"El patrón compilado arriba valida que el texto sea un número entero o decimal completo.", code:[0,5]},
+  {ps:"4. VAL ← TEX convertido a número real", ex:"Solo se convierte con float cuando el texto ya pasó la validación.", code:[6]},
+  {ps:"5. VAL ← NULO", ex:"Si no es número (por ejemplo \"unknown\"), el resultado es NULO; en Python, None.", code:[7]},
+  {ps:"6. Fin del paso 3", ex:"Cierra la decisión. En Python lo marca el fin de la sangría del if.", code:[5]},
+  {ps:"7. Regresar VAL", ex:"En Python cada camino tiene su propio return.", code:[6,7]},
+  {ps:"8. Fin", ex:"Termina la función.", code:[7]}
+];
+function lkRender(){
+  var c = $("lkCode"), e = $("lkExp");
+  c.innerHTML = LK_CODE.map(function(l,i){ return '<button type="button" class="cl" data-l="'+i+'"><span class="ln">'+(i+1)+'</span>'+hlPy(l)+'</button>'; }).join("");
+  e.innerHTML = LK_PASOS.map(function(p,i){ return '<button type="button" class="exp" data-p="'+i+'"><span class="ps">'+esc(p.ps)+'</span>'+esc(p.ex)+'</button>'; }).join("");
+  c.querySelectorAll(".cl").forEach(function(b){ b.addEventListener("click", function(){
+    var l = +b.dataset.l, ps = [];
+    LK_PASOS.forEach(function(p,i){ if (p.code.indexOf(l) >= 0) ps.push(i); });
+    lkMark([l], ps.length ? [ps[0]] : []);
+  }); });
+  e.querySelectorAll(".exp").forEach(function(b){ b.addEventListener("click", function(){
+    var i = +b.dataset.p; lkMark(LK_PASOS[i].code, [i]);
+  }); });
+}
+function lkMark(lines, pasos){
+  document.querySelectorAll("#lkCode .cl").forEach(function(b){ b.classList.toggle("on", lines.indexOf(+b.dataset.l) >= 0); });
+  document.querySelectorAll("#lkExp .exp").forEach(function(b){ b.classList.toggle("on", pasos.indexOf(+b.dataset.p) >= 0); });
+}
+
+/* ============ EJECUCIÓN PASO A PASO (mezclar) ============ */
+var TR_CODE = [
+  'def mezclar(izquierda, derecha):',
+  '    resultado = []',
+  '    i = 0',
+  '    j = 0',
+  '    while i < len(izquierda) and j < len(derecha):',
+  '        if izquierda[i] <= derecha[j]:',
+  '            resultado.append(izquierda[i])',
+  '            i += 1',
+  '        else:',
+  '            resultado.append(derecha[j])',
+  '            j += 1',
+  '    resultado.extend(izquierda[i:])  # lo que sobró de la izquierda',
+  '    resultado.extend(derecha[j:])    # lo que sobró de la derecha',
+  '    return resultado'
+];
+function T(a,b){ return {t:[a,b]}; }
+var IZQ = [T(66,"Yoda"), T(172,"Luke Skywalker")], DER = [T(88,"Wicket"), T(264,"Yarael Poof")];
+var TRACE = (function(){
+  var st = [], i = null, j = null, res = null;
+  function snap(line, note, out){ st.push({line:line, note:note, out:out||"", v:{i:i, j:j, resultado: res ? res.slice() : null}}); }
+  snap(1, "Se llama a mezclar con dos listas que ya están ordenadas por altura.");
+  res = []; snap(2, "resultado empieza como una lista vacía.");
+  i = 0; snap(3, "i señala el primer elemento de izquierda.");
+  j = 0; snap(4, "j señala el primer elemento de derecha.");
+  while (true){
+    var c = i < IZQ.length && j < DER.length;
+    snap(5, "Condición: " + i + " < 2 and " + j + " < 2 → " + (c ? "True: entra al ciclo." : "False: sale del ciclo."));
+    if (!c) break;
+    var le = IZQ[i].t[0] <= DER[j].t[0];
+    snap(6, "¿" + pyRepr(IZQ[i]) + " <= " + pyRepr(DER[j]) + "? Python compara primero la altura: " + IZQ[i].t[0] + " <= " + DER[j].t[0] + " → " + (le ? "True." : "False, pasa al else."));
+    if (le){ res.push(IZQ[i]); snap(7, "Se agrega " + pyRepr(IZQ[i]) + " al resultado."); i++; snap(8, "i avanza a la siguiente posición de izquierda."); }
+    else { res.push(DER[j]); snap(10, "Se agrega " + pyRepr(DER[j]) + " al resultado."); j++; snap(11, "j avanza a la siguiente posición de derecha."); }
+  }
+  var sobraI = IZQ.slice(i); res = res.concat(sobraI); snap(12, "izquierda[" + i + ":] = " + pyRepr(sobraI) + ": a la izquierda ya no le sobró nada.");
+  var sobraD = DER.slice(j); res = res.concat(sobraD); snap(13, "derecha[" + j + ":] = " + pyRepr(sobraD) + ": se agrega lo que sobró de la derecha.");
+  snap(14, "Se regresa la lista unida y ordenada de menor a mayor altura.", "return " + pyRepr(res));
+  return st;
+})();
+var trK = 0;
+function trRender(){
+  var s = TRACE[trK], prev = trK > 0 ? TRACE[trK-1] : null;
+  $("trCode").innerHTML = TR_CODE.map(function(l,i){ return '<div class="cl'+(i+1 === s.line ? " on" : "")+'"><span class="ln">'+(i+1)+'</span>'+hlPy(l)+'</div>'; }).join("");
+  var filas = [["izquierda", pyRepr(IZQ), pyRepr(IZQ)], ["derecha", pyRepr(DER), pyRepr(DER)]];
+  ["i","j","resultado"].forEach(function(k){
+    var cur = s.v[k] === null ? "—" : pyRepr(s.v[k]);
+    var ant = !prev || prev.v[k] === null ? "—" : pyRepr(prev.v[k]);
+    filas.push([k, cur, ant]);
+  });
+  $("trMem").innerHTML = filas.map(function(f){ var chg = f[1] !== f[2] && trK > 0; return '<tr><td class="mono">'+f[0]+'</td><td class="mono'+(chg?" chg":"")+'">'+esc(f[1])+'</td><td class="mono">'+esc(f[2])+'</td></tr>'; }).join("");
+  var out = TRACE.slice(0, trK+1).map(function(x){ return x.out; }).filter(Boolean).join("\n");
+  $("trOut").textContent = out || "(sin salida todavía)";
+  $("trNote").textContent = "Línea " + s.line + ": " + s.note;
+  $("trPos").textContent = "Paso " + (trK+1) + " de " + TRACE.length;
+  $("trPrev").disabled = trK === 0; $("trNext").disabled = trK === TRACE.length - 1;
+}
+$("trPrev").addEventListener("click", function(){ if (trK > 0){ trK--; trRender(); } });
+$("trNext").addEventListener("click", function(){ if (trK < TRACE.length-1){ trK++; trRender(); } });
+$("trReset").addEventListener("click", function(){ trK = 0; trRender(); });
+
+/* ============ TUBERÍA DE MÓDULOS ============ */
+var PIPE = [
+  {m:"main.py", hace:"Pide cuántos planetas mostrar en la gráfica (1-15, Enter = 8) y llama a cada módulo en orden.", recibe:"El dato del usuario.", entrega:"Conecta a todos los módulos; ninguno se llama entre sí.", archivo:"—"},
+  {m:"api_cliente.py", hace:"Recorre todas las páginas de people y planets siguiendo \"next\". Es el único módulo que se comunica con el API.", recibe:"La ruta del archivo JSON.", entrega:"Un diccionario con las listas \"personajes\" y \"planetas\" crudas.", archivo:"datos/datos_crudos.json"},
+  {m:"limpiador_datos.py", hace:"Valida y convierte los textos con expresiones regulares.", recibe:"Personajes y planetas crudos.", entrega:"planetas (diccionario indexado por id), personajes (lista de diccionarios) y el contador de valores descartados.", archivo:"—"},
+  {m:"analizador.py", hace:"Calcula IMC y estadísticas, ordena con Merge Sort, arma el ranking de planetas y el conjunto de climas.", recibe:"personajes y planetas limpios.", entrega:"Un diccionario de resultados, el mismo para exportador.py y graficas.py.", archivo:"—"},
+  {m:"exportador.py", hace:"Escribe el libro de Excel con openpyxl.", recibe:"personajes y resultados.", entrega:"Tres hojas: Personajes, Planetas y Estadisticas.", archivo:"datos/resultados.xlsx"},
+  {m:"graficas.py", hace:"Dibuja dos gráficas con matplotlib.", recibe:"ranking_planetas, cantidad, alturas_ordenadas y la media.", entrega:"Gráfica de barras (planetas natales con más personajes) y gráfica de líneas (alturas ordenadas).", archivo:"graficas/grafica_barras.png y graficas/grafica_lineas.png"}
+];
+var pK = 0;
+function pRender(){
+  $("pipe").innerHTML = PIPE.map(function(p,i){ return (i ? '<span class="parrow">→</span>' : '') + '<button type="button" class="pnode'+(i===pK?" on":"")+'" data-k="'+i+'">'+p.m+'</button>'; }).join("");
+  $("pipe").querySelectorAll(".pnode").forEach(function(b){ b.addEventListener("click", function(){ pK = +b.dataset.k; pRender(); }); });
+  var p = PIPE[pK];
+  $("pDetail").innerHTML = '<dt>Módulo</dt><dd class="mono">'+p.m+'</dd><dt>Qué hace</dt><dd>'+esc(p.hace)+'</dd><dt>Recibe</dt><dd>'+esc(p.recibe)+'</dd><dt>Entrega</dt><dd>'+esc(p.entrega)+'</dd><dt>Archivo que genera</dt><dd class="mono">'+esc(p.archivo)+'</dd>';
+  $("pPos").textContent = "Etapa " + (pK+1) + " de " + PIPE.length;
+  $("pPrev").disabled = pK === 0; $("pNext").disabled = pK === PIPE.length - 1;
+}
+$("pPrev").addEventListener("click", function(){ if (pK > 0){ pK--; pRender(); } });
+$("pNext").addEventListener("click", function(){ if (pK < PIPE.length-1){ pK++; pRender(); } });
+$("pReset").addEventListener("click", function(){ pK = 0; pRender(); });
+
+/* ============ LISTA DE COTEJO ============ */
+var SECC = ["Introducción al problema (tu pregunta)","Justificación del API (tabla de criterios y endpoints)","Algoritmo en pseudocódigo y diagrama de flujo","Arquitectura del sistema y estructura de carpetas","Estructuras de datos utilizadas y su justificación","Código fuente por módulo, con encabezado (Nombre, Descripción, Autor, Fecha, Versión)","Uso de expresiones regulares","Resultados del análisis (estadísticas y tablas)","Interpretación de las gráficas","Conclusiones: la historia que cuentan los datos","Anexo: requirements.txt, README y fuentes de consulta"];
+$("checklist").innerHTML = SECC.map(function(s,i){ return '<li><label><input type="checkbox" id="ck'+i+'"> <span>'+esc(s)+'</span></label></li>'; }).join("");
+
+/* ============ INICIO ============ */
+document.querySelectorAll("pre.code.py").forEach(function(p){ p.innerHTML = hlBlock(p.textContent); });
+ACTS.forEach(function(a){
+  var cont = document.querySelector('[data-act="'+a.id+'"]');
+  if (a.tipo === "mc") renderMC(cont, a);
+  else if (a.tipo === "match") renderMatch(cont, a);
+  else cont.innerHTML = '<div class="act-h"><span>Actividad 8 de 9 · '+esc(a.titulo)+'</span><span class="estado">Pendiente</span></div><p class="muted">Este ejercicio aparece cuando escribes tu correo.</p>';
+});
+ejemplos(); probar(); lkRender(); trRender(); pRender(); actualizarIndicadores();
+})();
+</script>
+</body>
+</html>
