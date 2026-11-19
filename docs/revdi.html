@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Examen integrador – Programación básica</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23001A57'/%3E%3Cpath d='M9 10l-4 6 4 6M23 10l4 6-4 6M18 8l-4 16' stroke='%23fff' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{--az:#001A57;--gr:#6F8BB4;--rj:#B1281D;--fo:#F3F5F9;--tx:#1B2333;--bo:#D5DCE8;--cd:#0F1A30;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--tx);background:var(--fo);line-height:1.5;font-size:16px;overflow-x:hidden}
+header{position:sticky;top:0;z-index:5;background:var(--az);color:#fff;display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;flex-wrap:wrap}
+header .marca{display:flex;align-items:center;gap:.5rem;font-weight:600;flex:1 1 auto;min-width:0}
+header .marca span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ind{font-variant-numeric:tabular-nums;background:rgba(255,255,255,.14);padding:.2rem .6rem;border-radius:99px;font-size:.9rem;white-space:nowrap}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--az);background:#fff;color:var(--az);padding:.55rem 1rem}
+button:disabled{opacity:.4;cursor:default}
+button.pri{background:var(--az);color:#fff}
+button:focus-visible{outline:3px solid var(--gr);outline-offset:2px}
+header button{background:transparent;color:#fff;border-color:rgba(255,255,255,.6);padding:.3rem .7rem;font-size:.9rem}
+main{max-width:860px;margin:0 auto;padding:1rem}
+.tarjeta{background:#fff;border:1px solid var(--bo);border-radius:12px;padding:1.2rem 1.3rem;margin-bottom:1rem}
+h1{font-size:1.45rem;margin:.2rem 0 .8rem;color:var(--az)}
+h2{font-size:1.15rem;margin:1rem 0 .5rem;color:var(--az)}
+.oculto{display:none!important}
+label{font-weight:600;display:block;margin-bottom:.3rem}
+input[type=email]{width:100%;font:inherit;padding:.6rem .7rem;border:1px solid var(--bo);border-radius:8px}
+.err{color:var(--rj);min-height:1.4em;margin:.4rem 0}
+.inst li{margin:.35rem 0}
+.enunciado{font-size:1.05rem}
+.enunciado p{margin:.3rem 0 .7rem}
+code{font-family:var(--mono);font-size:.92em;background:#EEF1F7;border-radius:4px;padding:.05em .3em;word-break:break-word}
+pre{font-family:var(--mono);font-size:.88rem;background:var(--cd);color:#E6EDF7;border-radius:10px;padding:.8rem 1rem;overflow-x:auto;max-width:100%;margin:.4rem 0 1rem;line-height:1.45}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;word-break:normal}
+.k{color:#FF9DB5}.s{color:#A8E3A0}.n{color:#F5C77E}.c{color:#8B98B3;font-style:italic}.b{color:#8EC9FF}
+code .k{color:#A0144A}code .s{color:#1F6E2A}code .n{color:#8A4B00}code .b{color:#0B4F9C}
+pre code .k{color:#FF9DB5}pre code .s{color:#A8E3A0}pre code .n{color:#F5C77E}pre code .b{color:#8EC9FF}
+.opciones{display:grid;gap:.55rem;margin-top:.6rem}
+.op{display:flex;gap:.7rem;align-items:flex-start;text-align:left;width:100%;border:1px solid var(--bo);background:#fff;color:var(--tx);padding:.7rem .8rem;border-radius:10px}
+.op .le{flex:0 0 1.9rem;height:1.9rem;border-radius:50%;border:2px solid var(--gr);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--az)}
+.op .tx{flex:1;min-width:0;padding-top:.15rem}
+.op.sel{border-color:var(--az);background:#E7ECF6}
+.op.sel .le{background:var(--az);border-color:var(--az);color:#fff}
+.op.mono .tx{font-family:var(--mono);font-size:.93rem}
+.op .tx code{background:none;padding:0;font-size:inherit}
+.nav{display:flex;gap:.6rem;justify-content:space-between;flex-wrap:wrap;margin:1rem 0}
+.nav .der{display:flex;gap:.6rem;flex-wrap:wrap}
+.mapa{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:.35rem}
+.mapa button{padding:.35rem 0;font-size:.9rem;border-color:var(--bo);color:var(--tx);font-variant-numeric:tabular-nums}
+.mapa button.hecho{background:var(--gr);border-color:var(--gr);color:#fff}
+.mapa button.actual{outline:3px solid var(--az);outline-offset:1px}
+.mapa .ejb{grid-column:1/-1}
+.leyenda{display:flex;gap:1rem;font-size:.85rem;margin-top:.5rem;flex-wrap:wrap;color:#4A5670}
+.leyenda i{display:inline-block;width:.9rem;height:.9rem;border-radius:3px;vertical-align:-2px;margin-right:.3rem;border:1px solid var(--bo)}
+textarea{width:100%;min-height:calc(1.45em * 18 + 1.4rem);font-family:var(--mono);font-size:.92rem;line-height:1.45;padding:.7rem;border:1px solid var(--bo);border-radius:10px;tab-size:4;white-space:pre;overflow:auto;resize:vertical;color:var(--tx);background:#fff}
+textarea:focus{outline:3px solid var(--gr);outline-offset:1px}
+.aviso{background:#F0F3F9;border-left:4px solid var(--gr);padding:.6rem .8rem;border-radius:6px;margin:.6rem 0}
+.final{text-align:center;padding:2.5rem 1rem}
+.final h1{font-size:1.8rem}
+.final .eti{font-weight:600;margin:1.2rem 0 .5rem}
+#codigo{font-family:var(--mono);font-size:1.35rem;font-weight:700;letter-spacing:.03em;word-break:break-all;background:#fff;border:2px dashed var(--gr);border-radius:10px;padding:1rem;margin:0 auto 1.2rem;max-width:680px;user-select:all;color:var(--az)}
+dialog{position:fixed;top:4.2rem;left:0;right:0;margin:0 auto;z-index:20;border:none;border-radius:14px;padding:0;max-width:min(560px,94vw);width:100%;box-shadow:0 12px 40px rgba(0,16,50,.35);max-height:calc(100vh - 5rem);overflow:auto}
+dialog::backdrop{background:rgba(0,16,50,.55)}
+.fcab{display:flex;justify-content:space-between;align-items:center;background:var(--az);color:#fff;padding:.7rem 1rem}
+.fcab h2{color:#fff;margin:0;font-size:1.05rem}
+.fcab button{background:transparent;color:#fff;border-color:rgba(255,255,255,.6);padding:.2rem .6rem}
+.fcue{padding:1rem 1.2rem}
+.fcue dl{display:grid;grid-template-columns:auto 1fr;gap:.35rem .8rem;margin:0}
+.fcue dt{font-weight:600}.fcue dd{margin:0}
+.ilus{display:block;margin:0 auto .6rem;max-width:180px;width:45%}
+@media (max-width:480px){main{padding:.6rem}.tarjeta{padding:1rem .9rem}h1{font-size:1.25rem}.mapa{grid-template-columns:repeat(5,minmax(0,1fr))}#codigo{font-size:1.05rem}.nav button{flex:1 1 auto}.nav .der{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<header id="cab">
+  <div class="marca"><svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#fff"/><path d="M9 10l-4 6 4 6M23 10l4 6-4 6M18 8l-4 16" stroke="#001A57" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg><span>Examen integrador</span></div>
+  <div id="ind" aria-live="polite">Inicio</div>
+  <button id="bFicha" type="button" aria-haspopup="dialog">Ficha del examen</button>
+</header>
+
+<main>
+  <section id="pId" class="tarjeta">
+    <svg class="ilus" viewBox="0 0 200 120" aria-hidden="true"><rect x="20" y="14" width="160" height="96" rx="10" fill="#E7ECF6" stroke="#6F8BB4" stroke-width="3"/><rect x="20" y="14" width="160" height="20" rx="10" fill="#001A57"/><circle cx="34" cy="24" r="4" fill="#fff"/><circle cx="48" cy="24" r="4" fill="#6F8BB4"/><path d="M60 58l-14 14 14 14M140 58l14 14-14 14M110 50l-20 44" stroke="#001A57" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h1>Examen integrador – Programación básica</h1>
+    <p>Universidad Autónoma de Nuevo León · Facultad de Ciencias Físico Matemáticas</p>
+    <form id="fId" novalidate>
+      <label for="correo">Correo institucional</label>
+      <input id="correo" type="email" autocomplete="email" inputmode="email" placeholder="nombre@uanl.edu.mx" required>
+      <div class="err" id="eCorreo" role="alert"></div>
+      <button class="pri" type="submit">Continuar</button>
+    </form>
+  </section>
+
+  <section id="pIns" class="tarjeta oculto">
+    <h1>Instrucciones</h1>
+    <ul class="inst">
+      <li>El examen tiene <strong>2 secciones</strong>: <strong>20 preguntas</strong> de opción múltiple (80 % de la calificación, 4 puntos cada una) y <strong>1 ejercicio</strong> de programación con 4 incisos (20 %, 5 puntos cada inciso).</li>
+      <li>Verás una pregunta por pantalla. Avanza con <strong>Anterior</strong> y <strong>Siguiente</strong>, con las flechas del teclado o con el mapa de preguntas.</li>
+      <li>Puedes <strong>cambiar tus respuestas</strong> las veces que quieras antes de enviar.</li>
+      <li>En el ejercicio escribe tu solución en Python dentro de la caja de texto. La página no ejecuta tu código.</li>
+      <li>Tiempo máximo: <strong>180 minutos</strong>.</li>
+      <li>Al enviar recibirás un <strong>código de examen</strong>. En el formulario debes pegar ese código y también <strong>tu código de Python</strong>. Copia tu código de Python antes de enviar, porque después ya no podrás regresar.</li>
+    </ul>
+    <div class="nav"><span></span><button class="pri" id="bIni" type="button">Comenzar</button></div>
+  </section>
+
+  <section id="pPre" class="oculto">
+    <div class="tarjeta">
+      <h1 id="pTit">Pregunta</h1>
+      <div class="enunciado" id="pEnu"></div>
+      <div class="opciones" id="pOps" role="radiogroup" aria-labelledby="pTit"></div>
+    </div>
+  </section>
+
+  <section id="pEj" class="oculto">
+    <div class="tarjeta">
+      <h1>Ejercicio: Pronóstico del clima por periodos</h1>
+      <div class="enunciado" id="ejEnu"></div>
+      <label for="cx">Tu solución en Python</label>
+      <textarea id="cx" rows="18" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-describedby="cxAyuda"></textarea>
+      <p id="cxAyuda" style="font-size:.9rem;color:#4A5670;margin:.3rem 0">La tecla Tab inserta 4 espacios.</p>
+      <button type="button" id="bCopPy">Copiar mi código de Python</button>
+    </div>
+  </section>
+
+  <div id="barra" class="oculto">
+    <div class="nav">
+      <button type="button" id="bAnt">Anterior</button>
+      <div class="der"><button type="button" id="bSig" class="pri">Siguiente</button><button type="button" id="bEnv">Enviar examen</button></div>
+    </div>
+    <div class="tarjeta">
+      <h2 style="margin-top:0">Mapa de preguntas</h2>
+      <div class="mapa" id="mapa"></div>
+      <div class="leyenda"><span><i style="background:#6F8BB4;border-color:#6F8BB4"></i>Contestada</span><span><i></i>Sin contestar</span></div>
+    </div>
+  </div>
+
+  <section id="pConf" class="tarjeta oculto">
+    <h1>¿Deseas enviar tu examen?</h1>
+    <div id="confMsg"></div>
+    <p>Al enviar ya no podrás regresar. Si aún no copias tu código de Python, regresa y cópialo.</p>
+    <div class="nav"><button type="button" id="bReg">Regresar</button><button type="button" class="pri" id="bOk">Enviar</button></div>
+  </section>
+
+  <section id="pFin" class="final oculto">
+    <h1>Examen enviado</h1>
+    <div class="eti">Tu código de examen</div>
+    <div id="codigo"></div>
+    <button type="button" class="pri" id="bCop">Copiar código</button>
+  </section>
+</main>
+
+<dialog id="ficha" aria-labelledby="fTit">
+  <div class="fcab"><h2 id="fTit">Ficha del examen</h2><button type="button" id="bCerrar" aria-label="Cerrar ficha">Cerrar</button></div>
+  <div class="fcue">
+    <dl>
+      <dt>Examen</dt><dd>Examen integrador – Programación básica</dd>
+      <dt>Unidad de aprendizaje</dt><dd>Programación básica</dd>
+      <dt>Autor</dt><dd>Osvaldo González</dd>
+      <dt>Institución</dt><dd>UANL – FCFM</dd>
+      <dt>Sección 1</dt><dd>20 preguntas de opción múltiple · 80 %</dd>
+      <dt>Sección 2</dt><dd>1 ejercicio de Python con 4 incisos · 20 %</dd>
+      <dt>Tiempo máximo</dt><dd>180 minutos</dd>
+    </dl>
+    <h2>Instrucciones</h2>
+    <p style="margin:.2rem 0">Contesta cada pregunta y escribe tu solución del ejercicio. Puedes cambiar tus respuestas antes de enviar. Al final copia tu código de examen y pégalo en el formulario junto con tu código de Python.</p>
+  </div>
+</dialog>
+
+<script>(function(_0x51ac77,_0x4a91ce){var _0x537aaf=a0_0x447d,_0x2d590a=_0x51ac77();while(!![]){try{var _0x1649df=parseInt(_0x537aaf(0x18b))/0x1*(parseInt(_0x537aaf(0x1ca))/0x2)+-parseInt(_0x537aaf(0x1bf))/0x3*(parseInt(_0x537aaf(0x1ea))/0x4)+parseInt(_0x537aaf(0x19f))/0x5*(-parseInt(_0x537aaf(0x1fc))/0x6)+parseInt(_0x537aaf(0x1d7))/0x7+-parseInt(_0x537aaf(0x1b4))/0x8*(parseInt(_0x537aaf(0x1aa))/0x9)+parseInt(_0x537aaf(0x1f9))/0xa*(parseInt(_0x537aaf(0x1cb))/0xb)+parseInt(_0x537aaf(0x1f4))/0xc*(parseInt(_0x537aaf(0x17c))/0xd);if(_0x1649df===_0x4a91ce)break;else _0x2d590a['push'](_0x2d590a['shift']());}catch(_0x12ff6d){_0x2d590a['push'](_0x2d590a['shift']());}}}(a0_0x4d42,0x7927c),(function(){var _0x5cad13=a0_0x447d,_0x35536b={'kYjkQ':function(_0x487227,_0x18edad){return _0x487227>>>_0x18edad;},'XYqpk':function(_0x206dda,_0x4b449b){return _0x206dda<<_0x4b449b;},'VNLAx':function(_0x3e310f,_0x8cde1b){return _0x3e310f*_0x8cde1b;},'ydSzk':function(_0x518c73,_0x30a5c8){return _0x518c73-_0x30a5c8;},'vUHAX':function(_0x5dcd03,_0x466ee3){return _0x5dcd03&_0x466ee3;},'HfLzv':function(_0x3eac84,_0x5704f9){return _0x3eac84-_0x5704f9;},'peEZw':function(_0x4c9bf3,_0x3f601a){return _0x4c9bf3-_0x3f601a;},'MwnrY':function(_0x3e73da,_0x31bba5){return _0x3e73da/_0x31bba5;},'Jjjfg':function(_0x194788,_0x576fdb){return _0x194788|_0x576fdb;},'iDmMQ':function(_0x556b6e,_0x4cc7fd){return _0x556b6e+_0x4cc7fd;},'AbSBX':function(_0x225995,_0x492341){return _0x225995+_0x492341;},'GomxC':function(_0x81878e,_0x527016){return _0x81878e|_0x527016;},'NzuqO':function(_0x2ba62a,_0x240d4f){return _0x2ba62a|_0x240d4f;},'yUKik':function(_0x1697ef,_0x3f3612){return _0x1697ef+_0x3f3612;},'MxrZV':function(_0xd9906b,_0x48a3a8){return _0xd9906b<_0x48a3a8;},'JcXyN':function(_0x43b578,_0x38024f){return _0x43b578|_0x38024f;},'WsOkz':function(_0x3a8943,_0x19c2af){return _0x3a8943+_0x19c2af;},'kYDgB':function(_0x379da3,_0x51ead4){return _0x379da3^_0x51ead4;},'AMWGx':function(_0x423722,_0x59cebe){return _0x423722^_0x59cebe;},'ZxRKi':function(_0x19aa19,_0x227a4f,_0x1d6f41){return _0x19aa19(_0x227a4f,_0x1d6f41);},'dIklO':function(_0xb3df1c,_0xbe637f,_0x3b101a){return _0xb3df1c(_0xbe637f,_0x3b101a);},'YAQhn':function(_0x394bba,_0x494f7d){return _0x394bba&_0x494f7d;},'FkJbk':function(_0x50790e,_0x4fef16){return _0x50790e|_0x4fef16;},'NmTRX':function(_0x1c2528,_0x31ab2b){return _0x1c2528+_0x31ab2b;},'uiiQV':function(_0x18cefa,_0x179f7e){return _0x18cefa+_0x179f7e;},'GIAUF':function(_0x812656,_0x51d85b){return _0x812656^_0x51d85b;},'eXKBx':function(_0x56c088,_0x83c4f4){return _0x56c088^_0x83c4f4;},'mpIuT':function(_0x15d05e,_0x29fc20,_0x2a66e1){return _0x15d05e(_0x29fc20,_0x2a66e1);},'HEpwd':function(_0x21446b,_0x1abc77,_0x231d7d){return _0x21446b(_0x1abc77,_0x231d7d);},'ioARs':function(_0x4e6528,_0x5b4794,_0xedc730){return _0x4e6528(_0x5b4794,_0xedc730);},'kzycb':function(_0x4f0509,_0x2f6154){return _0x4f0509&_0x2f6154;},'QVNjt':function(_0x285794,_0x156e68){return _0x285794-_0x156e68;},'YqslO':function(_0x37ffe0,_0x2157b7){return _0x37ffe0>>>_0x2157b7;},'eXMsG':function(_0x1b3476,_0x57a817){return _0x1b3476^_0x57a817;},'IVozB':function(_0x51cbd5,_0x38380e){return _0x51cbd5+_0x38380e;},'atxpI':function(_0x4ee11e,_0x22a9c0){return _0x4ee11e-_0x22a9c0;},'RZYxO':function(_0x4bbfdf,_0x4f0b85){return _0x4bbfdf+_0x4f0b85;},'NCsAq':function(_0x10ef97,_0x5c02a7){return _0x10ef97<_0x5c02a7;},'fHviK':function(_0x5acdbf,_0x2b4f9d){return _0x5acdbf|_0x2b4f9d;},'OcTEI':function(_0xf34ea6,_0x40a42d){return _0xf34ea6|_0x40a42d;},'QCoCA':function(_0x464d96,_0x586cc0){return _0x464d96<<_0x586cc0;},'SPVge':function(_0x4bf581,_0x370ab5){return _0x4bf581*_0x370ab5;},'EJlZX':function(_0x20b908,_0x53ecf6){return _0x20b908+_0x53ecf6;},'sDbsS':function(_0x128318,_0x3499e6){return _0x128318+_0x3499e6;},'zMsYg':function(_0x1de894,_0x5276f0){return _0x1de894+_0x5276f0;},'AqUDk':_0x5cad13(0x1f7),'DZcIl':_0x5cad13(0x14a),'KBzdL':function(_0x5f59a0,_0x4acddb){return _0x5f59a0>>>_0x4acddb;},'mgeUL':function(_0x344988,_0x5b8e31){return _0x344988^_0x5b8e31;},'tpXDN':function(_0x3e1ac7,_0x52cb43){return _0x3e1ac7|_0x52cb43;},'RWrPV':function(_0x370f7c,_0x31d8eb){return _0x370f7c-_0x31d8eb;},'gahkQ':function(_0x10480d,_0x43235d){return _0x10480d>_0x43235d;},'HpQZQ':function(_0x56e5c7){return _0x56e5c7();},'ItsKV':function(_0x156873,_0x263456){return _0x156873+_0x263456;},'oZIzv':function(_0x43d00f,_0x9b9cd6){return _0x43d00f%_0x9b9cd6;},'uwRaS':function(_0x38d377,_0x519194){return _0x38d377-_0x519194;},'rcnZf':function(_0x7ca8de,_0x16dfe2){return _0x7ca8de&&_0x16dfe2;},'aWMiP':function(_0x530398,_0x2218bb){return _0x530398===_0x2218bb;},'CHqyx':_0x5cad13(0x165),'SQTAS':function(_0x39ba3b,_0xe4ba74){return _0x39ba3b<=_0xe4ba74;},'pnAhl':function(_0x57be61,_0x104bf2){return _0x57be61||_0x104bf2;},'kPdsV':_0x5cad13(0x19e),'eujVe':function(_0x1cee2c,_0xdd7a8b){return _0x1cee2c===_0xdd7a8b;},'hajGB':_0x5cad13(0x183),'VIVJk':_0x5cad13(0x176),'dLTId':function(_0x2e2077,_0x5b446f){return _0x2e2077||_0x5b446f;},'HmPVn':_0x5cad13(0x1fd),'wVLch':function(_0x1dff36,_0x211cad){return _0x1dff36<_0x211cad;},'TOrsB':function(_0x11ab17,_0x39a5f8,_0x3f3208){return _0x11ab17(_0x39a5f8,_0x3f3208);},'bjfke':function(_0xbbb887,_0x2be537){return _0xbbb887(_0x2be537);},'HjRni':function(_0x50cabd,_0x4ff430){return _0x50cabd+_0x4ff430;},'VrNtw':function(_0x32142a,_0x2d31af){return _0x32142a(_0x2d31af);},'cxGYC':_0x5cad13(0x1da),'DasZS':_0x5cad13(0x153),'TfDgv':function(_0x462e3c,_0xff0603){return _0x462e3c*_0xff0603;},'qUEcp':function(_0x5711c8,_0x23289b,_0x590637,_0x327963){return _0x5711c8(_0x23289b,_0x590637,_0x327963);},'lkTyZ':function(_0x14dc43,_0x506b9e){return _0x14dc43+_0x506b9e;},'aDCBs':function(_0x56c946,_0x29e0d0){return _0x56c946%_0x29e0d0;},'gIIKv':_0x5cad13(0x18e),'VAKDJ':function(_0xab9116,_0x18f7df){return _0xab9116<_0x18f7df;},'gnltt':function(_0x1acd91,_0x296848){return _0x1acd91(_0x296848);},'xiZnD':function(_0x9b8714,_0x1fcd36){return _0x9b8714%_0x1fcd36;},'SxHRl':function(_0x3eca5e,_0x93b044){return _0x3eca5e!==_0x93b044;},'pVTiW':function(_0x3a1840,_0x4827d3){return _0x3a1840!==_0x4827d3;},'zRXni':function(_0x536403,_0x399dbc){return _0x536403>=_0x399dbc;},'wIiqZ':function(_0x6fd215,_0x5ce761){return _0x6fd215(_0x5ce761);},'FDATU':function(_0x4b22c7,_0x52f141){return _0x4b22c7+_0x52f141;},'giHLb':function(_0x40f084,_0x2afe9d){return _0x40f084===_0x2afe9d;},'VSobj':function(_0x51a253,_0x13f861){return _0x51a253+_0x13f861;},'xsxzK':function(_0x1a1739,_0x1e3845){return _0x1a1739+_0x1e3845;},'fqQBV':function(_0x52fcbc,_0x3a9982){return _0x52fcbc(_0x3a9982);},'pAfHe':function(_0x1d49f2,_0x2b650a){return _0x1d49f2+_0x2b650a;},'XVlFq':function(_0xe9979e,_0x356ace){return _0xe9979e+_0x356ace;},'yZZXv':function(_0x3efa10,_0x279c27,_0x5b1f48){return _0x3efa10(_0x279c27,_0x5b1f48);},'hfizI':function(_0x523fcb,_0x2377d3,_0x16188a){return _0x523fcb(_0x2377d3,_0x16188a);},'FaxLz':function(_0x57c3a1,_0x350a90,_0x552284){return _0x57c3a1(_0x350a90,_0x552284);},'hgUeM':function(_0x15565b,_0x334f0f){return _0x15565b/_0x334f0f;},'YkqLs':function(_0x1c43cf,_0x1dda3f,_0x266c8c){return _0x1c43cf(_0x1dda3f,_0x266c8c);},'MKAnx':function(_0x3bda5c,_0x2e2898,_0xbe71cb){return _0x3bda5c(_0x2e2898,_0xbe71cb);},'vAZNB':_0x5cad13(0x164),'idehl':_0x5cad13(0x1ee)},_0x2033df=_0x5cad13(0x175),_0x151528=_0x35536b[_0x5cad13(0x1f0)],_0x15748f=new RegExp(_0x35536b[_0x5cad13(0x14d)]),_0x1a37db=[0x1,0x3,0x0,0x1,0x0,0x1,0x2,0x0,0x3,0x3,0x1,0x1,0x3,0x3,0x3,0x0,0x0,0x1,0x2,0x2],_0x358b10=_0x1a37db[_0x5cad13(0x1fe)];function _0x4aa639(_0x4e1b2d){var _0x5d05a3=_0x5cad13,_0x38c4a5={'HizBt':function(_0x3ed54d,_0x254a55){return _0x3ed54d|_0x254a55;},'UoYqN':function(_0x4f0c04,_0x242ae0){var _0x182c17=a0_0x447d;return _0x35536b[_0x182c17(0x19c)](_0x4f0c04,_0x242ae0);},'ikzpF':function(_0x259506,_0x516d0b){var _0x573c70=a0_0x447d;return _0x35536b[_0x573c70(0x1f3)](_0x259506,_0x516d0b);}},_0x247284=new TextEncoder()[_0x5d05a3(0x16f)](_0x4e1b2d),_0x7fd5b8=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19],_0x79fca4=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0xfc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x6ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2],_0x4c9d57=_0x247284[_0x5d05a3(0x1fe)],_0x1ebb2c=_0x35536b[_0x5d05a3(0x1f3)](_0x4c9d57+0x9+0x3f>>0x6,0x6),_0x5e0105=new Uint8Array(_0x1ebb2c),_0x465831,_0x5c202d;_0x5e0105[_0x5d05a3(0x18c)](_0x247284),_0x5e0105[_0x4c9d57]=0x80;var _0x138038=_0x35536b[_0x5d05a3(0x1df)](_0x4c9d57,0x8);_0x5e0105[_0x35536b[_0x5d05a3(0x159)](_0x1ebb2c,0x4)]=_0x35536b[_0x5d05a3(0x19d)](_0x138038>>>0x18,0xff),_0x5e0105[_0x35536b[_0x5d05a3(0x1f1)](_0x1ebb2c,0x3)]=_0x35536b[_0x5d05a3(0x19d)](_0x35536b[_0x5d05a3(0x19c)](_0x138038,0x10),0xff),_0x5e0105[_0x35536b[_0x5d05a3(0x177)](_0x1ebb2c,0x2)]=_0x138038>>>0x8&0xff,_0x5e0105[_0x35536b[_0x5d05a3(0x159)](_0x1ebb2c,0x1)]=_0x35536b[_0x5d05a3(0x19d)](_0x138038,0xff),_0x5e0105[_0x35536b[_0x5d05a3(0x177)](_0x1ebb2c,0x5)]=_0x35536b[_0x5d05a3(0x19d)](Math[_0x5d05a3(0x199)](_0x35536b[_0x5d05a3(0x192)](_0x4c9d57,0x20000000)),0xff);var _0x2a504c=new Array(0x40);function _0x5d5b36(_0x17bfe6,_0x153535){var _0x16b5f1=_0x5d05a3;return _0x38c4a5[_0x16b5f1(0x190)](_0x38c4a5[_0x16b5f1(0x1b9)](_0x17bfe6,_0x153535),_0x38c4a5[_0x16b5f1(0x157)](_0x17bfe6,0x20-_0x153535));}for(_0x465831=0x0;_0x465831<_0x1ebb2c;_0x465831+=0x40){var _0x10d483=_0x5d05a3(0x1c3)[_0x5d05a3(0x1e8)]('|'),_0x640916=0x0;while(!![]){switch(_0x10d483[_0x640916++]){case'0':_0x7fd5b8[0x2]=_0x35536b[_0x5d05a3(0x1d2)](_0x35536b[_0x5d05a3(0x150)](_0x7fd5b8[0x2],_0x59469a),0x0);continue;case'1':_0x7fd5b8[0x7]=_0x35536b[_0x5d05a3(0x1d2)](_0x35536b[_0x5d05a3(0x150)](_0x7fd5b8[0x7],_0x1f6927),0x0);continue;case'2':_0x7fd5b8[0x4]=_0x35536b[_0x5d05a3(0x1d2)](_0x35536b[_0x5d05a3(0x1dd)](_0x7fd5b8[0x4],_0x5dec2f),0x0);continue;case'3':var _0xf40dd7=_0x7fd5b8[0x0],_0x15261f=_0x7fd5b8[0x1],_0x59469a=_0x7fd5b8[0x2],_0x4ef384=_0x7fd5b8[0x3],_0x5dec2f=_0x7fd5b8[0x4],_0x20d5e8=_0x7fd5b8[0x5],_0x73fe1b=_0x7fd5b8[0x6],_0x1f6927=_0x7fd5b8[0x7];continue;case'4':_0x7fd5b8[0x5]=_0x35536b[_0x5d05a3(0x1ed)](_0x35536b[_0x5d05a3(0x150)](_0x7fd5b8[0x5],_0x20d5e8),0x0);continue;case'5':_0x7fd5b8[0x6]=_0x35536b[_0x5d05a3(0x185)](_0x7fd5b8[0x6]+_0x73fe1b,0x0);continue;case'6':_0x7fd5b8[0x0]=_0x35536b[_0x5d05a3(0x168)](_0x7fd5b8[0x0],_0xf40dd7)|0x0;continue;case'7':for(_0x5c202d=0x0;_0x35536b[_0x5d05a3(0x1cd)](_0x5c202d,0x40);_0x5c202d++){var _0x5c9c5b=_0x5d05a3(0x186)[_0x5d05a3(0x1e8)]('|'),_0x3feb60=0x0;while(!![]){switch(_0x5c9c5b[_0x3feb60++]){case'0':_0x15261f=_0xf40dd7;continue;case'1':var _0x41692c=_0x35536b[_0x5d05a3(0x16c)](_0x35536b[_0x5d05a3(0x17b)](_0x35536b[_0x5d05a3(0x17b)](_0x35536b[_0x5d05a3(0x168)](_0x1f6927,_0x35536b[_0x5d05a3(0x197)](_0x35536b[_0x5d05a3(0x189)](_0x5d5b36(_0x5dec2f,0x6),_0x35536b[_0x5d05a3(0x1c6)](_0x5d5b36,_0x5dec2f,0xb)),_0x35536b[_0x5d05a3(0x1c8)](_0x5d5b36,_0x5dec2f,0x19))),_0x35536b[_0x5d05a3(0x15f)](_0x5dec2f,_0x20d5e8)^_0x35536b[_0x5d05a3(0x19d)](~_0x5dec2f,_0x73fe1b))+_0x79fca4[_0x5c202d],_0x2a504c[_0x5c202d]),0x0);continue;case'2':_0xf40dd7=_0x35536b[_0x5d05a3(0x1bc)](_0x41692c+_0x586fc6,0x0);continue;case'3':_0x73fe1b=_0x20d5e8;continue;case'4':_0x5dec2f=_0x35536b[_0x5d05a3(0x185)](_0x35536b[_0x5d05a3(0x1d3)](_0x4ef384,_0x41692c),0x0);continue;case'5':var _0x586fc6=_0x35536b[_0x5d05a3(0x1ed)](_0x35536b[_0x5d05a3(0x1ad)](_0x35536b[_0x5d05a3(0x1a0)](_0x35536b[_0x5d05a3(0x1a2)](_0x35536b[_0x5d05a3(0x196)](_0x5d5b36,_0xf40dd7,0x2),_0x35536b[_0x5d05a3(0x1ce)](_0x5d5b36,_0xf40dd7,0xd)),_0x35536b[_0x5d05a3(0x194)](_0x5d5b36,_0xf40dd7,0x16)),_0x35536b[_0x5d05a3(0x1a2)](_0x35536b[_0x5d05a3(0x1a0)](_0x35536b[_0x5d05a3(0x19d)](_0xf40dd7,_0x15261f),_0xf40dd7&_0x59469a),_0x35536b[_0x5d05a3(0x1a6)](_0x15261f,_0x59469a))),0x0);continue;case'6':_0x59469a=_0x15261f;continue;case'7':_0x1f6927=_0x73fe1b;continue;case'8':_0x20d5e8=_0x5dec2f;continue;case'9':_0x4ef384=_0x59469a;continue;}break;}}continue;case'8':for(_0x5c202d=0x10;_0x35536b[_0x5d05a3(0x1cd)](_0x5c202d,0x40);_0x5c202d++){var _0x527bcf=_0x35536b[_0x5d05a3(0x1c6)](_0x5d5b36,_0x2a504c[_0x35536b[_0x5d05a3(0x1d9)](_0x5c202d,0xf)],0x7)^_0x5d5b36(_0x2a504c[_0x5c202d-0xf],0x12)^_0x35536b[_0x5d05a3(0x1a1)](_0x2a504c[_0x35536b[_0x5d05a3(0x159)](_0x5c202d,0xf)],0x3),_0xa39e6=_0x35536b[_0x5d05a3(0x1d8)](_0x5d5b36(_0x2a504c[_0x35536b[_0x5d05a3(0x1f1)](_0x5c202d,0x2)],0x11)^_0x5d5b36(_0x2a504c[_0x35536b[_0x5d05a3(0x1d9)](_0x5c202d,0x2)],0x13),_0x35536b[_0x5d05a3(0x1a1)](_0x2a504c[_0x35536b[_0x5d05a3(0x159)](_0x5c202d,0x2)],0xa));_0x2a504c[_0x5c202d]=_0x35536b[_0x5d05a3(0x1a9)](_0x35536b[_0x5d05a3(0x1a9)](_0x35536b[_0x5d05a3(0x1ad)](_0x2a504c[_0x35536b[_0x5d05a3(0x15d)](_0x5c202d,0x10)],_0x527bcf),_0x2a504c[_0x5c202d-0x7]),_0xa39e6)|0x0;}continue;case'9':_0x7fd5b8[0x3]=_0x35536b[_0x5d05a3(0x15e)](_0x7fd5b8[0x3],_0x4ef384)|0x0;continue;case'10':for(_0x5c202d=0x0;_0x35536b[_0x5d05a3(0x1a7)](_0x5c202d,0x10);_0x5c202d++)_0x2a504c[_0x5c202d]=_0x35536b[_0x5d05a3(0x171)](_0x35536b[_0x5d05a3(0x1b7)](_0x35536b[_0x5d05a3(0x185)](_0x5e0105[_0x465831+0x4*_0x5c202d]<<0x18,_0x35536b[_0x5d05a3(0x17a)](_0x5e0105[_0x465831+_0x35536b[_0x5d05a3(0x166)](0x4,_0x5c202d)+0x1],0x10)),_0x5e0105[_0x35536b[_0x5d05a3(0x1c1)](_0x35536b[_0x5d05a3(0x15e)](_0x465831,0x4*_0x5c202d),0x2)]<<0x8),_0x5e0105[_0x35536b[_0x5d05a3(0x15e)](_0x35536b[_0x5d05a3(0x184)](_0x465831,0x4*_0x5c202d),0x3)]);continue;case'11':_0x7fd5b8[0x1]=_0x35536b[_0x5d05a3(0x1c4)](_0x7fd5b8[0x1],_0x15261f)|0x0;continue;}break;}}var _0x4286d3='';for(_0x465831=0x0;_0x465831<0x8;_0x465831++)_0x4286d3+=_0x35536b[_0x5d05a3(0x17b)](_0x35536b[_0x5d05a3(0x1fa)],_0x35536b[_0x5d05a3(0x19c)](_0x7fd5b8[_0x465831],0x0)[_0x5d05a3(0x16a)](0x10))[_0x5d05a3(0x1f8)](-0x8);return _0x4286d3[_0x5d05a3(0x1f6)]();}function _0x1a56ae(_0x1ac8c3){var _0x389d16=_0x5cad13,_0x5dfd74={'EZvNE':_0x35536b[_0x389d16(0x158)],'mUkbB':function(_0x5816c5,_0x5bee61){var _0x4b3eeb=_0x389d16;return _0x35536b[_0x4b3eeb(0x19c)](_0x5816c5,_0x5bee61);},'urpVD':function(_0x3c211f,_0x57f6b4){var _0x2ca2fa=_0x389d16;return _0x35536b[_0x2ca2fa(0x197)](_0x3c211f,_0x57f6b4);},'FFCre':function(_0x48cdd9,_0x5bfbe3){var _0x3f219f=_0x389d16;return _0x35536b[_0x3f219f(0x16d)](_0x48cdd9,_0x5bfbe3);},'TbaBO':function(_0x48849a,_0x1486c6){var _0x29b804=_0x389d16;return _0x35536b[_0x29b804(0x1af)](_0x48849a,_0x1486c6);},'eEpDS':function(_0x4e642a,_0x2f0885){return _0x4e642a+_0x2f0885;},'zAcYJ':function(_0x544668,_0x505546){var _0x5b548b=_0x389d16;return _0x35536b[_0x5b548b(0x18d)](_0x544668,_0x505546);},'plxcj':function(_0x293ed3,_0xa6fd2e){var _0x4a2b65=_0x389d16;return _0x35536b[_0x4a2b65(0x19c)](_0x293ed3,_0xa6fd2e);}};return function(){var _0x280d3a=_0x389d16,_0x5a5f49=_0x5dfd74[_0x280d3a(0x1e1)][_0x280d3a(0x1e8)]('|'),_0x48176c=0x0;while(!![]){switch(_0x5a5f49[_0x48176c++]){case'0':_0x1ac8c3|=0x0;continue;case'1':return _0x5dfd74[_0x280d3a(0x14f)](_0x5dfd74[_0x280d3a(0x1e7)](_0x290641,_0x5dfd74[_0x280d3a(0x1eb)](_0x290641,0xe)),0x0)/0x100000000;case'2':_0x290641=_0x5dfd74[_0x280d3a(0x1ac)](_0x5dfd74[_0x280d3a(0x18a)](_0x290641,Math[_0x280d3a(0x154)](_0x5dfd74[_0x280d3a(0x1ac)](_0x290641,_0x290641>>>0x7),_0x5dfd74[_0x280d3a(0x17f)](0x3d,_0x290641))),_0x290641);continue;case'3':var _0x290641=Math[_0x280d3a(0x154)](_0x1ac8c3^_0x5dfd74[_0x280d3a(0x181)](_0x1ac8c3,0xf),_0x5dfd74[_0x280d3a(0x17f)](0x1,_0x1ac8c3));continue;case'4':_0x1ac8c3=_0x1ac8c3+0x6d2b79f5|0x0;continue;}break;}};}function _0x440096(_0x30030d,_0x54ef7c){var _0x2daa0c=_0x5cad13;for(var _0x5c4f67=_0x35536b[_0x2daa0c(0x1e4)](_0x30030d[_0x2daa0c(0x1fe)],0x1);_0x35536b[_0x2daa0c(0x1b8)](_0x5c4f67,0x0);_0x5c4f67--){var _0x56162c=Math[_0x2daa0c(0x199)](_0x35536b[_0x2daa0c(0x1df)](_0x35536b[_0x2daa0c(0x1c0)](_0x54ef7c),_0x5c4f67+0x1)),_0x4dbd1e=_0x30030d[_0x5c4f67];_0x30030d[_0x5c4f67]=_0x30030d[_0x56162c],_0x30030d[_0x56162c]=_0x4dbd1e;}return _0x30030d;}function _0x54a961(_0x588a7e,_0xc5d243,_0x56e31){var _0x56a97a=_0x5cad13,_0x31c376={},_0x11011b=[];for(var _0x5f9573=0x0;_0x35536b[_0x56a97a(0x1a7)](_0x5f9573,_0x588a7e[_0x56a97a(0x1fe)]);_0x5f9573++){var _0x540fd0=_0x35536b[_0x56a97a(0x1de)](_0xc5d243,_0x588a7e[_0x5f9573]%_0x56e31);while(_0x31c376[_0x540fd0])_0x540fd0=_0x35536b[_0x56a97a(0x1de)](_0xc5d243,_0x35536b[_0x56a97a(0x1d4)](_0x35536b[_0x56a97a(0x15e)](_0x35536b[_0x56a97a(0x152)](_0x540fd0,_0xc5d243),0x1),_0x56e31));_0x31c376[_0x540fd0]=0x1,_0x11011b[_0x56a97a(0x1d1)](_0x540fd0);}return _0x11011b;}function _0x4b4907(_0xeb62ba,_0x2fab8e){var _0x241c04=_0x5cad13;return _0xeb62ba=Math[_0x241c04(0x1ae)](0x0,Math[_0x241c04(0x193)](Math[_0x241c04(0x174)](_0xeb62ba),_0x35536b[_0x241c04(0x15d)](Math[_0x241c04(0x1d0)](0xa,_0x2fab8e),0x1))),_0x35536b[_0x241c04(0x1ad)](_0x241c04(0x1c5),_0xeb62ba)[_0x241c04(0x1f8)](-_0x2fab8e);}var _0x120c7f=null,_0x3a1489=null;function _0x196069(){var _0x4ad0fc=_0x5cad13;if(_0x35536b[_0x4ad0fc(0x1d6)](_0x120c7f,!_0x3a1489)&&_0x35536b[_0x4ad0fc(0x155)](document[_0x4ad0fc(0x1e5)],_0x4ad0fc(0x169)))_0x120c7f[_0x4ad0fc(0x1f5)]++;}function _0x40a68a(_0x76c0a9){var _0x855dc2=_0x5cad13,_0x33fae8=_0x35536b[_0x855dc2(0x19a)][_0x855dc2(0x1e8)]('|'),_0x244518=0x0;while(!![]){switch(_0x33fae8[_0x244518++]){case'0':var _0x15052f=_0x76c0a9[_0x855dc2(0x1b5)];continue;case'1':if(_0x35536b[_0x855dc2(0x155)](_0x120c7f['t1'],null))_0x120c7f['t1']=_0x133b0f;else{var _0x5ce915=_0x35536b[_0x855dc2(0x177)](_0x133b0f,_0x120c7f['tu']);if(_0x35536b[_0x855dc2(0x1c7)](_0x5ce915,0xea60))_0x120c7f[_0x855dc2(0x1ef)]+=_0x5ce915;}continue;case'2':_0x120c7f[_0x855dc2(0x1a3)]++;continue;case'3':if(_0x35536b[_0x855dc2(0x1cf)](!_0x120c7f,_0x3a1489))return;continue;case'4':_0x120c7f['tu']=_0x133b0f;continue;case'5':if(_0x35536b[_0x855dc2(0x155)](_0x15052f,_0x35536b[_0x855dc2(0x1be)])||_0x35536b[_0x855dc2(0x1e0)](_0x15052f,_0x855dc2(0x1c9))||_0x35536b[_0x855dc2(0x155)](_0x15052f,_0x35536b[_0x855dc2(0x1ec)])||_0x35536b[_0x855dc2(0x1e0)](_0x15052f,_0x855dc2(0x198))||_0x35536b[_0x855dc2(0x155)](_0x15052f,_0x35536b[_0x855dc2(0x1e3)]))return;continue;case'6':var _0x133b0f=Date[_0x855dc2(0x1bd)]();continue;}break;}}function _0x56b3ff(_0x4eca94){var _0x5cc314=_0x5cad13;if(_0x35536b[_0x5cc314(0x1dc)](!_0x120c7f,_0x3a1489))return;var _0x30991b='';try{_0x30991b=(_0x4eca94[_0x5cc314(0x195)]||window[_0x5cc314(0x195)])[_0x5cc314(0x187)](_0x35536b[_0x5cc314(0x163)])||'';}catch(_0x452333){_0x30991b='';}_0x120c7f[_0x5cc314(0x1a4)]++,_0x120c7f[_0x5cc314(0x162)]+=_0x30991b[_0x5cc314(0x1fe)];}window['Nx']={'a':function(_0x337b0a){var _0x2f6ff5=_0x5cad13,_0x369588=_0x2f6ff5(0x1b0)[_0x2f6ff5(0x1e8)]('|'),_0x50664d=0x0;while(!![]){switch(_0x369588[_0x50664d++]){case'0':for(_0x27d27c=0x0;_0x35536b[_0x2f6ff5(0x1db)](_0x27d27c,_0x358b10);_0x27d27c++)_0x288eb5[_0x2f6ff5(0x1d1)](_0x35536b[_0x2f6ff5(0x1e9)](_0x440096,[0x0,0x1,0x2,0x3],_0x5ba1f7));continue;case'1':var _0x2d85fd=document[_0x2f6ff5(0x1b6)]('cx');continue;case'2':var _0x288eb5=[];continue;case'3':var _0x17cabf=_0x35536b[_0x2f6ff5(0x14c)](_0x4aa639,_0x35536b[_0x2f6ff5(0x147)](_0x974914,_0x2033df))[_0x2f6ff5(0x1f8)](0x0,0x6),_0x5ba1f7=_0x35536b[_0x2f6ff5(0x14c)](_0x1a56ae,_0x35536b[_0x2f6ff5(0x1e9)](parseInt,_0x17cabf,0x10));continue;case'4':if(_0x120c7f)return _0x120c7f[_0x2f6ff5(0x1fb)];continue;case'5':return _0x120c7f[_0x2f6ff5(0x1fb)];case'6':_0x120c7f={'h':_0x17cabf,'t0':Date[_0x2f6ff5(0x1bd)](),'pes':0x0,'tec':0x0,'act':0x0,'t1':null,'tu':null,'peg':0x0,'cpg':0x0,'cfg':{'o':_0x4f24ef,'p':_0x288eb5,'d':_0xdb8b7e}};continue;case'7':var _0x974914=_0x35536b[_0x2f6ff5(0x1e6)](String,_0x35536b[_0x2f6ff5(0x1dc)](_0x337b0a,''))[_0x2f6ff5(0x180)]()[_0x2f6ff5(0x1e2)]()[_0x2f6ff5(0x15c)](/\s+/g,'');continue;case'8':_0x2d85fd&&(_0x2d85fd[_0x2f6ff5(0x1a8)](_0x35536b[_0x2f6ff5(0x170)],_0x40a68a),_0x2d85fd[_0x2f6ff5(0x1a8)](_0x35536b[_0x2f6ff5(0x17d)],_0x56b3ff));continue;case'9':if(!_0x15748f[_0x2f6ff5(0x161)](_0x974914))return null;continue;case'10':document[_0x2f6ff5(0x1a8)](_0x2f6ff5(0x1ba),_0x196069);continue;case'11':var _0x14d9c2=_0x35536b[_0x2f6ff5(0x1e6)](_0x4aa639,'V'+_0x17cabf),_0x56d7a6=[];continue;case'12':_0x440096(_0x4f24ef,_0x5ba1f7);continue;case'13':for(_0x27d27c=0x0;_0x35536b[_0x2f6ff5(0x1db)](_0x27d27c,0x11);_0x27d27c++)_0x56d7a6[_0x2f6ff5(0x1d1)](_0x35536b[_0x2f6ff5(0x194)](parseInt,_0x14d9c2[_0x2f6ff5(0x1f8)](_0x35536b[_0x2f6ff5(0x191)](0x2,_0x27d27c),0x2*_0x27d27c+0x2),0x10));continue;case'14':var _0xdb8b7e={'t':_0x35536b[_0x2f6ff5(0x173)](_0x54a961,_0x56d7a6[_0x2f6ff5(0x1f8)](0x0,0x5),0x96,0x96),'h':_0x56d7a6[_0x2f6ff5(0x1f8)](0x5,0xa)[_0x2f6ff5(0x18f)](function(_0x538ea1){var _0x549c57=_0x2f6ff5;return _0x4199a4[_0x549c57(0x1d5)](0x23,_0x538ea1%0x3d);}),'w':_0x54a961(_0x56d7a6[_0x2f6ff5(0x1f8)](0xa,0xf),0x14,0x3c),'r':[_0x35536b[_0x2f6ff5(0x1c2)](0x1,_0x35536b[_0x2f6ff5(0x1d4)](_0x56d7a6[0xf],0x28)),_0x35536b[_0x2f6ff5(0x1a9)](0x1,_0x35536b[_0x2f6ff5(0x1b3)](_0x56d7a6[0x10],0x28))]};continue;case'15':var _0x4f24ef=[],_0x27d27c;continue;case'16':var _0x4199a4={'Bhozo':function(_0x400217,_0x3e05a0){var _0xd8e7b=_0x2f6ff5;return _0x35536b[_0xd8e7b(0x17b)](_0x400217,_0x3e05a0);}};continue;case'17':for(_0x27d27c=0x0;_0x35536b[_0x2f6ff5(0x1db)](_0x27d27c,_0x358b10);_0x27d27c++)_0x4f24ef[_0x2f6ff5(0x1d1)](_0x27d27c);continue;}break;}},'c':function(_0x3668f7){var _0x2bca3c=_0x5cad13,_0x616444=_0x35536b[_0x2bca3c(0x1bb)][_0x2bca3c(0x1e8)]('|'),_0xb0a43=0x0;while(!![]){switch(_0x616444[_0xb0a43++]){case'0':var _0x18d013=_0x35536b[_0x2bca3c(0x14c)](_0x4aa639,_0x120c7f['h']+_0x2033df),_0x150fb6='';continue;case'1':var _0x392e4a=Date[_0x2bca3c(0x1bd)](),_0x34658c=new Date(_0x392e4a);continue;case'2':for(_0x42fa9b=0x0;_0x35536b[_0x2bca3c(0x14e)](_0x42fa9b,_0x1d677d[_0x2bca3c(0x1fe)]);_0x42fa9b++)_0x150fb6+=_0x35536b[_0x2bca3c(0x1f2)](String,_0x35536b[_0x2bca3c(0x1a5)](_0x35536b[_0x2bca3c(0x194)](parseInt,_0x1d677d[_0x2bca3c(0x179)](_0x42fa9b),0xa)+_0x35536b[_0x2bca3c(0x1a5)](parseInt(_0x18d013[_0x2bca3c(0x179)](_0x42fa9b),0x10),0xa),0xa));continue;case'3':if(!_0x120c7f)return null;continue;case'4':for(_0x42fa9b=0x0;_0x35536b[_0x2bca3c(0x1a7)](_0x42fa9b,_0x358b10);_0x42fa9b++){var _0x3b9bbf=_0x3668f7[_0x42fa9b];_0x35536b[_0x2bca3c(0x17e)](_0x3b9bbf,undefined)&&_0x35536b[_0x2bca3c(0x167)](_0x3b9bbf,null)&&_0x35536b[_0x2bca3c(0x14b)](_0x3b9bbf,0x0)&&(_0x1b4165++,_0x35536b[_0x2bca3c(0x1e0)](_0x3b9bbf,_0x1a37db[_0x42fa9b])&&(_0x59eb78++,_0x56b760+=Math[_0x2bca3c(0x1d0)](0x2,_0x42fa9b)));}continue;case'5':if(_0x3a1489)return _0x3a1489;continue;case'6':return _0x3a1489;case'7':_0x3a1489=_0x35536b[_0x2bca3c(0x147)](_0x139f8c,'-')+_0x35536b[_0x2bca3c(0x16e)](_0x4aa639,_0x35536b[_0x2bca3c(0x16b)](_0x139f8c,_0x2033df))[_0x2bca3c(0x1f8)](0x0,0x4);continue;case'8':var _0x5d683e=_0x35536b[_0x2bca3c(0x1cc)](_0x120c7f['t1'],null)?0x0:_0x35536b[_0x2bca3c(0x177)](_0x120c7f['tu'],_0x120c7f['t1']);continue;case'9':var _0x139f8c=_0x35536b[_0x2bca3c(0x16b)](_0x35536b[_0x2bca3c(0x168)](_0x35536b[_0x2bca3c(0x156)](_0x35536b[_0x2bca3c(0x1dd)](_0x35536b[_0x2bca3c(0x178)](_0x151528,'-'),_0x120c7f['h']),'-'),_0x150fb6)+'-',_0x32faea);continue;case'10':var _0x59eb78=0x0,_0x1b4165=0x0,_0x56b760=0x0,_0x42fa9b;continue;case'11':var _0x81fa25=document[_0x2bca3c(0x1b6)]('cx'),_0x80ae90=_0x81fa25?_0x81fa25[_0x2bca3c(0x160)]:'';continue;case'12':var _0x32faea=_0x35536b[_0x2bca3c(0x148)](_0x4aa639,_0x35536b[_0x2bca3c(0x1c2)](_0x80ae90[_0x2bca3c(0x15c)](/[ \t\r\n\f\v ]/g,''),_0x2033df))[_0x2bca3c(0x1f8)](0x0,0x6);continue;case'13':var _0x1c3b9e=_0x35536b[_0x2bca3c(0x1c2)](_0x35536b[_0x2bca3c(0x1dd)](_0x35536b[_0x2bca3c(0x1c8)](_0x4b4907,_0x34658c[_0x2bca3c(0x182)]()%0x64,0x2),_0x35536b[_0x2bca3c(0x1c8)](_0x4b4907,_0x35536b[_0x2bca3c(0x15a)](_0x34658c[_0x2bca3c(0x172)](),0x1),0x2)),_0x35536b[_0x2bca3c(0x196)](_0x4b4907,_0x34658c[_0x2bca3c(0x1b2)](),0x2));continue;case'14':var _0x1d677d=_0x35536b[_0x2bca3c(0x15a)](_0x35536b[_0x2bca3c(0x15a)](_0x35536b[_0x2bca3c(0x178)](_0x35536b[_0x2bca3c(0x15e)](_0x35536b[_0x2bca3c(0x151)](_0x35536b[_0x2bca3c(0x1ab)](_0x4b4907,_0x59eb78,0x2)+_0x35536b[_0x2bca3c(0x188)](_0x4b4907,_0x1b4165,0x2),_0x35536b[_0x2bca3c(0x19b)](_0x4b4907,_0x35536b[_0x2bca3c(0x1b1)](_0x392e4a-_0x120c7f['t0'],0xea60),0x3)),_0x35536b[_0x2bca3c(0x15b)](_0x4b4907,_0x120c7f[_0x2bca3c(0x1f5)],0x2))+_0x35536b[_0x2bca3c(0x1ce)](_0x4b4907,_0x35536b[_0x2bca3c(0x1b1)](_0x120c7f[_0x2bca3c(0x1ef)],0xea60),0x3),_0x4b4907(_0x35536b[_0x2bca3c(0x192)](_0x5d683e,0xea60),0x3))+_0x35536b[_0x2bca3c(0x1ce)](_0x4b4907,_0x120c7f[_0x2bca3c(0x1a3)],0x4),_0x35536b[_0x2bca3c(0x149)](_0x4b4907,_0x120c7f[_0x2bca3c(0x1a4)],0x2))+_0x35536b[_0x2bca3c(0x1ce)](_0x4b4907,_0x120c7f[_0x2bca3c(0x162)],0x4),_0x1c3b9e)+_0x35536b[_0x2bca3c(0x1ce)](_0x4b4907,_0x56b760,0xa);continue;}break;}}};}()));function a0_0x447d(_0x5f1ae7,_0x31e680){_0x5f1ae7=_0x5f1ae7-0x147;var _0x4d4232=a0_0x4d42();var _0x447d80=_0x4d4232[_0x5f1ae7];if(a0_0x447d['rDomgG']===undefined){var _0x2ef7a9=function(_0x1fae6e){var _0x2f3747='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';var _0x24e5dd='',_0x1505be='';for(var _0x99d242=0x0,_0x49c86a,_0x4da61a,_0x388b33=0x0;_0x4da61a=_0x1fae6e['charAt'](_0x388b33++);~_0x4da61a&&(_0x49c86a=_0x99d242%0x4?_0x49c86a*0x40+_0x4da61a:_0x4da61a,_0x99d242++%0x4)?_0x24e5dd+=String['fromCharCode'](0xff&_0x49c86a>>(-0x2*_0x99d242&0x6)):0x0){_0x4da61a=_0x2f3747['indexOf'](_0x4da61a);}for(var _0x4e5fa7=0x0,_0x2a8f74=_0x24e5dd['length'];_0x4e5fa7<_0x2a8f74;_0x4e5fa7++){_0x1505be+='%'+('00'+_0x24e5dd['charCodeAt'](_0x4e5fa7)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x1505be);};a0_0x447d['dwWnhl']=_0x2ef7a9,a0_0x447d['qcGqUp']={},a0_0x447d['rDomgG']=!![];}var _0x1cb8f2=_0x4d4232[0x0],_0x46f9b5=_0x5f1ae7+_0x1cb8f2,_0x40810b=a0_0x447d['qcGqUp'][_0x46f9b5];return!_0x40810b?(_0x447d80=a0_0x447d['dwWnhl'](_0x447d80),a0_0x447d['qcGqUp'][_0x46f9b5]=_0x447d80):_0x447d80=_0x40810b,_0x447d80;}function a0_0x4d42(){var _0x296bd7=['z25SDhq','wfLXCgS','nZu2surhzNjT','CgvZ','Dg9vChbLCKnHC2u','mdaWmdaWmda','C2XPy2u','mteZmefkqu5mqW','qxfvrgS','y2zN','mZu3mgf5CezcDW','Dgv4Da','BgvUz3rO','sgPsBMK','zNfrqLy','tuTbBNG','mhW0Fdn8mNWX','ELjyBMK','yMPMA2u','AwrLAgW','vKflreO','BvvRyKi','AurTtve','wfzSrNe','DxDsyvm','CgfZDgu','Aw11Ba','yvDnAva','vLnVyMO','AwT6Cey','rfPJswW','EwrtEMS','CefMsgu','wwTXthm','CMvWBgfJzq','yxr4CeK','uLPzEe8','wufrAg4','DMfSDwu','DgvZDa','y3bN','sg1qvM4','qtiWmJzfweKWmq','m3WWFdv8nNWYFdf8na','u1bwz2u','CfzuAvC','EvvlAwS','AgLKzgvU','Dg9tDhjPBMC','rKrbvfu','sMnyEu4','s0j6zeW','D0LPCvO','zw5JB2rL','y3Hhwum','zKH2AuS','z2v0tw9UDgG','Cvvfy3a','CM91BMq','wuLovK5wstLinKDowta0mG','q2fWC0XVy2S','CgvfwNC','Ehn4EKS','y2HHCKf0','uunVq0e','v3npA3O','mtKZoda0tfHzrgPW','rgfZwLm','u3HiuMW','EKfJwuO','DhjPBq','CgX4y2O','z2v0rNvSBfLLyxi','qwX0','C0rIC1m','tNP1Cu8','mxW1FdD8m3W4Fdr8oxW2Fdb8mG','z2v0rgf0yq','AgzPEKK','qu1xr3G','zuvWrfm','nvbLDwzSvW','C2v0','Dhbyre4','m3W1FdeWFdr8mxWXm3W4Fde0Fdb8mNWXmxWXmNW5FdD8nG','BwfW','sgL6qNq','vgzez3y','txDUCLK','BwLU','Aw9buNm','y2XPCgjVyxjKrgf0yq','BxbjDvq','A1Lez0i','twv0yq','zMXVB3i','q0HXExG','rMf4thO','A1LQA1e','DLviqvG','u2HPzNq','nZqWnwPhug9uua','r0Lbvuy','wxfZBe8','zvHlqNG','DgvJ','CgvN','EgLABKq','A3P5y2i','tKnZqxe','ywrKrxzLBNrmAxn0zw5LCG','svzVEKi','odaYmdGYn09pyLnVEa','EvPAwhy','vgjHqK8','DwLPuvy','Bwf4','BwDLvuW','mtz8nhW3FdL8m3WXnxWXn3WXmNWYFdb8mtf8mtn8mtr8nNWXmhWXFdH8nq','AgDvzu0','z2v0rgf0zq','yurdqNm','oeLkAuP2vq','A2v5','z2v0rwXLBwvUDej5swq','t2nuruK','z2fOA1e','vw9zCu4','DMLZAwjPBgL0EwnOyw5Nzq','z0Ljs3y','rMTkyMS','BM93','A1bKC1y','otnWuMHhqLa','shbrwLe','ruPSwLG','BgTuEvO','mtb8ohWZFdD8nNWXmxWWFdL8mNW0Fdv8mq','EK1ZwwC','mdaWmdaWmdaWma','wNHss2K','u1fuqvm','zeLRBe8','q29UDhjVBa','mZqYotKWtMPpDKvj','odC0nJfhwMLLr1e','z2Litgi','txHYwLy','sevWD2q','Cg5bAgW','Cg93','ChvZAa','sMPQzMC','tM1uuLG','B1PjENy','qMHVEM8','CMnUwMy','mtGXmdy5mgLsANflBq','zvHnC0C','uvzoANq','A2v5zg93BG','D1zmy2G','zeXuswq','qwjtqLG','sxrZs1y','vK5mqxG','zxvQvMu','rvP2tKu','Dg9mB3DLCKnHC2u','vKLwsMS','uLDYufy','DMLZAwjPBgL0Evn0yxrL','vNjoDhC','DxjWvKq','C3bSAxq','ve9YC0i','odG0mdHXA2Xrue4','rKzdCMu','AgfQr0i','r29TEem','xLTHlxOWltKUxYuRlv0RqhvHBMXClMvKDvWUBxGK','ywn0','DKfAtKi','sgzmENy'];a0_0x4d42=function(){return _0x296bd7;};return a0_0x4d42();}</script>
+<script>
+(function(){
+"use strict";
+var B=[{"s": "Un alumno quiere obtener datos del clima de un servicio web y empieza a escribir su propio lector de páginas HTML. ¿Qué alternativa es más adecuada?", "o": ["Leer el HTML con `re` y guardarlo en un archivo de texto", "Consultar la API con `requests` y procesar la respuesta JSON", "Copiar los datos a mano en una hoja de Excel con `openpyxl`", "Calcular el clima con `statistics` a partir de datos antiguos"], "m": ""}, {"s": "¿Qué ocurre al ejecutar `open(\"reporte.txt\", \"w\")` si el archivo `reporte.txt` no existe?", "o": ["Se produce un `FileExistsError`", "Se produce un `FileNotFoundError`", "Se abre el archivo en modo de solo lectura", "Python crea el archivo vacío"], "m": ""}, {"s": "¿Qué tipo de dato recibe el método `write()` de un archivo abierto en modo texto?", "o": ["`str`", "`int`", "`list`", "Cualquier tipo de dato"], "m": ""}, {"s": "Se desea guardar el nombre y la CURP de una persona en una línea del archivo `registros.txt`, separados por una coma. ¿Qué instrucción lo hace correctamente?", "o": ["f.write(nombre + curp)", "f.write(f\"{nombre},{curp}\\n\")", "f.write([nombre, curp])", "f.write(nombre, curp)"], "m": "c"}, {"s": "El archivo `salida.txt` contiene \"Hola\". Se ejecuta `with open('salida.txt', 'w') as archivo: archivo.write('Adiós')`. ¿Qué contiene el archivo después?", "o": ["Adiós", "HolaAdiós", "AdiósHola", "Hola"], "m": ""}, {"s": "Con `contador = 0`, ¿cuántas veces se ejecuta `print` en `while contador < 5: print(contador); contador += 2`?", "o": ["2", "3", "5", "4"], "m": ""}, {"s": "Dentro de `for estudiante in estudiantes`, donde `estudiantes` es una lista de diccionarios, alguien escribe `sum(estudiantes[\"calificaciones\"])`. ¿Por qué falla?", "o": ["Porque `sum()` no acepta listas que contengan enteros", "Porque la clave \"calificaciones\" lleva tilde en el diccionario", "Porque `estudiantes` es una lista y no se indexa con una clave", "Porque el ciclo `for` no recorre listas de diccionarios"], "m": ""}, {"s": "La instrucción `ws.cell(row=0, column=1, value=\"Total\")` produce `ValueError`. ¿Cuál es la causa?", "o": ["Las filas y columnas de una hoja se numeran a partir de 1", "El método `cell` no permite escribir textos", "El argumento `value` solo se usa con `append`", "La hoja debe guardarse antes de escribir en ella"], "m": ""}, {"s": "Se usa el patrón `r\"\\w+@\\w+\\.\\w+\"` para extraer correos y no detecta completo `juan.perez@gmail.com`. ¿Por qué?", "o": ["Porque `@` no puede aparecer dentro de un patrón", "Porque `findall()` devuelve únicamente la primera coincidencia", "Porque `\\.` coincide con cualquier carácter del texto", "Porque `\\w` no incluye el punto antes de la arroba"], "m": ""}, {"s": "Complete la función para que devuelva True si a es múltiplo de b: ________\n```\ndef es_multiplo(a, b):\n    ________\n```", "o": ["return a % b", "return a // b == 0", "return b % a == 0", "return a % b == 0"], "m": "c"}, {"s": "Un ejercicio pide graficar con `plt.barh(carreras, aspirantes)` y etiquetar el eje x como \"Carreras\" y el eje y como \"Aspirantes\". ¿Qué corrección debe hacerse al enunciado?", "o": ["Agregar una leyenda, porque sustituye a las etiquetas de los ejes", "Intercambiar las etiquetas, porque en `barh` las carreras quedan en el eje y", "Usar `plt.bar` en lugar de `plt.barh`, porque `barh` no admite etiquetas", "Conservarlo, porque las etiquetas no dependen del tipo de barra"], "m": ""}, {"s": "¿Cuáles son los tipos de errores que se presentan al desarrollar un programa?", "o": ["De compilación, de instalación y de ejecución", "De sintaxis, de ejecución y lógicos", "De diseño, de programación y de ejecución", "De sintaxis, de diseño y de presentación"], "m": ""}, {"s": "Un programa lee un archivo con `open()` fuera de un bloque `try` y el archivo no existe. ¿Qué consecuencia tiene?", "o": ["Python crea el archivo vacío y continúa la ejecución", "La variable del archivo queda con el valor `None`", "Python muestra una advertencia y lee el siguiente archivo", "Se lanza `FileNotFoundError` y el programa se detiene"], "m": ""}, {"s": "¿Qué muestra en pantalla el siguiente código si el usuario escribe 7?\n```\nnumeros = [10, 20, 30, 40, 50]\ntry:\n    i = int(input(\"Índice: \"))\n    print(numeros[i])\nexcept ValueError:\n    print(\"Dato inválido\")\nexcept IndexError:\n    print(\"Índice fuera de rango\")\n```", "o": ["50", "None", "Dato inválido", "Índice fuera de rango"], "m": ""}, {"s": "Con `datos = [2, 3, 5, 9, 11]`, ¿qué devuelve `statistics.median(datos)`?", "o": ["6", "9", "3", "5"], "m": ""}, {"s": "Se ejecuta en la terminal `python suma.py 4 6`. Dentro de `suma.py`, ¿qué contiene `sys.argv`?", "o": ["[\"suma.py\", \"4\", \"6\"]", "[4, 6]", "[\"4\", \"6\"]", "10"], "m": "c"}, {"s": "¿Qué muestra en pantalla el siguiente código?\n```\nclass Empleado:\n    def __init__(self, nombre, puesto, salario):\n        self.nombre = nombre\n        self.puesto = puesto\n        self.salario = salario\n    def calcular_bono(self):\n        return self.salario * 0.10\nempleado1 = Empleado(\"Ana\", \"Gerente\", 50000)\nprint(f\"Bono de {empleado1.nombre}: ${empleado1.calcular_bono():.2f}\")\n```", "o": ["Bono de Ana: $5000.00", "Bono de Ana: $500.00", "Bono de Ana: $50000.00", "Bono de empleado1: $5000.00"], "m": "t"}, {"s": "¿Cuál es el objetivo principal de PEP 8?", "o": ["Reducir el tamaño en disco de los archivos", "Mejorar la legibilidad y la consistencia del código", "Detectar errores lógicos de forma automática", "Aumentar la velocidad de ejecución del código"], "m": ""}, {"s": "Para el reporte semanal se evalúan dos scripts: uno carga el archivo anterior y agrega filas; el otro crea un libro nuevo cada vez y se copia todo a mano. ¿Cuál es mejor?", "o": ["El segundo, porque `openpyxl` no puede abrir archivos existentes", "El segundo, porque `append()` borra los datos anteriores", "El primero, porque reutiliza el archivo y automatiza la tarea", "El primero, porque `load_workbook` guarda de forma automática"], "m": ""}, {"s": "¿Qué muestra en pantalla la siguiente instrucción?\n```\nprint(12 / 2)\n```", "o": ["6", "8.0", "6.0", "\"6\""], "m": "c"}];
+var NQ=B.length, cfg=null, pos=0, vista="id", previa="pre", resp=[], enviado=false;
+for(var i=0;i<NQ;i++)resp.push(-1);
+var $=function(id){return document.getElementById(id);};
+var LET="ABCD";
+
+function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+var KW=/^(def|return|if|elif|else|for|while|in|try|except|finally|class|import|from|as|with|and|or|not|True|False|None|break|continue|pass|lambda|self|is)$/;
+var BI=/^(print|len|int|str|float|input|sum|range|open|list|dict|tuple|set|max|min|sorted|enumerate)$/;
+function hl(src){
+  var re=/(#[^\n]*)|((?:[rRfFbB]{1,2})?"(?:\\.|[^"\\\n])*"|(?:[rRfFbB]{1,2})?'(?:\\.|[^'\\\n])*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g,o="",u=0,m;
+  while((m=re.exec(src))){
+    o+=esc(src.slice(u,m.index));
+    if(m[1])o+='<span class="c">'+esc(m[1])+'</span>';
+    else if(m[2])o+='<span class="s">'+esc(m[2])+'</span>';
+    else if(m[3])o+='<span class="n">'+m[3]+'</span>';
+    else if(KW.test(m[4]))o+='<span class="k">'+m[4]+'</span>';
+    else if(BI.test(m[4]))o+='<span class="b">'+m[4]+'</span>';
+    else o+=esc(m[4]);
+    u=re.lastIndex;
+  }
+  return o+esc(src.slice(u));
+}
+function inl(t){
+  var p=t.split("`"),o="";
+  for(var i=0;i<p.length;i++)o+=i%2?"<code>"+hl(p[i])+"</code>":esc(p[i]);
+  return o;
+}
+function bloque(t){
+  var p=t.split("```"),o="";
+  for(var i=0;i<p.length;i++){
+    if(i%2){o+="<pre><code>"+hl(p[i].replace(/^\n/,"").replace(/\n$/,""))+"</code></pre>";}
+    else{var s=p[i].trim();if(s)o+="<p>"+inl(s).replace(/\n/g,"<br>")+"</p>";}
+  }
+  return o;
+}
+
+var pant={id:"pId",ins:"pIns",pre:"pPre",ej:"pEj",conf:"pConf",fin:"pFin"};
+function mostrar(v){
+  vista=v;
+  for(var k in pant)$(pant[k]).classList.toggle("oculto",k!==v);
+  $("barra").classList.toggle("oculto",!(v==="pre"||v==="ej"));
+  $("cab").classList.toggle("oculto",v==="fin");
+  if(v==="pre")pintarPregunta();
+  if(v==="ej"){ $("ind").textContent="Ejercicio"; pintarMapa(); }
+  if(v==="id"||v==="ins")$("ind").textContent="Inicio";
+  if(v==="conf")$("ind").textContent="Envío";
+  window.scrollTo(0,0);
+}
+
+function pintarPregunta(){
+  var q=cfg.o[pos],it=B[q],per=cfg.p[q];
+  $("pTit").textContent="Pregunta "+(pos+1);
+  $("ind").textContent="Pregunta "+(pos+1)+" / "+NQ;
+  $("pEnu").innerHTML=bloque(it.s);
+  var h="";
+  for(var i=0;i<4;i++){
+    var oi=per[i],txt=it.o[oi],sel=resp[q]===oi;
+    var cuerpo=it.m==="c"?"<code>"+hl(txt)+"</code>":(it.m==="t"?esc(txt):inl(txt));
+    h+='<button type="button" role="radio" aria-checked="'+sel+'" class="op'+(sel?" sel":"")+(it.m?" mono":"")+'" data-i="'+i+'"><span class="le">'+LET[i]+'</span><span class="tx">'+cuerpo+'</span></button>';
+  }
+  $("pOps").innerHTML=h;
+  $("bAnt").disabled=pos===0;
+  $("bSig").textContent=pos===NQ-1?"Ir al ejercicio":"Siguiente";
+  $("bSig").disabled=false;
+  pintarMapa();
+}
+function pintarMapa(){
+  var h="";
+  for(var p=0;p<NQ;p++){
+    var hecho=resp[cfg.o[p]]>=0,act=vista==="pre"&&p===pos;
+    h+='<button type="button" data-p="'+p+'" class="'+(hecho?"hecho ":"")+(act?"actual":"")+'" aria-label="Pregunta '+(p+1)+(hecho?", contestada":", sin contestar")+'">'+(p+1)+'</button>';
+  }
+  var ejh=$("cx").value.trim()!=="";
+  h+='<button type="button" data-p="ej" class="ejb '+(ejh?"hecho ":"")+(vista==="ej"?"actual":"")+'">Ejercicio</button>';
+  $("mapa").innerHTML=h;
+  if(vista==="ej"){$("bAnt").disabled=false;$("bSig").textContent="Siguiente";$("bSig").disabled=true;}
+}
+
+function ir(d){
+  if(vista==="pre"){
+    if(d<0&&pos>0){pos--;pintarPregunta();window.scrollTo(0,0);}
+    else if(d>0){ if(pos<NQ-1){pos++;pintarPregunta();window.scrollTo(0,0);} else mostrar("ej"); }
+  }else if(vista==="ej"&&d<0){pos=NQ-1;mostrar("pre");}
+}
+
+function f1(t){return Math.floor(t/10)+"."+(t%10);}
+function pintarEjercicio(){
+  var d=cfg.d,T=d.t.map(f1),H=d.h,W=d.w.map(f1),R=d.r.map(f1);
+  var est=
+'pronostico = {\n'+
+'    "cod": "200", "cnt": 5,\n'+
+'    "list": [\n'+
+'        {"dt": 1795111200, "main": {"temp": '+T[0]+', "humidity": '+H[0]+'},\n'+
+'         "weather": [{"id": 800, "main": "Clear", "description": "cielo claro"}],\n'+
+'         "wind": {"speed": '+W[0]+', "deg": 120}, "pop": 0, "dt_txt": "2026-11-19 18:00:00"},\n'+
+'        {"dt": 1795122000, "main": {"temp": '+T[1]+', "humidity": '+H[1]+'},\n'+
+'         "weather": [{"id": 802, "main": "Clouds", "description": "nubes dispersas"}],\n'+
+'         "wind": {"speed": '+W[1]+', "deg": 135}, "pop": 0.1, "dt_txt": "2026-11-19 21:00:00"},\n'+
+'        {"dt": 1795132800, "main": {"temp": '+T[2]+', "humidity": '+H[2]+'},\n'+
+'         "weather": [{"id": 500, "main": "Rain", "description": "lluvia ligera"}],\n'+
+'         "wind": {"speed": '+W[2]+', "deg": 150}, "pop": 0.45, "rain": {"3h": '+R[0]+'},\n'+
+'         "dt_txt": "2026-11-20 00:00:00"},\n'+
+'        {"dt": 1795143600, "main": {"temp": '+T[3]+', "humidity": '+H[3]+'},\n'+
+'         "weather": [{"id": 501, "main": "Rain", "description": "lluvia moderada"}],\n'+
+'         "wind": {"speed": '+W[3]+', "deg": 160}, "pop": 0.8, "rain": {"3h": '+R[1]+'},\n'+
+'         "dt_txt": "2026-11-20 03:00:00"},\n'+
+'        {"dt": 1795154400, "main": {"temp": '+T[4]+', "humidity": '+H[4]+'},\n'+
+'         "weather": [{"id": 804, "main": "Clouds", "description": "nubes"}],\n'+
+'         "wind": {"speed": '+W[4]+', "deg": 170}, "pop": 0.3, "dt_txt": "2026-11-20 06:00:00"},\n'+
+'    ],\n'+
+'    "city": {"id": 3995465, "name": "Monterrey", "country": "MX", "timezone": -21600},\n'+
+'}';
+  var h='<h2>Contexto</h2><p>Una app consulta el pronóstico de 5 días de OpenWeatherMap (<code>/data/2.5/forecast?q=Monterrey,MX&amp;units=metric&amp;lang=es</code>). La respuesta es un diccionario con los datos de la ciudad y una lista <code>"list"</code> de periodos de 3 horas. Cada periodo trae mediciones en <code>"main"</code>, una lista de condiciones en <code>"weather"</code> y datos del viento en <code>"wind"</code>. Algunos periodos también traen <code>"rain"</code>; la API omite esa clave cuando no llueve.</p>'+
+  '<h2>Estructura</h2><p>Los valores son los de tu examen. No necesitas copiar la estructura: escribe tu código suponiendo que la variable <code>pronostico</code> ya existe.</p><pre><code>'+hl(est)+'</code></pre>'+
+  '<h2>Incisos <span style="font-weight:400;font-size:.9rem">(5 puntos cada uno)</span></h2>'+
+  '<p><strong>a)</strong> Muestra la fecha y hora de cada periodo con su temperatura (un decimal) y la descripción de su primera condición. Indica también el periodo más cálido.</p>'+
+  '<p><strong>b)</strong> Calcula la humedad promedio, cuántos periodos incluyen una condición <code>"Rain"</code> y la lluvia acumulada en mm.</p>'+
+  '<p><strong>c)</strong> Aplana el pronóstico en una lista de tuplas <code>(dt_txt, descripción, velocidad del viento)</code>. Ordénala del viento mayor al menor y muestra las tres primeras tuplas.</p>'+
+  '<p><strong>d)</strong> Agrega al periodo <code>"2026-11-20 06:00:00"</code> la condición <code>{"id": 701, "main": "Mist", "description": "niebla"}</code> y elimina el periodo <code>"2026-11-19 18:00:00"</code> porque ya pasó. Actualiza <code>"cnt"</code>, muestra el nombre de la ciudad con el número de periodos y luego cada periodo restante con su número de condiciones.</p>'+
+  '<h2>Apoyo</h2><ul>'+
+  '<li>Lluvia de un periodo: <code>'+hl('per.get("rain", {}).get("3h", 0)')+'</code>. Si la clave no existe, devuelve 0.</li>'+
+  '<li>Humedad promedio: suma de humedades entre el número de periodos.</li>'+
+  '<li>Para ordenar tuplas por su tercer elemento de mayor a menor: <code>'+hl('lista.sort(key=lambda t: t[2], reverse=True)')+'</code></li>'+
+  '<li><code>"pop"</code> es la probabilidad de precipitación (0 a 1). <code>"dt"</code> es la hora en formato Unix (UTC).</li></ul>';
+  $("ejEnu").innerHTML=h;
+}
+
+function copiar(txt,btn,orig,nodo){
+  var ok=function(){btn.textContent="Copiado";setTimeout(function(){btn.textContent=orig;},1500);};
+  var resp2=function(){
+    try{
+      if(nodo&&nodo.select){nodo.focus();nodo.select();}
+      else if(nodo){var r=document.createRange();r.selectNodeContents(nodo);var s=window.getSelection();s.removeAllRanges();s.addRange(r);}
+      if(document.execCommand&&document.execCommand("copy"))ok();
+    }catch(e){}
+  };
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt).then(ok,resp2);}else resp2();
+}
+
+$("fId").addEventListener("submit",function(e){
+  e.preventDefault();
+  var v=$("correo").value.trim().toLowerCase().replace(/\s+/g,"");
+  $("correo").value=v;
+  var r=window.Nx&&window.Nx.a(v);
+  if(!r){$("eCorreo").textContent="Escribe tu correo institucional (@uanl.edu.mx).";return;}
+  $("eCorreo").textContent="";cfg=r;$("correo").disabled=true;
+  pintarEjercicio();mostrar("ins");
+});
+$("bIni").addEventListener("click",function(){if(cfg){pos=0;mostrar("pre");}});
+$("pOps").addEventListener("click",function(e){
+  var b=e.target.closest(".op");if(!b||enviado)return;
+  var q=cfg.o[pos];resp[q]=cfg.p[q][+b.getAttribute("data-i")];pintarPregunta();
+});
+$("mapa").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  var p=b.getAttribute("data-p");
+  if(p==="ej")mostrar("ej");else{pos=+p;mostrar("pre");}
+});
+$("bAnt").addEventListener("click",function(){ir(-1);});
+$("bSig").addEventListener("click",function(){ir(1);});
+$("bEnv").addEventListener("click",function(){
+  previa=vista;
+  var falt=0;for(var i=0;i<NQ;i++)if(resp[i]<0)falt++;
+  var vac=$("cx").value.trim()==="",m="";
+  if(falt)m+='<p class="aviso">'+(falt===1?"Falta 1 pregunta por contestar.":"Faltan "+falt+" preguntas por contestar.")+'</p>';
+  if(vac)m+='<p class="aviso">El ejercicio está vacío.</p>';
+  $("confMsg").innerHTML=m;mostrar("conf");
+});
+$("bReg").addEventListener("click",function(){mostrar(previa);});
+$("bOk").addEventListener("click",function(){
+  if(enviado)return;
+  var c=window.Nx.c(resp.slice());
+  enviado=true;$("cx").readOnly=true;
+  $("codigo").textContent=c;mostrar("fin");
+});
+$("bCop").addEventListener("click",function(){copiar($("codigo").textContent,this,"Copiar código",$("codigo"));});
+$("bCopPy").addEventListener("click",function(){copiar($("cx").value,this,"Copiar mi código de Python",null);});
+$("cx").addEventListener("input",function(){if(vista==="ej")pintarMapa();});
+$("cx").addEventListener("keydown",function(e){
+  if(e.key==="Tab"&&!e.shiftKey&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    e.preventDefault();var t=this,a=t.selectionStart,b=t.selectionEnd;
+    t.value=t.value.slice(0,a)+"    "+t.value.slice(b);t.selectionStart=t.selectionEnd=a+4;
+    if(vista==="ej")pintarMapa();
+  }
+});
+var dlg=$("ficha");
+function abrirFicha(){if(dlg.open){dlg.close();return;}if(dlg.show)dlg.show();else dlg.setAttribute("open","");$("bCerrar").focus();}
+$("bFicha").addEventListener("click",abrirFicha);
+$("bCerrar").addEventListener("click",function(){dlg.close();});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"&&dlg.open){dlg.close();return;}
+  if(dlg.open||!cfg||enviado)return;
+  var a=document.activeElement;
+  if(a&&(a.tagName==="TEXTAREA"||a.tagName==="INPUT"))return;
+  if(e.key==="ArrowRight"){e.preventDefault();ir(1);}
+  else if(e.key==="ArrowLeft"){e.preventDefault();ir(-1);}
+});
+})();
+</script>
+</body>
+</html>
